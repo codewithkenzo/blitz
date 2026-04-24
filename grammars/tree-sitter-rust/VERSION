@@ -1,0 +1,1 @@
+upstream: tree-sitter/tree-sitter-rust @ master (2026-04-24 snapshot)
