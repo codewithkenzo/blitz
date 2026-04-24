@@ -1,0 +1,12 @@
+.zig-cache/
+zig-out/
+zig-pkg/
+/blitz
+*.bak
+
+# OS
+.DS_Store
+
+# Local notes
+.pi/
+.tokensave/
