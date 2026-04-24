@@ -1,0 +1,1 @@
+upstream: tree-sitter/tree-sitter @ v0.26.8
