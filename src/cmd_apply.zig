@@ -17,6 +17,7 @@ const ApplyOperation = enum {
     multi_body,
     compose_body,
     insert_after_symbol,
+    patch,
 };
 
 const TargetRange = enum { body, node };
@@ -177,12 +178,12 @@ pub fn run(
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
 
-    if (operation != .multi_body) {
+    if (operation != .multi_body and operation != .patch) {
         const target = req.target orelse return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
         if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     }
 
-    const target_range = if (operation == .multi_body) TargetRange.body else parseTargetRange(req.target.?.range) catch |err| {
+    const target_range = if (operation == .multi_body or operation == .patch) TargetRange.body else parseTargetRange(req.target.?.range) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     const require_single_match = if (req.options) |opts| opts.requireSingleMatch orelse true else true;
@@ -213,8 +214,8 @@ pub fn run(
     const root = source_tree.rootNode();
     if (root.isNull() or root.hasError()) return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
-    const target_node: ?bindings.Node = if (operation == .multi_body) null else symbols.findEditableSymbolNode(original, root, req.target.?.symbol);
-    if (operation != .multi_body and target_node == null) {
+    const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch) null else symbols.findEditableSymbolNode(original, root, req.target.?.symbol);
+    if (operation != .multi_body and operation != .patch and target_node == null) {
         return emitFailure(ApplyError.SymbolNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     }
 
@@ -222,6 +223,8 @@ pub fn run(
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
     const body_range = if (operation == .multi_body or operation == .insert_after_symbol)
         edit_support.ByteRange{ .start = target_start, .end = target_end }
+    else if (operation == .patch)
+        edit_support.ByteRange{ .start = 0, .end = 0 }
     else
         edit_support.replacementRangeFor(lang, original, target_node.?);
 
@@ -329,6 +332,14 @@ pub fn run(
                 .changed_after = code.len,
             };
         },
+        .patch => makeCompactPatchOp(
+            allocator,
+            lang,
+            root,
+            original,
+            req.edit,
+            require_single_match,
+        ),
         .multi_body => makeMultiBodyOp(
             allocator,
             lang,
@@ -344,7 +355,7 @@ pub fn run(
     defer allocator.free(op_result.contents);
 
     var parse_after: bool = undefined;
-    if (operation == .multi_body) {
+    if (operation == .multi_body or operation == .patch) {
         var final_tree = parser.parseString(op_result.contents) orelse return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
         defer final_tree.deinit();
         parse_after = !final_tree.rootNode().isNull() and !final_tree.rootNode().hasError();
@@ -474,6 +485,7 @@ fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "multi_body")) return .multi_body;
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
+    if (std.mem.eql(u8, raw, "patch") or std.mem.eql(u8, raw, "compact_patch")) return .patch;
     return ApplyError.UnsupportedOperation;
 }
 
@@ -679,6 +691,296 @@ fn selectMatch(haystack: []const u8, needle: []const u8, selector: MatchSelector
     };
 }
 
+fn selectSpanFromCandidates(candidates: []const EditSpan, selector: MatchSelector, require_single_match: bool) !MatchSpan {
+    if (candidates.len == 0) return ApplyError.NoMatches;
+
+    const chosen = switch (selector.kind) {
+        .default_single => blk: {
+            if (require_single_match and candidates.len != 1) return if (candidates.len == 0) ApplyError.NoMatches else ApplyError.AmbiguousMatches;
+            break :blk candidates[0];
+        },
+        .first => candidates[0],
+        .last => candidates[candidates.len - 1],
+        .only => blk: {
+            if (candidates.len != 1) return ApplyError.AmbiguousMatches;
+            break :blk candidates[0];
+        },
+        .index => blk: {
+            if (selector.index == 0 or selector.index > candidates.len) return ApplyError.NoMatches;
+            break :blk candidates[selector.index - 1];
+        },
+    };
+
+    return MatchSpan{
+        .start = chosen.start,
+        .end = chosen.end,
+        .single_match = candidates.len == 1,
+        .total = candidates.len,
+    };
+}
+
+fn resolveCompactPatchEdits(
+    allocator: Allocator,
+    lang: bindings.Language,
+    root: bindings.Node,
+    source: []const u8,
+    ops: std.json.Array,
+    require_single_match: bool,
+) ![]MultiEdit {
+    if (ops.items.len == 0) return ApplyError.PatternEmpty;
+
+    var resolved = std.ArrayList(MultiEdit).empty;
+    errdefer {
+        for (resolved.items) |entry| {
+            if (entry.replacement_owned) allocator.free(entry.replacement);
+        }
+        resolved.deinit(allocator);
+    }
+
+    for (ops.items) |op_item| {
+        const op_arr = switch (op_item) {
+            .array => |arr| arr,
+            else => return ApplyError.FieldTypeMismatch,
+        };
+        if (op_arr.items.len < 2) return ApplyError.MissingField;
+
+        const op_name = try requireTupleString(op_arr, 0);
+        const symbol = try requireTupleString(op_arr, 1);
+        const target_node = symbols.findEditableSymbolNode(source, root, symbol) orelse return ApplyError.SymbolNotFound;
+        const target_start: usize = @intCast(target_node.startByte());
+        const target_end: usize = @intCast(target_node.endByte());
+        const body_range = edit_support.replacementRangeFor(lang, source, target_node);
+        const body = source[body_range.start..body_range.end];
+
+        if (std.mem.eql(u8, op_name, "replace")) {
+            if (op_arr.items.len < 4) return ApplyError.MissingField;
+            const find = try requireTupleString(op_arr, 2);
+            const replace = try requireTupleString(op_arr, 3);
+            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 4));
+            const match = try selectMatch(body, find, selector, require_single_match);
+            const edit_start = body_range.start + match.start;
+            const edit_end = body_range.start + match.end;
+            try resolved.append(allocator, .{
+                .start = edit_start,
+                .end = edit_end,
+                .replacement = replace,
+                .replacement_owned = false,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = edit_start, .editEnd = edit_end },
+                .single_match = match.single_match,
+                .changed_before = match.end - match.start,
+                .changed_after = replace.len,
+            });
+            continue;
+        }
+
+        if (std.mem.eql(u8, op_name, "insert_after")) {
+            if (op_arr.items.len < 4) return ApplyError.MissingField;
+            const anchor = try requireTupleString(op_arr, 2);
+            const text = try requireTupleString(op_arr, 3);
+            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 4));
+            const match = try selectMatch(body, anchor, selector, require_single_match);
+            const insert_at = body_range.start + match.end;
+            try resolved.append(allocator, .{
+                .start = insert_at,
+                .end = insert_at,
+                .replacement = text,
+                .replacement_owned = false,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = insert_at, .editEnd = insert_at },
+                .single_match = match.single_match,
+                .changed_before = 0,
+                .changed_after = text.len,
+            });
+            continue;
+        }
+
+        if (std.mem.eql(u8, op_name, "wrap")) {
+            if (op_arr.items.len < 4) return ApplyError.MissingField;
+            const before = try requireTupleString(op_arr, 2);
+            const after = try requireTupleString(op_arr, 3);
+            const indent = try tupleOptionalIndent(op_arr, 4, 0);
+            const kept_body = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
+            defer allocator.free(kept_body);
+            const wrapped = try concat3(allocator, before, kept_body, after);
+            try resolved.append(allocator, .{
+                .start = body_range.start,
+                .end = body_range.end,
+                .replacement = wrapped,
+                .replacement_owned = true,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = true,
+                .changed_before = body.len,
+                .changed_after = wrapped.len,
+            });
+            continue;
+        }
+
+        if (std.mem.eql(u8, op_name, "replace_return")) {
+            if (op_arr.items.len < 3) return ApplyError.MissingField;
+            const expr = try requireTupleString(op_arr, 2);
+            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 3));
+            const body_node = edit_support.findBodyNode(target_node) orelse return ApplyError.UnsupportedMultiEditOperation;
+            const returns = try collectReturnStatements(allocator, source, body_node);
+            defer allocator.free(returns);
+            const match = try selectSpanFromCandidates(returns, selector, require_single_match);
+            const replacement = try buildReturnReplacement(allocator, lang, expr);
+            try resolved.append(allocator, .{
+                .start = match.start,
+                .end = match.end,
+                .replacement = replacement,
+                .replacement_owned = true,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = match.start, .editEnd = match.end },
+                .single_match = match.single_match,
+                .changed_before = match.end - match.start,
+                .changed_after = replacement.len,
+            });
+            continue;
+        }
+
+        if (std.mem.eql(u8, op_name, "try_catch")) {
+            if (op_arr.items.len < 3) return ApplyError.MissingField;
+            if (lang != .typescript and lang != .tsx) return ApplyError.UnsupportedMultiEditOperation;
+            const catch_body = try requireTupleString(op_arr, 2);
+            const indent = try tupleOptionalIndent(op_arr, 3, 2);
+            const body_for_try = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
+            defer allocator.free(body_for_try);
+            const catch_indent = if (indent == 0) @as(usize, 0) else indent * 2;
+            const catch_for_try = if (catch_indent == 0) try allocator.dupe(u8, catch_body) else try indentBody(allocator, catch_body, catch_indent);
+            defer allocator.free(catch_for_try);
+            const wrapped = try concat5(allocator, "\n  try {", body_for_try, "  } catch (error) {\n", catch_for_try, "\n  }\n");
+            try resolved.append(allocator, .{
+                .start = body_range.start,
+                .end = body_range.end,
+                .replacement = wrapped,
+                .replacement_owned = true,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = true,
+                .changed_before = body.len,
+                .changed_after = wrapped.len,
+            });
+            continue;
+        }
+
+        return ApplyError.UnsupportedMultiEditOperation;
+    }
+
+    return resolved.toOwnedSlice(allocator);
+}
+
+fn collectReturnStatements(allocator: Allocator, source: []const u8, node: bindings.Node) ![]EditSpan {
+    var spans = std.ArrayList(EditSpan).empty;
+    errdefer spans.deinit(allocator);
+    try collectReturnStatementsRecursive(allocator, &spans, source, node);
+    return spans.toOwnedSlice(allocator);
+}
+
+fn collectReturnStatementsRecursive(allocator: Allocator, list: *std.ArrayList(EditSpan), source: []const u8, node: bindings.Node) !void {
+    const kind = node.kind();
+    if (isReturnNodeKind(kind)) {
+        try list.append(allocator, .{ .start = @intCast(node.startByte()), .end = @intCast(node.endByte()) });
+        return;
+    }
+
+    const child_count = node.namedChildCount();
+    var i: u32 = 0;
+    while (i < child_count) : (i += 1) {
+        if (node.namedChild(i)) |child| {
+            try collectReturnStatementsRecursive(allocator, list, source, child);
+        }
+    }
+}
+
+fn isReturnNodeKind(kind: []const u8) bool {
+    return std.mem.eql(u8, kind, "return_statement") or std.mem.eql(u8, kind, "return_expression");
+}
+
+fn buildReturnReplacement(allocator: Allocator, lang: bindings.Language, expr: []const u8) ![]u8 {
+    const suffix = switch (lang) {
+        .python => "",
+        else => ";",
+    };
+    return concat3(allocator, "return ", expr, suffix);
+}
+
+fn requireTupleString(items: std.json.Array, index: usize) ![]const u8 {
+    if (index >= items.items.len) return ApplyError.MissingField;
+    return switch (items.items[index]) {
+        .string => |value| value,
+        else => ApplyError.FieldTypeMismatch,
+    };
+}
+
+fn tupleOptionalValue(items: std.json.Array, index: usize) ?std.json.Value {
+    if (index >= items.items.len) return null;
+    return items.items[index];
+}
+
+fn tupleOptionalIndent(items: std.json.Array, index: usize, default_value: usize) !usize {
+    const value = tupleOptionalValue(items, index) orelse return default_value;
+    return switch (value) {
+        .integer => |v| if (v < 0) return ApplyError.InvalidOccurrence else @as(usize, @intCast(v)),
+        .float => |v| blk: {
+            const rounded = @round(v);
+            if (v < 0 or rounded != v) return ApplyError.InvalidOccurrence;
+            break :blk @as(usize, @intFromFloat(rounded));
+        },
+        else => ApplyError.FieldTypeMismatch,
+    };
+}
+
+fn concat4(allocator: Allocator, a: []const u8, b: []const u8, c: []const u8, d: []const u8) ![]u8 {
+    const out = try allocator.alloc(u8, a.len + b.len + c.len + d.len);
+    @memcpy(out[0..a.len], a);
+    @memcpy(out[a.len .. a.len + b.len], b);
+    @memcpy(out[a.len + b.len .. a.len + b.len + c.len], c);
+    @memcpy(out[a.len + b.len + c.len ..], d);
+    return out;
+}
+
+fn concat5(allocator: Allocator, a: []const u8, b: []const u8, c: []const u8, d: []const u8, e: []const u8) ![]u8 {
+    const out = try allocator.alloc(u8, a.len + b.len + c.len + d.len + e.len);
+    @memcpy(out[0..a.len], a);
+    @memcpy(out[a.len .. a.len + b.len], b);
+    @memcpy(out[a.len + b.len .. a.len + b.len + c.len], c);
+    @memcpy(out[a.len + b.len + c.len .. a.len + b.len + c.len + d.len], d);
+    @memcpy(out[a.len + b.len + c.len + d.len ..], e);
+    return out;
+}
+
+fn makeCompactPatchOp(
+    allocator: Allocator,
+    lang: bindings.Language,
+    root: bindings.Node,
+    original: []const u8,
+    edit_value: std.json.Value,
+    require_single_match: bool,
+) !OpResult {
+    const edit_obj = try expectObject(edit_value);
+    const ops = try requireArray(edit_obj, "ops");
+    const patch = try resolveCompactPatchEdits(
+        allocator,
+        lang,
+        root,
+        original,
+        ops,
+        require_single_match,
+    );
+    defer {
+        for (patch) |edit| {
+            if (edit.replacement_owned) allocator.free(edit.replacement);
+        }
+        allocator.free(patch);
+    }
+
+    const contents = try applyResolvedEdits(allocator, original, patch);
+    return OpResult{
+        .contents = contents,
+        .range = combinedRangeFromEdits(patch),
+        .single_match = allSingleMatch(patch),
+        .changed_before = totalChangedBefore(patch),
+        .changed_after = totalChangedAfter(patch),
+    };
+}
+
 fn makeMultiBodyOp(
     allocator: Allocator,
     lang: bindings.Language,
@@ -752,6 +1054,7 @@ fn resolveMultiBodyEdits(
         const body_range = edit_support.replacementRangeFor(lang, source, target_node);
 
         switch (op) {
+            .patch => return ApplyError.UnsupportedMultiEditOperation,
             .replace_body_span => {
                 const find = try requireString(edit_obj, "find");
                 const replace = try requireString(edit_obj, "replace");
@@ -1273,6 +1576,118 @@ test "apply wrap_body preserves signature" {
     try std.testing.expect(std.mem.indexOf(u8, post, "  try {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "    const doubled = value * 2;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "  } catch (error) {") != null);
+}
+test "apply patch with 3 ops succeeds" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function alpha(value: number): number {
+        \\  return value;
+        \\}
+        \\function beta(value: string): string {
+        \\  const trimmed = value.trim();
+        \\  return trimmed;
+        \\}
+        \\function gamma(value: number): number {
+        \\  const doubled = value * 2;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace","alpha","return value;","return value + 1;"],["insert_after","beta","const trimmed = value.trim();","\n  const upper = trimmed.toUpperCase();"],["wrap","gamma","\n  if (value > 0) {","\n  }\n",2]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const upper = trimmed.toUpperCase();") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "if (value > 0) {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "  const doubled = value * 2;") != null);
+}
+
+test "apply patch replace_return rewrites return expr" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function scale(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","scale","value * 3"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value * 3;") != null);
+}
+
+test "apply patch try_catch wraps body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function guarded(value: number): number {
+        \\  const doubled = value * 2;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["try_catch","guarded","  console.error(error);\n  throw error;"] ]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "try {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "catch (error)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "console.error(error);") != null);
+}
+
+test "apply patch ambiguous replace_return rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function ambiguous(value: number): number {
+        \\  if (value > 0) {
+        \\    return value;
+        \\  }
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","ambiguous","value + 1"]]}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply multi_body three edits on same file" {
