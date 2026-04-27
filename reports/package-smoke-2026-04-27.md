@@ -9,22 +9,52 @@ cd /home/kenzo/dev/blitz
 npm pack --dry-run --json
 ```
 
-Result: **failed**.
+Result: **passed** after adding package metadata and wrapper.
+
+Package:
 
 ```text
-Invalid package, must have name and version
+@codewithkenzo/blitz@0.1.0-alpha.0
+filename: codewithkenzo-blitz-0.1.0-alpha.0.tgz
+size: ~2.5MB
+unpackedSize: ~11.7MB
 ```
 
-Cause: `package.json` is still bench-only/private:
+Packed files:
 
-```json
-{
-  "name": "@codewithkenzo/blitz-bench",
-  "private": true
-}
+```text
+LICENSE
+NOTICE.md
+README.md
+bin/blitz
+bin/blitz.js
+docs/blitz.md
+mcp/blitz-mcp.ts
+package.json
 ```
 
-Release blocker: add real CLI package metadata and package layout before publishing `@codewithkenzo/blitz`.
+## CLI temp install
+
+Command shape:
+
+```bash
+npm pack --json
+mkdir /tmp/blitz-install
+cd /tmp/blitz-install
+npm install /home/kenzo/dev/blitz/codewithkenzo-blitz-0.1.0-alpha.0.tgz
+./node_modules/.bin/blitz doctor
+```
+
+Result: **passed**.
+
+```text
+blitz doctor
+  version:     0.0.1
+  stage:       v0.1
+  tree-sitter: linked
+  grammars:    rust ok, typescript ok, tsx ok, python ok, go ok
+  commands:    read, edit, batch-edit, rename, undo, doctor, apply
+```
 
 ## Pi extension package
 
@@ -44,22 +74,6 @@ Key output:
 filename: codewithkenzo-pi-blitz-0.0.1-alpha.0.tgz
 size: 93957
 unpackedSize: 521309
-```
-
-## CLI doctor
-
-Command:
-
-```bash
-./zig-out/bin/blitz doctor
-```
-
-Result: **passed**.
-
-Doctor now reports the actual command set including `apply`:
-
-```text
-commands: read, edit, batch-edit, rename, undo, doctor, apply
 ```
 
 ## Pi install
@@ -90,13 +104,15 @@ pi --offline --print --no-context-files --no-prompt-templates \
 
 Result: **passed** with exit code 0.
 
-## Next packaging fix
+## MCP stdio package smoke
 
-Implement CLI npm package metadata before publish:
+`mcp/blitz-mcp.ts` is included in the CLI package and exposed as `blitz-mcp`.
 
-- package name: `@codewithkenzo/blitz`
-- version aligned with CLI `0.0.1` / alpha tag decision
-- `bin.blitz`
-- packed files allowlist
-- postinstall or optional dependency strategy for platform binary packages
-- temp install smoke that runs `blitz doctor`
+Manual framed JSON-RPC smoke passed in `reports/mcp-stdio-smoke-2026-04-27.md`.
+
+## Remaining package release decisions
+
+- Align package version with CLI doctor version (`0.1.0-alpha.0` vs doctor `0.0.1`).
+- Decide whether first alpha ships embedded linux-x64-musl binary only or platform optional packages.
+- Add a true postinstall/platform resolution script if using optional packages.
+- Add a real automated MCP protocol smoke script.
