@@ -16,8 +16,8 @@ Package:
 ```text
 @codewithkenzo/blitz@0.1.0-alpha.0
 filename: codewithkenzo-blitz-0.1.0-alpha.0.tgz
-size: ~2.5MB
-unpackedSize: ~11.7MB
+size: small metadata wrapper package
+unpackedSize: excludes native binary until platform packages ship
 ```
 
 Packed files:
@@ -26,11 +26,11 @@ Packed files:
 LICENSE
 NOTICE.md
 README.md
-bin/blitz
 bin/blitz.js
 docs/blitz.md
 mcp/blitz-mcp.ts
 package.json
+scripts/mcp-smoke.ts
 ```
 
 ## CLI temp install

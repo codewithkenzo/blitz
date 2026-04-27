@@ -10,7 +10,6 @@
     "blitz-mcp": "./mcp/blitz-mcp.ts"
   },
   "files": [
-    "bin/blitz",
     "bin/blitz.js",
     "mcp/blitz-mcp.ts",
     "scripts/mcp-smoke.ts",

@@ -27,13 +27,13 @@ zig build -Doptimize=ReleaseFast
 npm install -g @codewithkenzo/blitz
 ```
 
-The npm package ships `bin/blitz.js`, a Node wrapper that resolves the binary in order:
+The npm package ships `bin/blitz.js`, a Node wrapper. Alpha packages do not include native prebuilts. The wrapper resolves the binary in order:
 
-1. `bin/blitz` (platform prebuilt, not yet published)
+1. `BLITZ_BIN` env var
 2. `zig-out/bin/blitz` (local source build)
-3. `BLITZ_BIN` env var
+3. `bin/blitz` (future platform package location)
 
-If none resolve, it exits with an error. Until prebuilts ship, build from source and either place the binary on `PATH` as `blitz` or set `BLITZ_BIN`.
+Until prebuilts ship, build from source and set `BLITZ_BIN=/abs/path/to/zig-out/bin/blitz`.
 
 ## Commands
 

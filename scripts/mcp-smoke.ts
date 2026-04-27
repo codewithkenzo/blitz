@@ -1,15 +1,16 @@
 #!/usr/bin/env bun
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 
 const root = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const server = join(root, "mcp/blitz-mcp.ts");
-const blitz = resolve(process.env.BLITZ_BIN ?? join(root, "bin/blitz"));
+const blitz = resolve(process.env.BLITZ_BIN ?? join(root, "zig-out/bin/blitz"));
 const tmp = await mkdtemp(join(tmpdir(), "blitz-mcp-smoke-"));
 const file = join(tmp, "a.ts");
 await writeFile(file, `function handle(value: number): number {\n  const doubled = value * 2;\n  return doubled;\n}\n`);
+await symlink("/etc", join(tmp, "leak"));
 
 const child = spawn("bun", [server], {
   env: { ...process.env, BLITZ_BIN: blitz, BLITZ_WORKSPACE: tmp },
@@ -30,6 +31,7 @@ send(1, "initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientI
 send(2, "tools/list", {});
 send(3, "tools/call", { name: "blitz_try_catch", arguments: { file: "a.ts", symbol: "handle", catchBody: "console.error(error);\nthrow error;" } });
 send(4, "tools/call", { name: "blitz_read", arguments: { file: "/etc/passwd" } });
+send(5, "tools/call", { name: "blitz_read", arguments: { file: "leak/passwd" } });
 
 await new Promise((resolve) => setTimeout(resolve, 750));
 child.kill();
@@ -55,10 +57,11 @@ const hasTry = finalFile.includes("try {") && finalFile.includes("console.error(
 const listOk = frames.some((f) => f.id === 2 && JSON.stringify(f.result).includes("blitz_try_catch"));
 const mutateOk = frames.some((f) => f.id === 3 && JSON.stringify(f.result).includes("status") && JSON.stringify(f.result).includes("applied")) && hasTry;
 const escapeRejected = frames.some((f) => f.id === 4 && f.error?.message?.includes("path escapes workspace"));
+const symlinkRejected = frames.some((f) => f.id === 5 && f.error?.message?.includes("path escapes workspace"));
 
-if (!listOk || !mutateOk || !escapeRejected || stderr.length > 0) {
-  console.error(JSON.stringify({ listOk, mutateOk, escapeRejected, stderr, frames, finalFile }, null, 2));
+if (!listOk || !mutateOk || !escapeRejected || !symlinkRejected || stderr.length > 0) {
+  console.error(JSON.stringify({ listOk, mutateOk, escapeRejected, symlinkRejected, stderr, frames, finalFile }, null, 2));
   process.exit(1);
 }
 
-console.log(JSON.stringify({ ok: true, frames: frames.length, workspace: tmp }, null, 2));
+console.log(JSON.stringify({ ok: true, frames: frames.length, workspace: tmp, symlinkRejected }, null, 2));
