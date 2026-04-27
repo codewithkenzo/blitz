@@ -2,7 +2,7 @@
 
 Fast edits for coding agents. Less token waste, less waiting.
 
-On a 10k-function try/catch wrap benchmark, Blitz used 85 provider output tokens instead of 9,640 and finished in 4.6s instead of 61s.
+On a 10k-token function try/catch wrap benchmark, Blitz used 85 provider output tokens instead of 9,640 and finished in 4.6s instead of 61s.
 
 Blitz lets an agent change a large function without printing the large function back to you. Instead of sending thousands of tokens of replacement code, the model can send a tiny instruction like “wrap `handleRequest` in try/catch” or “replace the last return in `computeTotal`.” Blitz finds the code, applies the change, validates it, and keeps an undo snapshot.
 
@@ -16,7 +16,7 @@ Coding agents are slow and expensive when they rewrite code they mostly want to 
 
 | Edit class | Core edit | Blitz | Result |
 |---|---:|---:|---|
-| 10k function try/catch wrap | 9,640 output tokens / 61s | 85 output tokens / 4.6s | 99.1% fewer output tokens |
+| 10k-token function try/catch wrap | 9,640 output tokens / 61s | 85 output tokens / 4.6s | 99.1% fewer output tokens |
 | Large structural patch, 3 edits | 9,708 output tokens / failed output | 107 output tokens / correct | 98.9% fewer output tokens vs failed core attempt |
 | Async try/catch wrapper | 149 arg tokens | 42 arg tokens | 71.8% fewer tool-call arg tokens |
 | Class method try/catch wrapper | 118 arg tokens | 40 arg tokens | 66.1% fewer tool-call arg tokens |
