@@ -93,7 +93,10 @@ pub fn applyToSource(
     @memcpy(next_contents[replace_start .. replace_start + replacement.len], replacement);
     @memcpy(next_contents[replace_start + replacement.len ..], source[replace_end..]);
 
-    try validateEditedSourceIncremental(&parser, &tree, source, next_contents);
+    validateEditedSourceIncremental(&parser, &tree, source, next_contents) catch {
+        var full_tree = try parseStrict(&parser, next_contents);
+        full_tree.deinit();
+    };
     return .{
         .contents = next_contents,
         .target_start = target_start,
@@ -201,25 +204,32 @@ fn normalizeReplaceSnippet(allocator: std.mem.Allocator, lang: bindings.Language
 }
 
 fn outerBraceInterior(snippet: []const u8) ?ByteRange {
-    const first = std.mem.indexOfScalar(u8, snippet, '{') orelse return null;
     var depth: usize = 0;
-    var last: ?usize = null;
-    var i = first;
+    var open: ?usize = null;
+    var last_range: ?ByteRange = null;
+    var i: usize = 0;
     while (i < snippet.len) : (i += 1) {
         switch (snippet[i]) {
-            '{' => depth += 1,
+            '{' => {
+                if (depth == 0) open = i;
+                depth += 1;
+            },
             '}' => {
                 if (depth == 0) return null;
                 depth -= 1;
-                if (depth == 0) last = i;
+                if (depth == 0) {
+                    const start = open orelse return null;
+                    last_range = .{ .start = start + 1, .end = i };
+                    open = null;
+                }
             },
             else => {},
         }
     }
-    const close = last orelse return null;
-    const trailing = std.mem.trim(u8, snippet[close + 1 ..], " \t\r\n\x0b\x0c");
+    const range = last_range orelse return null;
+    const trailing = std.mem.trim(u8, snippet[range.end + 1 ..], " \t\r\n\x0b\x0c");
     if (trailing.len != 0) return null;
-    return .{ .start = first + 1, .end = close };
+    return range;
 }
 
 fn normalizeBraceBodySnippet(allocator: std.mem.Allocator, original_body: []const u8, snippet: []const u8) ![]u8 {

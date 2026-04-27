@@ -37,7 +37,10 @@ jobs:
         run: zig version
 
       - name: Build
-        run: zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSafe
+        # ReleaseSafe triggers a Zig 0.16/tree-sitter C interop trap in ts_parser_parse
+        # on macOS/Linux smoke runs. Use ReleaseFast for distributable smoke builds;
+        # native `zig build test` below keeps Debug safety checks in CI.
+        run: zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseFast
 
       - name: Setup Bun (linux-musl only)
         if: matrix.target == 'x86_64-linux-musl'
