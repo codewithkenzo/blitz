@@ -1,6 +1,7 @@
 const std = @import("std");
 const bindings = @import("tree_sitter/bindings.zig");
 const backup = @import("backup.zig");
+const file_lock = @import("lock.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
@@ -24,6 +25,23 @@ fn isExcludedParent(kind: []const u8) bool {
 
 fn isRenameKind(kind: []const u8) bool {
     return std.mem.eql(u8, kind, "identifier") or std.mem.eql(u8, kind, "type_identifier");
+}
+
+fn isIdentifierStart(c: u8) bool {
+    return (c >= 'A' and c <= 'Z') or (c >= 'a' and c <= 'z') or c == '_' or c == '$';
+}
+
+fn isIdentifierContinue(c: u8) bool {
+    return isIdentifierStart(c) or (c >= '0' and c <= '9');
+}
+
+fn isValidIdentifier(name: []const u8) bool {
+    if (name.len == 0) return false;
+    if (!isIdentifierStart(name[0])) return false;
+    for (name[1..]) |c| {
+        if (!isIdentifierContinue(c)) return false;
+    }
+    return true;
 }
 
 fn lineNumberForByte(contents: []const u8, byte: usize) usize {
@@ -131,6 +149,11 @@ pub fn run(
     const real_path = try Dir.cwd().realPathFileAlloc(io, file_path, allocator);
     defer allocator.free(real_path);
 
+    if (!isValidIdentifier(new_name)) {
+        try stderr.print("Error: invalid new identifier '{s}'\n", .{new_name});
+        return 1;
+    }
+
     const stat = try Dir.cwd().statFile(io, real_path, .{});
     const original_mtime = stat.mtime;
 
@@ -194,6 +217,16 @@ pub fn run(
     const new_contents = try buildRenamedContents(allocator, original, targets.items, old_name, new_name);
     defer allocator.free(new_contents);
 
+    var renamed_tree = parser.parseString(new_contents) orelse {
+        try stderr.print("Error: renamed file does not parse for {s}\n", .{file_path});
+        return 1;
+    };
+    defer renamed_tree.deinit();
+    if (renamed_tree.rootNode().hasError()) {
+        try stderr.print("Error: renamed file does not parse for {s}\n", .{file_path});
+        return 1;
+    }
+
     const cache_dir = try backup.defaultCacheDir(allocator);
     defer allocator.free(cache_dir);
 
@@ -204,6 +237,9 @@ pub fn run(
         );
         return 0;
     }
+
+    var lock_guard = try file_lock.acquire(allocator, io, real_path);
+    defer lock_guard.release();
 
     try backup.store(allocator, io, cache_dir, real_path, original);
     try backup.atomicWrite(allocator, io, real_path, new_contents);
@@ -257,6 +293,38 @@ test "rename TypeScript identifier in two places and skip string literal" {
         ,
         contents,
     );
+}
+
+test "rename rejects invalid new identifier" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    try tmp.dir.writeFile(io, .{
+        .sub_path = "invalid.ts",
+        .data =
+        \\const oldFoo = 1;
+        \\oldFoo();
+        \\
+    });
+
+    const file_path = try tmp.dir.realPathFileAlloc(io, "invalid.ts", allocator);
+    defer allocator.free(file_path);
+
+    var stdout_aw: std.Io.Writer.Allocating = .init(allocator);
+    defer stdout_aw.deinit();
+    var stderr_aw: std.Io.Writer.Allocating = .init(allocator);
+    defer stderr_aw.deinit();
+
+    const code = try run(allocator, io, file_path, "oldFoo", "new-name", false, &stdout_aw.writer, &stderr_aw.writer);
+    try std.testing.expectEqual(@as(u8, 1), code);
+    try std.testing.expect(std.mem.indexOf(u8, stderr_aw.written(), "invalid new identifier") != null);
+
+    const contents = try tmp.dir.readFileAlloc(io, "invalid.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    try std.testing.expect(std.mem.indexOf(u8, contents, "oldFoo") != null);
 }
 
 test "dry_run returns 0 and does not modify file" {

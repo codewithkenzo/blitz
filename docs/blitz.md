@@ -510,15 +510,11 @@ Caps per `@mariozechner/pi-coding-agent` conventions:
 
 ### 9.4 Config
 
-`~/.pi/pi-blitz.json` + `$(cwd)/.pi/pi-blitz.json`, same precedence model as `flow-system`. User-level only for `binary` override and `trustedExternalPaths`; project config cannot set those.
+`~/.pi/pi-blitz.json` can point the extension at a specific `blitz` binary. Project config is read for future compatibility, but `binary` is user-only and cannot be overridden from `$(cwd)/.pi/pi-blitz.json`.
 
 ```ts
 type PiBlitzConfig = {
-  binary?: string;                 // user-only; absolute path
-  trustedExternalPaths?: boolean;  // user-only
-  defaultTimeoutMs?: number;       // default 30_000
-  cacheDir?: string;               // override backup cache; default ~/.cache/blitz
-  noUpdateCheck?: boolean;
+  binary?: string; // user-only; absolute path or command name for blitz
 };
 ```
 

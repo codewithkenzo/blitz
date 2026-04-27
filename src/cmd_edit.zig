@@ -3,6 +3,7 @@ const std = @import("std");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
+const file_lock = @import("lock.zig");
 const metrics = @import("metrics.zig");
 
 const Allocator = std.mem.Allocator;
@@ -113,6 +114,9 @@ fn runEdit(
         else => return err,
     };
     defer allocator.free(apply_result.contents);
+
+    var lock_guard = try file_lock.acquire(allocator, io, real_path);
+    defer lock_guard.release();
 
     const cache_dir = try backup.defaultCacheDir(allocator);
     defer allocator.free(cache_dir);

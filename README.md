@@ -88,7 +88,7 @@ zig build -Dtarget=x86_64-windows-gnu
 
 ## Pi integration
 
-`@codewithkenzo/pi-blitz` — Effect v4 Pi extension that wraps this binary. Exposes 13 typed tools. See the extension README for install and configuration.
+`@codewithkenzo/pi-blitz` — Effect v4 Pi extension that wraps this binary. Exposes typed tools for AST reads, structured apply operations, semantic patch helpers, rename, undo, and doctor. See the extension README for install and configuration.
 
 ## Design reference
 

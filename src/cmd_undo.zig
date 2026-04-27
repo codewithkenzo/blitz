@@ -1,5 +1,6 @@
 const std = @import("std");
 const backup = @import("backup.zig");
+const file_lock = @import("lock.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
@@ -31,6 +32,9 @@ fn runWithCacheDir(
         try writeMessage(stderr, "No undo history for {s}. Nothing to revert.\n", .{file_path});
         return 1;
     }
+
+    var lock_guard = try file_lock.acquire(allocator, io, real_path);
+    defer lock_guard.release();
 
     const pre_restore_stat = try Dir.cwd().statFile(io, real_path, .{});
 

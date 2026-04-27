@@ -3,6 +3,7 @@ const std = @import("std");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
+const file_lock = @import("lock.zig");
 const symbols = @import("symbols.zig");
 
 const Allocator = std.mem.Allocator;
@@ -17,6 +18,7 @@ const ApplyOperation = enum {
     multi_body,
     compose_body,
     insert_after_symbol,
+    set_body,
     patch,
 };
 
@@ -332,6 +334,18 @@ pub fn run(
                 .changed_after = code.len,
             };
         },
+        .set_body => blk: {
+            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const edit_obj = try expectObject(req.edit);
+            const body = try requireString(edit_obj, "body");
+            break :blk OpResult{
+                .contents = try spliceText(allocator, original, body_range.start, body_range.end, body),
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = true,
+                .changed_before = body_range.end - body_range.start,
+                .changed_after = body.len,
+            };
+        },
         .patch => makeCompactPatchOp(
             allocator,
             lang,
@@ -373,6 +387,8 @@ pub fn run(
 
     const changed = !std.mem.eql(u8, original, op_result.contents);
     if (changed and !dry_run) {
+        var lock_guard = try file_lock.acquire(allocator, io, real_path);
+        defer lock_guard.release();
         const cache_dir = try backup.defaultCacheDir(allocator);
         defer allocator.free(cache_dir);
         try backup.store(allocator, io, cache_dir, real_path, original);
@@ -407,7 +423,7 @@ pub fn run(
             .wallMs = @intCast(wall_ms),
         },
         .diffSummary = diffSummary,
-        .diff = if (diff_requested and changed and !dry_run) op_result.contents else null,
+        .diff = if (diff_requested and changed) diffSummary else null,
     };
 
     if (!json_output) {
@@ -485,6 +501,7 @@ fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "multi_body")) return .multi_body;
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
+    if (std.mem.eql(u8, raw, "set_body")) return .set_body;
     if (std.mem.eql(u8, raw, "patch") or std.mem.eql(u8, raw, "compact_patch")) return .patch;
     return ApplyError.UnsupportedOperation;
 }
@@ -1081,7 +1098,7 @@ fn resolveMultiBodyEdits(
         const body_range = edit_support.replacementRangeFor(lang, source, target_node);
 
         switch (op) {
-            .patch => return ApplyError.UnsupportedMultiEditOperation,
+            .patch, .set_body => return ApplyError.UnsupportedMultiEditOperation,
             .replace_body_span => {
                 const find = try requireString(edit_obj, "find");
                 const replace = try requireString(edit_obj, "replace");
@@ -1552,6 +1569,33 @@ test "apply compose_body parse failure rejects without mutation" {
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply set_body replaces complete body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function settable(value: number): number {
+        \\  const doubled = value * 2;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"settable"},"edit":{"body":"\n  return value + 1;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
 }
 
 test "apply insert_body_span after anchor" {
