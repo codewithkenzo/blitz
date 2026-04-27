@@ -11,3 +11,4 @@ node_modules/
 # Local notes
 .pi/
 .tokensave/
+bin/blitz

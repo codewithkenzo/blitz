@@ -1,13 +1,37 @@
 {
-  "name": "@codewithkenzo/blitz-bench",
-  "private": true,
+  "name": "@codewithkenzo/blitz",
+  "version": "0.1.0-alpha.0",
+  "description": "AST-aware fast edit CLI for Pi and MCP workflows",
   "type": "module",
+  "license": "MIT",
+  "private": false,
+  "bin": {
+    "blitz": "./bin/blitz.js",
+    "blitz-mcp": "./mcp/blitz-mcp.ts"
+  },
+  "files": [
+    "bin/blitz",
+    "bin/blitz.js",
+    "mcp/blitz-mcp.ts",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md",
+    "docs/blitz.md"
+  ],
   "scripts": {
     "bench": "bun bench/run.ts",
     "bench:llm": "bun bench/llm-tokens.ts",
     "bench:large": "bun bench/deep-large-symbol.ts",
-    "bench:small-target": "bun bench/deep-small-target.ts"
+    "bench:small-target": "bun bench/deep-small-target.ts",
+    "pack:check": "npm pack --dry-run --json"
   },
+  "keywords": [
+    "ast",
+    "tree-sitter",
+    "code-edit",
+    "mcp",
+    "pi-agent"
+  ],
   "devDependencies": {
     "tiktoken": "^1.0.22"
   }
