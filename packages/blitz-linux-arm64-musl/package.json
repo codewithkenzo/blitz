@@ -1,0 +1,10 @@
+{
+  "name": "@codewithkenzo/blitz-linux-arm64-musl",
+  "version": "0.1.0-alpha.0",
+  "description": "linux arm64 binary for @codewithkenzo/blitz",
+  "license": "MIT",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "files": ["bin/blitz"],
+  "publishConfig": { "access": "public" }
+}

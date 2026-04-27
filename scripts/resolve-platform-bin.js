@@ -20,8 +20,12 @@ export const candidateBinaries = () => {
   const pkg = platformPackage();
   const candidates = [];
   if (process.env.BLITZ_BIN) candidates.push(process.env.BLITZ_BIN);
-  if (pkg) candidates.push(join(root, "node_modules", pkg, "bin", exe));
-  if (pkg) candidates.push(join(root, "..", pkg, "bin", exe));
+  if (pkg) {
+    const unscoped = pkg.replace("@codewithkenzo/", "");
+    candidates.push(join(root, "node_modules", pkg, "bin", exe));
+    candidates.push(join(root, "..", unscoped, "bin", exe));
+    candidates.push(join(root, "..", "..", pkg, "bin", exe));
+  }
   candidates.push(join(root, "zig-out", "bin", exe));
   candidates.push(join(root, "bin", exe));
   return candidates;

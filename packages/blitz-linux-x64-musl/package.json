@@ -1,7 +1,7 @@
 {
   "name": "@codewithkenzo/blitz-linux-x64-musl",
   "version": "0.1.0-alpha.0",
-  "description": "Linux x64 musl binary for @codewithkenzo/blitz",
+  "description": "linux x64 binary for @codewithkenzo/blitz",
   "license": "MIT",
   "os": ["linux"],
   "cpu": ["x64"],
