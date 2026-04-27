@@ -37,6 +37,8 @@ type Fixture = {
 	intent: (filePath: string) => string;
 	expectedFile: string; // contents after edit
 	blitzGuidance?: string;
+	// core-only fixtures route to core edit; others compare core vs blitz
+	lanePolicy?: "core-only" | "compare";
 };
 
 const argv = process.argv.slice(2);
@@ -81,12 +83,25 @@ Goal: wrap the entire body of the ${symbol} function in a try/catch. Preserve ev
 Original file contents:
 ${src}`;
 
+const buildComposeIntent = (filePath: string, src: string, symbol = "mediumCompute"): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+
+Goal: update ${symbol} with two preserved islands and small structural edits:
+1) immediately after \`let total = seed;\`, add a finite check throwing RangeError when seed is not finite,
+2) before return, add an early return when total is negative.
+
+Preserve every original arithmetic statement exactly. Do not rewrite unchanged lines.
+
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
 		relPath: "small.ts",
 		intent: (p: string) => buildSmallIntent(p, smallSrc),
 		expectedFile: "",
+		lanePolicy: "core-only",
 	},
 	{
 		id: "medium-10k/marker-tail",
@@ -101,6 +116,12 @@ const FIXTURES: Fixture[] = [
 		expectedFile: "",
 		blitzGuidance:
 			"For this edit, use compact body-marker shape: `  try {\\n    let total = seed;\\n    // ... existing code ...\\n    return total;\\n  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }`.",
+	},
+	{
+		id: "medium-10k/compose-preserve-islands",
+		relPath: "medium.ts",
+		intent: (p: string) => buildComposeIntent(p, mediumSrc, "mediumCompute"),
+		expectedFile: "",
 	},
 	{
 		id: "huge-100k/marker-tail",
@@ -121,6 +142,16 @@ const smallExpected = smallSrc.replace(
 );
 const mediumSrc = await readFile(join(fixtureDir, "medium.ts"), "utf8");
 const mediumExpected = mediumSrc.replace("  return total;", "  return total + 1;");
+const mediumComposeExpected = (() => {
+	const withSeedGuard = mediumSrc.replace(
+		"  let total = seed;\n",
+		`  let total = seed;\n  if (!Number.isFinite(total)) {\n    throw new RangeError("seed must be finite");\n  }\n\n`,
+	);
+	return withSeedGuard.replace(
+		"  return total;\n",
+		"  if (total < 0) {\n    return 0;\n  }\n\n  return total;\n",
+	);
+})();
 const mediumBody = mediumSrc.slice(
 	mediumSrc.indexOf("{\n") + 2,
 	mediumSrc.lastIndexOf("\n}"),
@@ -132,7 +163,8 @@ const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
-FIXTURES[3]!.expectedFile = hugeExpected;
+FIXTURES[3]!.expectedFile = mediumComposeExpected;
+FIXTURES[4]!.expectedFile = hugeExpected;
 
 const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
 
@@ -296,12 +328,15 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 		let guidance = "pi_blitz_apply guidance: use operation enum + tiny structured edit payload. Do not repeat unchanged code. Use target.symbol only, no source code in symbol.";
 		if (fx.id.includes("wrap-body")) {
 			guidance += " For this edit, use operation `wrap_body`, target.symbol `mediumCompute`, edit `{ before: \"\\n  try {\", keep: \"body\", after: \"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\", indentKeptBodyBy: 2 }`.";
+		} else if (fx.id.includes("compose-preserve-islands")) {
+			guidance +=
+				" For this edit, use operation `compose_body`, target.symbol `mediumCompute`, target.range `body`. Suggested shape: `{ segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: \"only\" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\\"seed must be finite\\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: \"last\" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: \"last\" } } ] }`.";
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
 			guidance += " For this edit, use operation `replace_body_span`, target.symbol `mediumCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
 			guidance += " For this edit, use operation `replace_body_span`, target.symbol `hugeCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
 		} else if (fx.id.includes("small")) {
-			guidance += " For this edit, use operation `replace_body_span`, target.symbol `smallTarget`, edit `{ find: \"return \\\"hi \\\" + name;\", replace: \"return \\\"hello \\\" + name.toUpperCase();\", occurrence: \"only\" }`.";
+			guidance += " For this edit, route to core oldText/newText (no compose).";
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
@@ -361,9 +396,13 @@ const main = async () => {
 		: FIXTURES;
 	if (selectedFixtures.length === 0) throw new Error(`no fixtures match --case ${caseFilter}`);
 
-	const selectedLanes = laneFilter ? [laneFilter] : (["core", "blitz"] as Lane[]);
+	const lanesForFixture = (fx: Fixture): Lane[] => {
+		if (laneFilter) return [laneFilter];
+		if (fx.lanePolicy === "core-only") return ["core"];
+		return ["core", "blitz"];
+	};
 	for (const fx of selectedFixtures) {
-		for (const lane of selectedLanes) {
+		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx);

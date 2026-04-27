@@ -14,6 +14,7 @@ const ApplyOperation = enum {
     replace_body_span,
     insert_body_span,
     wrap_body,
+    compose_body,
     insert_after_symbol,
 };
 
@@ -104,6 +105,15 @@ const OpResult = struct {
     changed_after: usize,
 };
 
+const ComposeResult = struct {
+    contents: []u8,
+    single_match: bool,
+};
+
+const KeepSliceResult = struct {
+    span: EditSpan,
+    single_match: bool,
+};
 const EditSpan = struct { start: usize, end: usize };
 
 const ApplyError = error{
@@ -264,6 +274,29 @@ pub fn run(
                 .changed_after = wrapped.len,
             };
         },
+        .compose_body => blk: {
+            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const edit_obj = try expectObject(req.edit);
+            const segments = requireArray(edit_obj, "segments") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+
+            const compose = composeBody(
+                allocator,
+                original[body_range.start..body_range.end],
+                segments,
+                require_single_match,
+            ) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+
+            const new_contents = try spliceText(allocator, original, body_range.start, body_range.end, compose.contents);
+            defer allocator.free(compose.contents);
+
+            break :blk OpResult{
+                .contents = new_contents,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = compose.single_match,
+                .changed_before = body_range.end - body_range.start,
+                .changed_after = compose.contents.len,
+            };
+        },
         .insert_after_symbol => blk: {
             const edit_obj = try expectObject(req.edit);
             const code = try requireString(edit_obj, "code");
@@ -400,6 +433,7 @@ fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "replace_body_span")) return .replace_body_span;
     if (std.mem.eql(u8, raw, "insert_body_span")) return .insert_body_span;
     if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
+    if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
     return ApplyError.UnsupportedOperation;
 }
@@ -410,6 +444,133 @@ fn parseTargetRange(raw: ?[]const u8) !TargetRange {
     if (std.mem.eql(u8, value, "body")) return .body;
     if (std.mem.eql(u8, value, "node")) return .node;
     return ApplyError.UnsupportedTargetRange;
+}
+
+fn requireArray(object: std.json.ObjectMap, field: []const u8) !std.json.Array {
+    const value = object.get(field) orelse return ApplyError.MissingField;
+    switch (value) {
+        .array => |arr| return arr,
+        else => return ApplyError.FieldTypeMismatch,
+    }
+}
+
+fn requireOptionalString(object: std.json.ObjectMap, field: []const u8) !?[]const u8 {
+    const value = object.get(field) orelse return null;
+    switch (value) {
+        .string => |str| return str,
+        else => return ApplyError.FieldTypeMismatch,
+    }
+}
+
+fn requireOptionalBool(object: std.json.ObjectMap, field: []const u8) !?bool {
+    const value = object.get(field) orelse return null;
+    switch (value) {
+        .bool => |value_bool| return value_bool,
+        else => return ApplyError.FieldTypeMismatch,
+    }
+}
+
+fn composeBody(
+    allocator: Allocator,
+    body: []const u8,
+    segments: std.json.Array,
+    require_single_match: bool,
+) !ComposeResult {
+    if (segments.items.len == 0) return ApplyError.PatternEmpty;
+
+    var out = std.ArrayList(u8).empty;
+    defer out.deinit(allocator);
+
+    var all_single_match = true;
+
+    for (segments.items) |segment| {
+        const segment_obj = switch (segment) {
+            .object => |obj| obj,
+            else => return ApplyError.FieldTypeMismatch,
+        };
+
+        var has_text = false;
+        var has_keep = false;
+        var it = segment_obj.iterator();
+        while (it.next()) |entry| {
+            if (std.mem.eql(u8, entry.key_ptr.*, "text")) {
+                has_text = true;
+                continue;
+            }
+            if (std.mem.eql(u8, entry.key_ptr.*, "keep")) {
+                has_keep = true;
+                continue;
+            }
+            return ApplyError.FieldTypeMismatch;
+        }
+
+        if (has_text == has_keep) return ApplyError.FieldTypeMismatch;
+
+        if (segment_obj.get("text")) |text_node| {
+            const text = switch (text_node) {
+                .string => |value| value,
+                else => return ApplyError.FieldTypeMismatch,
+            };
+            try out.appendSlice(allocator, text);
+            continue;
+        }
+
+        const keep = segment_obj.get("keep").?;
+        const keep_slice = switch (keep) {
+            .string => |keep_text| blk: {
+                if (!std.mem.eql(u8, keep_text, "body")) return ApplyError.FieldTypeMismatch;
+                break :blk KeepSliceResult{ .span = .{ .start = 0, .end = body.len }, .single_match = true };
+            },
+            .object => |keep_obj| try parseKeepSpan(body, keep_obj, require_single_match),
+            else => return ApplyError.FieldTypeMismatch,
+        };
+
+        const body_span = body[keep_slice.span.start..keep_slice.span.end];
+        try out.appendSlice(allocator, body_span);
+        all_single_match = all_single_match and keep_slice.single_match;
+    }
+
+    return ComposeResult{
+        .contents = try out.toOwnedSlice(allocator),
+        .single_match = all_single_match,
+    };
+}
+
+fn parseKeepSpan(
+    body: []const u8,
+    keep_obj: std.json.ObjectMap,
+    require_single_match: bool,
+) !KeepSliceResult {
+    var it = keep_obj.iterator();
+    while (it.next()) |entry| {
+        if (!std.mem.eql(u8, entry.key_ptr.*, "beforeKeep") and
+            !std.mem.eql(u8, entry.key_ptr.*, "afterKeep") and
+            !std.mem.eql(u8, entry.key_ptr.*, "includeBefore") and
+            !std.mem.eql(u8, entry.key_ptr.*, "includeAfter") and
+            !std.mem.eql(u8, entry.key_ptr.*, "occurrence")) return ApplyError.FieldTypeMismatch;
+    }
+
+    const before_keep = try requireOptionalString(keep_obj, "beforeKeep");
+    const after_keep = try requireOptionalString(keep_obj, "afterKeep");
+    if (before_keep == null and after_keep == null) return ApplyError.FieldTypeMismatch;
+
+    const include_before = if (try requireOptionalBool(keep_obj, "includeBefore")) |value| value else false;
+    const include_after = if (try requireOptionalBool(keep_obj, "includeAfter")) |value| value else false;
+    const selector = parseMatchSelector(keep_obj.get("occurrence"));
+    const require_single = if (selector.kind == .default_single) require_single_match else false;
+
+    const before_match = if (before_keep) |needle| try selectMatch(body, needle, selector, require_single) else null;
+    const after_match = if (after_keep) |needle| try selectMatch(body, needle, selector, require_single) else null;
+
+    const start: usize = if (before_match) |match| if (include_before) match.start else match.end else 0;
+    const end: usize = if (after_match) |match| if (include_after) match.end else match.start else body.len;
+
+    if (start > end) return ApplyError.InvalidPosition;
+
+    return KeepSliceResult{
+        .span = .{ .start = start, .end = end },
+        .single_match = (before_match == null or before_match.?.single_match) and (after_match == null or after_match.?.single_match),
+    };
 }
 
 fn parseMatchSelector(raw: ?std.json.Value) MatchSelector {
@@ -633,6 +794,117 @@ test "apply replace_body_span ambiguous rejects without mutation" {
     const out = try runApplyTestExpectFailure(allocator, io, req, path);
     defer allocator.free(out);
     try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compose_body with text + keep body prefix/suffix" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function composeKeepSpan(value: number): number {
+        \\  const doubled = value * 2;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"compose_body","target":{"symbol":"composeKeepSpan"},"edit":{"segments":[{"text":"\n  const marker = \"compose\";\n"},{"keep":"body"},{"text":"\n  const suffix = marker;\n"}]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function composeKeepSpan(value: number): number {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const marker = \"compose\";") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const suffix = marker;") != null);
+    const marker_pos = std.mem.indexOf(u8, post, "const marker = \"compose\";");
+    const doubled_pos = std.mem.indexOf(u8, post, "const doubled = value * 2;");
+    try std.testing.expect(marker_pos != null and doubled_pos != null and marker_pos.? < doubled_pos.?);
+}
+
+test "apply compose_body beforeKeep/afterKeep keeps island" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function composeIsland(value: number): string {
+        \\  const method = value.toString();
+        \\  if (method !== "GET" && method !== "POST") {
+        \\    return "bad";
+        \\  }
+        \\  return method;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"compose_body","target":{"symbol":"composeIsland"},"edit":{"segments":[{"text":"\n  const prefix = true;\n"},{"keep":{"beforeKeep":"if (method !== \"GET\" && method !== \"POST\") {","afterKeep":"  }","includeBefore":true,"includeAfter":true,"occurrence":"only"}},{"text":"\n  const suffix = true;\n"}]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const prefix = true;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "if (method !== \"GET\" && method !== \"POST\") {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return \"bad\";") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const suffix = true;") != null);
+}
+
+test "apply compose_body ambiguous keep rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function ambiguousKeep(value: number): number {
+        \\  const marker = value;
+        \\  const marker = value;
+        \\  return marker;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"compose_body","target":{"symbol":"ambiguousKeep"},"edit":{"segments":[{"keep":{"beforeKeep":"const marker = value;"}}]}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compose_body parse failure rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function parseFail(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"compose_body","target":{"symbol":"parseFail"},"edit":{"segments":"bad"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "invalid edit field type") != null);
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
