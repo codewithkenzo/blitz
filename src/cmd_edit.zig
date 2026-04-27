@@ -2,6 +2,7 @@ const std = @import("std");
 
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
+const splice = @import("splice.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
@@ -28,6 +29,17 @@ const supported_kinds = [_][]const u8{
     "lexical_declaration",
     "identifier",
 };
+
+const typescript_comment_styles = [_][]const u8{ "//", "/*" };
+const python_comment_styles = [_][]const u8{"#"};
+
+fn commentStylesFor(language: bindings.Language) []const []const u8 {
+    return switch (language) {
+        .typescript, .tsx => &typescript_comment_styles,
+        .rust, .go => &typescript_comment_styles,
+        .python => &python_comment_styles,
+    };
+}
 
 pub fn runReplace(
     allocator: std.mem.Allocator,
@@ -93,11 +105,37 @@ fn runEdit(
     const start_byte: usize = @intCast(target.startByte());
     const end_byte: usize = @intCast(target.endByte());
 
-    const replacement = switch (mode) {
-        .replace => snippet,
-        .after => try normalizeAfterSnippet(allocator, snippet),
-    };
-    defer if (mode == .after) allocator.free(replacement);
+    var replacement: []const u8 = snippet;
+    var owned_replacement: ?[]const u8 = null;
+    defer if (owned_replacement) |owned| allocator.free(owned);
+
+    if (mode == .replace) {
+        const original_body = nodeText(original_contents, target);
+        const splice_result = splice.maybeSplice(
+            allocator,
+            original_body,
+            snippet,
+            commentStylesFor(lang),
+        ) catch |err| switch (err) {
+            error.AnchorNotFound => {
+                try stderr.print("marker splice failed: anchor not found\n", .{});
+                return 1;
+            },
+            error.MarkerGrammarInvalid => {
+                try stderr.print("marker splice failed: invalid marker grammar\n", .{});
+                return 1;
+            },
+            else => return err,
+        };
+
+        if (splice_result) |result| {
+            replacement = result.merged;
+            owned_replacement = result.merged;
+        }
+    } else {
+        replacement = try normalizeAfterSnippet(allocator, snippet);
+        owned_replacement = replacement;
+    }
 
     const new_len = original_contents.len - (end_byte - start_byte) + replacement.len;
     const new_contents = try allocator.alloc(u8, new_len);
@@ -173,6 +211,8 @@ fn findSymbolNode(source: []const u8, node: bindings.Node, symbol: []const u8) ?
 
     return null;
 }
+
+// Tests
 
 test "runReplace on TypeScript fixture" {
     var tmp = std.testing.tmpDir(.{});
@@ -299,4 +339,105 @@ test "runReplace stores backup snapshot" {
     try std.testing.expect(try backup.exists(cache_dir, abs_path));
 
     try backup.drop(cache_dir, abs_path);
+}
+
+test "runReplace with marker preserves untouched body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const fixture =
+        \\function greet(name: string): string {
+        \\  const prefix = "hi ";
+        \\  const body = name.trim();
+        \\  const suffix = "!";
+        \\  return prefix + body + suffix;
+        \\}
+    ;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = fixture });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "greet",
+        \\function greet(name: string): string {
+        \\  const prefix = "hey ";
+        \\  const body = name.trim();
+        \\  // ... existing code ...
+        \\  return prefix + body + suffix;
+        \\}
+    ,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    const expected =
+        \\function greet(name: string): string {
+        \\  const prefix = "hey ";
+        \\  const body = name.trim();
+        \\  const suffix = "!";
+        \\  return prefix + body + suffix;
+        \\}
+    ;
+    try std.testing.expectEqualSlices(u8, expected, contents);
+}
+
+test "runReplace marker with missing anchor fails without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\function greet(name: string): string {
+        \\  const prefix = "hi ";
+        \\  const suffix = "!";
+        \\  return prefix + suffix;
+        \\}
+    ;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "greet",
+        \\function nope(name: string): string {
+        \\  const inserted = "hey ";
+        \\  // ... existing code ...
+        \\  return "failed";
+        \\}
+    ,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stderr_buf.written(), "marker splice failed") != null);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    try std.testing.expectEqualSlices(u8, original, contents);
 }
