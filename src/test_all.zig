@@ -11,6 +11,7 @@ const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const edit_support = @import("edit_support.zig");
 const fallback = @import("fallback.zig");
+const incremental = @import("incremental.zig");
 const lock = @import("lock.zig");
 const main = @import("main.zig");
 const splice = @import("splice.zig");
@@ -29,6 +30,7 @@ test "import module tests" {
     _ = cmd_undo;
     _ = edit_support;
     _ = fallback;
+    _ = incremental;
     _ = lock;
     _ = main;
     _ = splice;

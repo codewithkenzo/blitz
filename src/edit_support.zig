@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const bindings = @import("tree_sitter/bindings.zig");
+const incremental = @import("incremental.zig");
 const splice = @import("splice.zig");
 const symbols = @import("symbols.zig");
 
@@ -73,7 +74,7 @@ pub fn applyToSource(
     @memcpy(next_contents[replace_start .. replace_start + replacement.len], replacement);
     @memcpy(next_contents[replace_start + replacement.len ..], source[replace_end..]);
 
-    try validateSource(lang, next_contents);
+    try validateEditedSourceIncremental(&parser, &tree, source, next_contents);
     return next_contents;
 }
 
@@ -84,6 +85,20 @@ pub fn validateSource(lang: bindings.Language, source: []const u8) !void {
     if (!parser.setLanguage(lang)) return error.UnsupportedLanguage;
     var tree = try parseStrict(&parser, source);
     defer tree.deinit();
+}
+
+pub fn validateEditedSourceIncremental(
+    parser: *bindings.Parser,
+    old_tree: *bindings.Tree,
+    original_source: []const u8,
+    next_source: []const u8,
+) !void {
+    const input_edit = try incremental.makeInputEditBetween(original_source, next_source);
+    old_tree.edit(input_edit);
+
+    var new_tree = parser.parseStringWithOld(next_source, old_tree) orelse return error.ParseFailed;
+    defer new_tree.deinit();
+    if (new_tree.rootNode().isNull() or new_tree.rootNode().hasError()) return error.ParseFailed;
 }
 
 pub fn commentStylesFor(language: bindings.Language) []const []const u8 {

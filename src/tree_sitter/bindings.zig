@@ -153,8 +153,13 @@ pub const Parser = struct {
     }
 
     pub fn parseString(self: *Parser, source: []const u8) ?Tree {
+        return self.parseStringWithOld(source, null);
+    }
+
+    pub fn parseStringWithOld(self: *Parser, source: []const u8, old_tree: ?*const Tree) ?Tree {
         if (source.len > std.math.maxInt(u32)) return null;
-        return if (c.ts_parser_parse_string(self.raw, null, source.ptr, @intCast(source.len))) |raw|
+        const raw_old = if (old_tree) |tree| tree.raw else null;
+        return if (c.ts_parser_parse_string(self.raw, raw_old, source.ptr, @intCast(source.len))) |raw|
             .{ .raw = raw }
         else
             null;
