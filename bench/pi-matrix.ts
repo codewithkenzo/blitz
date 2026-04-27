@@ -110,6 +110,17 @@ Goal: make three edits in the same file:
 Original file contents:
 ${src}`;
 
+const buildMultiLargeIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
+
+Goal: make three edits in the same file:
+1) wrap the entire body of mediumCompute in try/catch; catch should call console.error(error); then throw error,
+2) in auditEvent, insert a tagged audit string immediately after \`const normalized = event.trim();\`,
+3) in formatStatus, replace final return with \`return status.toUpperCase();\`.
+
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
@@ -155,6 +166,14 @@ const FIXTURES: Fixture[] = [
 		className: "multi_body_three_ops",
 	},
 	{
+		id: "multi/large-structural",
+		relPath: "multi-large.ts",
+		intent: (p: string) => buildMultiLargeIntent(p, multiLargeSrc),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "multi_body_large_structural",
+	},
+	{
 		id: "huge-100k/marker-tail",
 		relPath: "huge.ts",
 		intent: (p: string) => buildHugeIntent(p, hugeSrc),
@@ -198,6 +217,18 @@ const multiExpected = multiSrc
 		`export function risky(value: number): number {\n  return value;\n}`,
 		`export function risky(value: number): number {\n  try {\n    return value;\n  } catch (error) {\n    throw error;\n  }\n}`,
 	);
+const multiLargeSrc = await readFile(join(fixtureDir, "multi-large.ts"), "utf8");
+const multiLargeBody = multiLargeSrc.slice(
+	multiLargeSrc.indexOf("{\n") + 2,
+	multiLargeSrc.indexOf("\n}\n\nexport function auditEvent"),
+);
+const multiLargeExpected = multiLargeSrc
+	.replace(
+		`function mediumCompute(seed: number): number {\n${multiLargeBody}\n}`,
+		`function mediumCompute(seed: number): number {\n  try {\n${multiLargeBody.replace(/^/gm, "  ")}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}`,
+	)
+	.replace("  const normalized = event.trim();\n", "  const normalized = event.trim();\n  const tagged = `[audit] ${normalized}`;\n")
+	.replace("  return status;", "  return status.toUpperCase();");
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
 
@@ -206,7 +237,8 @@ FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
 FIXTURES[3]!.expectedFile = mediumComposeExpected;
 FIXTURES[4]!.expectedFile = multiExpected;
-FIXTURES[5]!.expectedFile = hugeExpected;
+FIXTURES[5]!.expectedFile = multiLargeExpected;
+FIXTURES[6]!.expectedFile = hugeExpected;
 
 const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
 
@@ -377,6 +409,8 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
 			guidance += " For this edit, call `pi_blitz_patch` with ops [[`replace`,`adjust`,`return base;`,`return base + 1;`,`only`], [`insert_after`,`emit`,`const marker = value;`,`\n  const markerUpper = value.toUpperCase();`,`only`], [`try_catch`,`risky`,`throw error;`]].";
+		} else if (fx.id.includes("multi/large-structural")) {
+			guidance += " For this edit, call `pi_blitz_patch` with ops [[`try_catch`,`mediumCompute`,`console.error(error);\nthrow error;`], [`insert_after`,`auditEvent`,`const normalized = event.trim();`,`\n  const tagged = `[audit] ${normalized}`;`,`only`], [`replace_return`,`formatStatus`,`status.toUpperCase()`,`only`]].";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("small")) {
