@@ -14,6 +14,7 @@ const ApplyOperation = enum {
     replace_body_span,
     insert_body_span,
     wrap_body,
+    multi_body,
     compose_body,
     insert_after_symbol,
 };
@@ -28,6 +29,7 @@ const MatchSelector = struct {
 };
 
 const ApplyTarget = struct {
+    /// Kept for single-target structured edits.
     symbol: []const u8,
     kind: ?[]const u8 = null,
     range: ?[]const u8 = null,
@@ -44,7 +46,7 @@ const ApplyRequest = struct {
     version: u8,
     file: []const u8,
     operation: []const u8,
-    target: ApplyTarget,
+    target: ?ApplyTarget = null,
     edit: std.json.Value,
     options: ?ApplyOptions = null,
 };
@@ -105,6 +107,17 @@ const OpResult = struct {
     changed_after: usize,
 };
 
+const MultiEdit = struct {
+    start: usize,
+    end: usize,
+    replacement: []const u8,
+    replacement_owned: bool,
+    range: RangesResult,
+    single_match: bool,
+    changed_before: usize,
+    changed_after: usize,
+};
+
 const ComposeResult = struct {
     contents: []u8,
     single_match: bool,
@@ -132,6 +145,8 @@ const ApplyError = error{
     SymbolNotFound,
     NoMatches,
     AmbiguousMatches,
+    OverlappingEdits,
+    UnsupportedMultiEditOperation,
     ParseFailedBefore,
     ParseFailedAfter,
 };
@@ -157,12 +172,17 @@ pub fn run(
 
     if (req.version != 1) return emitFailure(ApplyError.UnsupportedVersion, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     if (req.file.len == 0) return emitFailure(ApplyError.MissingFile, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    if (req.target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const operation = parseOperation(req.operation) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
-    const target_range = parseTargetRange(req.target.range) catch |err| {
+
+    if (operation != .multi_body) {
+        const target = req.target orelse return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    }
+
+    const target_range = if (operation == .multi_body) TargetRange.body else parseTargetRange(req.target.?.range) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     const require_single_match = if (req.options) |opts| opts.requireSingleMatch orelse true else true;
@@ -193,16 +213,17 @@ pub fn run(
     const root = source_tree.rootNode();
     if (root.isNull() or root.hasError()) return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
-    const target_node = symbols.findEditableSymbolNode(original, root, req.target.symbol) orelse {
+    const target_node: ?bindings.Node = if (operation == .multi_body) null else symbols.findEditableSymbolNode(original, root, req.target.?.symbol);
+    if (operation != .multi_body and target_node == null) {
         return emitFailure(ApplyError.SymbolNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    };
+    }
 
-    const target_start: usize = @intCast(target_node.startByte());
-    const target_end: usize = @intCast(target_node.endByte());
-    const body_range = if (operation == .insert_after_symbol)
+    const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
+    const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
+    const body_range = if (operation == .multi_body or operation == .insert_after_symbol)
         edit_support.ByteRange{ .start = target_start, .end = target_end }
     else
-        edit_support.replacementRangeFor(lang, original, target_node);
+        edit_support.replacementRangeFor(lang, original, target_node.?);
 
     const op_result_result: anyerror!OpResult = switch (operation) {
         .replace_body_span => blk: {
@@ -308,16 +329,31 @@ pub fn run(
                 .changed_after = code.len,
             };
         },
+        .multi_body => makeMultiBodyOp(
+            allocator,
+            lang,
+            root,
+            original,
+            req.edit,
+            require_single_match,
+        ),
     };
+
     const op_result = op_result_result catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
 
     defer allocator.free(op_result.contents);
 
     var parse_after: bool = undefined;
-    if (edit_support.validateEditedSourceIncremental(&parser, &source_tree, original, op_result.contents)) {
-        parse_after = true;
-    } else |_| {
-        parse_after = false;
+    if (operation == .multi_body) {
+        var final_tree = parser.parseString(op_result.contents) orelse return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+        defer final_tree.deinit();
+        parse_after = !final_tree.rootNode().isNull() and !final_tree.rootNode().hasError();
+    } else {
+        if (edit_support.validateEditedSourceIncremental(&parser, &source_tree, original, op_result.contents)) {
+            parse_after = true;
+        } else |_| {
+            parse_after = false;
+        }
     }
 
     if (!parse_after) {
@@ -345,7 +381,7 @@ pub fn run(
         .status = status,
         .operation = req.operation,
         .file = real_path,
-        .symbol = req.target.symbol,
+        .symbol = if (req.target) |target| target.symbol else "",
         .language = languageName(lang),
         .dryRun = dry_run,
         .changed = changed,
@@ -399,6 +435,8 @@ fn emitFailure(
         ApplyError.SymbolNotFound => "symbol not found",
         ApplyError.NoMatches => "no matching pattern",
         ApplyError.AmbiguousMatches => "ambiguous pattern match",
+        ApplyError.OverlappingEdits => "overlapping edits",
+        ApplyError.UnsupportedMultiEditOperation => "unsupported multi-body operation (compose_body TODO)",
         ApplyError.ParseFailedBefore => "source did not parse before edit",
         ApplyError.ParseFailedAfter => "edited source did not parse",
         else => "apply failed",
@@ -411,7 +449,7 @@ fn emitFailure(
 
     const operation = if (request) |r| r.operation else "";
     const file = if (request) |r| r.file else "";
-    const symbol = if (request) |r| r.target.symbol else "";
+    const symbol = if (request) |r| if (r.target) |target| target.symbol else "" else "";
     const probe = ApplyResult{
         .status = "rejected",
         .operation = operation,
@@ -433,6 +471,7 @@ fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "replace_body_span")) return .replace_body_span;
     if (std.mem.eql(u8, raw, "insert_body_span")) return .insert_body_span;
     if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
+    if (std.mem.eql(u8, raw, "multi_body")) return .multi_body;
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
     return ApplyError.UnsupportedOperation;
@@ -638,6 +677,281 @@ fn selectMatch(haystack: []const u8, needle: []const u8, selector: MatchSelector
         .single_match = total == 1,
         .total = total,
     };
+}
+
+fn makeMultiBodyOp(
+    allocator: Allocator,
+    lang: bindings.Language,
+    root: bindings.Node,
+    original: []const u8,
+    edit_value: std.json.Value,
+    require_single_match: bool,
+) !OpResult {
+    const edit_obj = try expectObject(edit_value);
+    const edits = try requireArray(edit_obj, "edits");
+    const resolved = try resolveMultiBodyEdits(
+        allocator,
+        lang,
+        root,
+        original,
+        edits,
+        require_single_match,
+    );
+    defer {
+        for (resolved) |edit| {
+            if (edit.replacement_owned) allocator.free(edit.replacement);
+        }
+        allocator.free(resolved);
+    }
+
+    const out = try applyResolvedEdits(allocator, original, resolved);
+    const combined = combinedRangeFromEdits(resolved);
+    return OpResult{
+        .contents = out,
+        .range = combined,
+        .single_match = allSingleMatch(resolved),
+        .changed_before = totalChangedBefore(resolved),
+        .changed_after = totalChangedAfter(resolved),
+    };
+}
+
+fn resolveMultiBodyEdits(
+    allocator: Allocator,
+    lang: bindings.Language,
+    root: bindings.Node,
+    source: []const u8,
+    edits: std.json.Array,
+    require_single_match: bool,
+) ![]MultiEdit {
+    if (edits.items.len == 0) return ApplyError.PatternEmpty;
+
+    var resolved = std.ArrayList(MultiEdit).empty;
+    errdefer {
+        for (resolved.items) |entry| {
+            if (entry.replacement_owned) allocator.free(entry.replacement);
+        }
+        resolved.deinit(allocator);
+    }
+
+    for (edits.items) |edit_item| {
+        const edit_obj = switch (edit_item) {
+            .object => |obj| obj,
+            else => return ApplyError.FieldTypeMismatch,
+        };
+
+        const symbol = try requireString(edit_obj, "symbol");
+        const op_raw = try requireString(edit_obj, "op");
+        const op = try parseOperation(op_raw);
+
+        const target_node = symbols.findEditableSymbolNode(source, root, symbol) orelse {
+            return ApplyError.SymbolNotFound;
+        };
+
+        const target_start: usize = @intCast(target_node.startByte());
+        const target_end: usize = @intCast(target_node.endByte());
+        const body_range = edit_support.replacementRangeFor(lang, source, target_node);
+
+        switch (op) {
+            .replace_body_span => {
+                const find = try requireString(edit_obj, "find");
+                const replace = try requireString(edit_obj, "replace");
+                const selector = parseMatchSelector(edit_obj.get("occurrence"));
+                const match = try selectMatch(source[body_range.start..body_range.end], find, selector, require_single_match);
+                const edit_start = body_range.start + match.start;
+                const edit_end = body_range.start + match.end;
+                const range = RangesResult{
+                    .targetStart = target_start,
+                    .targetEnd = target_end,
+                    .bodyStart = body_range.start,
+                    .bodyEnd = body_range.end,
+                    .editStart = edit_start,
+                    .editEnd = edit_end,
+                };
+                try resolved.append(allocator, .{
+                    .start = edit_start,
+                    .end = edit_end,
+                    .replacement = replace,
+                    .replacement_owned = false,
+                    .range = range,
+                    .single_match = match.single_match,
+                    .changed_before = match.end - match.start,
+                    .changed_after = replace.len,
+                });
+            },
+            .insert_body_span => {
+                const anchor = try requireString(edit_obj, "anchor");
+                const text = try requireString(edit_obj, "text");
+                const raw_pos = try requireString(edit_obj, "position");
+                const selector = parseMatchSelector(edit_obj.get("occurrence"));
+                const match = try selectMatch(source[body_range.start..body_range.end], anchor, selector, require_single_match);
+                const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
+                    body_range.start + match.end
+                else if (std.mem.eql(u8, raw_pos, "before"))
+                    body_range.start + match.start
+                else
+                    return ApplyError.InvalidPosition;
+
+                const range = RangesResult{
+                    .targetStart = target_start,
+                    .targetEnd = target_end,
+                    .bodyStart = body_range.start,
+                    .bodyEnd = body_range.end,
+                    .editStart = insert_at,
+                    .editEnd = insert_at,
+                };
+
+                try resolved.append(allocator, .{
+                    .start = insert_at,
+                    .end = insert_at,
+                    .replacement = text,
+                    .replacement_owned = false,
+                    .range = range,
+                    .single_match = match.single_match,
+                    .changed_before = 0,
+                    .changed_after = text.len,
+                });
+            },
+            .wrap_body => {
+                const before = try requireString(edit_obj, "before");
+                const keep = try requireString(edit_obj, "keep");
+                const after = try requireString(edit_obj, "after");
+                if (!std.mem.eql(u8, keep, "body")) return ApplyError.FieldTypeMismatch;
+
+                const indent = if (edit_obj.get("indentKeptBodyBy")) |indent_raw| switch (indent_raw) {
+                    .integer => |v| if (v < 0) return ApplyError.InvalidOccurrence else @as(usize, @intCast(v)),
+                    .float => |v| float_blk: {
+                        const rounded = @round(v);
+                        if (v < 0 or rounded != v) return ApplyError.InvalidOccurrence;
+                        break :float_blk @as(usize, @intFromFloat(rounded));
+                    },
+                    else => 0,
+                } else 0;
+
+                const body = source[body_range.start..body_range.end];
+                const kept_body = if (indent == 0) body else try indentBody(allocator, body, indent);
+                defer if (indent != 0) allocator.free(kept_body);
+                const wrapped = try concat3(allocator, before, kept_body, after);
+
+                const range = RangesResult{
+                    .targetStart = target_start,
+                    .targetEnd = target_end,
+                    .bodyStart = body_range.start,
+                    .bodyEnd = body_range.end,
+                    .editStart = body_range.start,
+                    .editEnd = body_range.end,
+                };
+
+                try resolved.append(allocator, .{
+                    .start = body_range.start,
+                    .end = body_range.end,
+                    .replacement = wrapped,
+                    .replacement_owned = true,
+                    .range = range,
+                    .single_match = true,
+                    .changed_before = body.len,
+                    .changed_after = wrapped.len,
+                });
+            },
+            .compose_body => {
+                // TODO: multi-body compose_body not implemented yet due nested span risk.
+                return ApplyError.UnsupportedMultiEditOperation;
+            },
+            .multi_body, .insert_after_symbol => return ApplyError.UnsupportedMultiEditOperation,
+        }
+    }
+
+    return resolved.toOwnedSlice(allocator);
+}
+
+fn applyResolvedEdits(allocator: Allocator, original: []const u8, edits: []MultiEdit) ![]u8 {
+    if (edits.len == 0) return ApplyError.PatternEmpty;
+
+    sortMultiEditsDescending(edits);
+
+    if (hasOverlappingEdits(edits)) return ApplyError.OverlappingEdits;
+
+    var current = try allocator.dupe(u8, original);
+    errdefer allocator.free(current);
+
+    for (edits) |edit| {
+        const next = try spliceText(allocator, current, edit.start, edit.end, edit.replacement);
+        allocator.free(current);
+        current = next;
+    }
+
+    return current;
+}
+
+fn sortMultiEditsDescending(edits: []MultiEdit) void {
+    var i: usize = 1;
+    while (i < edits.len) : (i += 1) {
+        var j = i;
+        while (j > 0) {
+            if (edits[j].start <= edits[j - 1].start) break;
+            std.mem.swap(MultiEdit, &edits[j], &edits[j - 1]);
+            j -= 1;
+        }
+    }
+}
+
+fn hasOverlappingEdits(edits: []MultiEdit) bool {
+    if (edits.len < 2) return false;
+
+    for (edits[0 .. edits.len - 1], edits[1..]) |left, right| {
+        if (left.end > right.start and right.end > left.start) return true;
+    }
+
+    return false;
+}
+
+fn combinedRangeFromEdits(edits: []MultiEdit) RangesResult {
+    if (edits.len == 0) return .{ .targetStart = 0, .targetEnd = 0, .editStart = 0, .editEnd = 0 };
+
+    var target_start = edits[0].range.targetStart;
+    var target_end = edits[0].range.targetEnd;
+    var body_start: ?usize = edits[0].range.bodyStart;
+    var body_end: ?usize = edits[0].range.bodyEnd;
+    var edit_start = edits[0].range.editStart;
+    var edit_end = edits[0].range.editEnd;
+
+    for (edits[1..]) |edit| {
+        if (edit.range.targetStart < target_start) target_start = edit.range.targetStart;
+        if (edit.range.targetEnd > target_end) target_end = edit.range.targetEnd;
+        if (edit.range.bodyStart) |value| {
+            if (body_start == null or value < body_start.?) body_start = value;
+        }
+        if (edit.range.bodyEnd) |value| {
+            if (body_end == null or value > body_end.?) body_end = value;
+        }
+        if (edit.range.editStart < edit_start) edit_start = edit.range.editStart;
+        if (edit.range.editEnd > edit_end) edit_end = edit.range.editEnd;
+    }
+
+    return RangesResult{
+        .targetStart = target_start,
+        .targetEnd = target_end,
+        .bodyStart = body_start,
+        .bodyEnd = body_end,
+        .editStart = edit_start,
+        .editEnd = edit_end,
+    };
+}
+
+fn allSingleMatch(edits: []MultiEdit) bool {
+    for (edits) |edit| if (!edit.single_match) return false;
+    return true;
+}
+
+fn totalChangedBefore(edits: []MultiEdit) usize {
+    var total: usize = 0;
+    for (edits) |edit| total += edit.changed_before;
+    return total;
+}
+
+fn totalChangedAfter(edits: []MultiEdit) usize {
+    var total: usize = 0;
+    for (edits) |edit| total += edit.changed_after;
+    return total;
 }
 
 fn spliceText(allocator: Allocator, source: []const u8, start: usize, end: usize, replacement: []const u8) ![]u8 {
@@ -959,4 +1273,91 @@ test "apply wrap_body preserves signature" {
     try std.testing.expect(std.mem.indexOf(u8, post, "  try {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "    const doubled = value * 2;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "  } catch (error) {") != null);
+}
+
+test "apply multi_body three edits on same file" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function adjust(value: number): number {
+        \\  const base = value;
+        \\  return base;
+        \\}
+        \\function emit(value: string): string {
+        \\  const marker = value;
+        \\  return marker;
+        \\}
+        \\function risky(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"multi_body","edit":{"edits":[{"symbol":"adjust","op":"replace_body_span","find":"return base;","replace":"return base + 1;","occurrence":"only"},{"symbol":"emit","op":"insert_body_span","anchor":"const marker = value;","position":"after","text":"\n  const markerUpper = value.toUpperCase();\n","occurrence":"only"},{"symbol":"risky","op":"wrap_body","before":"\n  try {","keep":"body","after":"  } catch (error) {\n    throw error;\n  }\n","indentKeptBodyBy":2}]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return base + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const markerUpper = value.toUpperCase();") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "try {") != null);
+}
+
+test "apply multi_body overlaps reject with no mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function overlap(value: number): number {
+        \\  const doubled = value;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"multi_body","edit":{"edits":[{"symbol":"overlap","op":"replace_body_span","find":"return doubled;","replace":"return doubled + 1;","occurrence":"only"},{"symbol":"overlap","op":"insert_body_span","anchor":"eturn doubled","position":"after","text":"\n  // overlap marker\n","occurrence":"only"}]}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "overlapping edits") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply multi_body ambiguous anchor rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function ambiguous(value: number): number {
+        \\  return value;
+        \\  return value;
+        \\}
+        \\function anchor(value: string): string {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"multi_body","edit":{"edits":[{"symbol":"ambiguous","op":"replace_body_span","find":"return value;","replace":"return value + 1;"},{"symbol":"anchor","op":"insert_body_span","anchor":"return value;","position":"before","text":"\n  const upper = value.toUpperCase();\n","occurrence":"only"}]}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
 }
