@@ -1,59 +1,76 @@
-# Blitz v0.2 Stream UX + Hardening Plan
+# Blitz Stream UX + v0.2 Hardening Plan
 
-Status: active draft  
-Owner: Kenzo / Pi main agent  
-Repos: `codewithkenzo/blitz`, `codewithkenzo/pi-blitz`, Pi Rig mirror  
+Status: active draft
+Owner: Kenzo / Pi main agent
+Repos: `codewithkenzo/blitz`, `codewithkenzo/pi-blitz`, Pi Rig mirror
+Branch: `spec/blitz-v02-stream-ux-plan`
 Last updated: 2026-04-28
 
 ## Purpose
 
 Make Blitz feel obvious and trustworthy in AI coding sessions without adding setup friction or token noise.
 
-This plan focuses on the next post-alpha.10 slice:
+This plan separates the immediate patch slice from deeper v0.2/v1 hardening:
 
-1. Stream-readable Pi tool results.
-2. Minimal progress updates where they add trust.
-3. MCP/install docs that start from copy/paste usage, not env/config theory.
-4. Security/reliability hardening backlog captured clearly.
-5. Release/CI and code-shape debt sequenced behind UX-safe work.
+1. **v0.1.x patch:** stream-readable Pi tool results and MCP/install docs polish.
+2. **v0.2:** safety tests, optional Pi renderers/progress, code-shape cleanup prep.
+3. **v1 readiness:** CI provenance, platform runtime verification, stronger locking, deeper refactors.
 
-No full TUI overlay for this slice. The stream is the product surface.
+No full TUI overlay for this plan. The stream is the product surface.
 
 ## Current state
 
 - `@codewithkenzo/blitz@0.1.0-alpha.10` published.
 - `@codewithkenzo/pi-blitz@0.1.0-alpha.10` published.
 - Platform packages published for Linux x64/arm64 musl, macOS arm64/x64, Windows x64.
+- Linux x64 npm/Pi/MCP path has been smoke-tested locally.
+- macOS/Windows packages are published but not runtime-verified yet.
 - MCP server supports `blitz-mcp --workspace <path>`.
 - MCP falls back to current working directory only when it looks like a project root.
 - Zig CLI enforces workspace boundaries via `--workspace-root`.
 - Pi extension calls Blitz as subprocess and returns text + structured `details`.
 - Tool results are functional but too mechanical for human skimming.
+- No `renderCall`/`renderResult` is wired in `pi-blitz` today.
+- Current pi-blitz `execute` functions use narrower 2-arg signatures even though Pi supports 5 args.
 - `multi/three-body-ops` benchmark expectation fixed.
 - Vendored grammars and benchmark fixtures are hidden from GitHub Linguist stats.
 
 ## Decision principles
 
 1. Install friction wins. Default path must remain `npm install` / `pi install` / copy-paste MCP.
-2. Stream output must be compact. Every result line enters model context.
-3. Safety is implicit, not marketing copy. Keep workspace guards and clear errors.
-4. Token-savings proof belongs in docs/results when useful, not every tool call.
-5. No router. Keep narrow tools and compact payloads.
-6. No full TUI overlay in this phase. Add stream renderers first.
-7. Effect v4 is the target. Do not introduce v3-only APIs or heavy DI.
-8. Zig performance claims must be measured.
+2. Stream output must be compact. `content[0].text` enters model context across Pi and MCP-like clients.
+3. Pi renderers are TUI cosmetics only. They reduce **zero** MCP/provider tokens.
+4. Safety is enforced quietly through workspace guards, path checks, and clear errors.
+5. Token-savings proof belongs in docs/benchmarks and only selectively in stream.
+6. No router. Keep narrow tools and compact payloads.
+7. No full TUI overlay in this phase.
+8. Effect v4 is the target. Pin v4 beta exactly until stable.
+9. Zig performance claims must be measured.
 
-## UX target: Pi stream result
+## UX target: stream result text
 
-Normal applied result should fit in 5-6 short lines:
+Default result text should be readable without custom renderer support.
+
+Normal applied result, maximum 5 lines:
 
 ```text
 blitz patch applied: src/app.ts
 op: try_catch(handleRequest)
 parse: clean
-changed: +6/-1
-wall: 42ms
-undo: pi_blitz_undo file=src/app.ts
+changed: +6/-1 · wall: 42ms
+```
+
+Applied result may include savings only when all are true:
+
+- status is `applied`
+- parse is clean
+- metric is present
+- estimated savings is at least 30%
+
+Example optional fifth line:
+
+```text
+saved: ~72% payload vs anchor edit
 ```
 
 Preview result:
@@ -62,8 +79,7 @@ Preview result:
 blitz patch preview: src/app.ts
 op: replace_return(computeTotal)
 parse: clean
-changed: +1/-1
-no files written
+changed: +1/-1 · no files written
 ```
 
 Soft miss:
@@ -74,30 +90,25 @@ file: src/app.ts
 next: run pi_blitz_read or use core edit
 ```
 
-Optional savings line only when all are true:
+Do not include by default:
 
-- status is `applied` or `preview`
-- parse is clean
-- metric is present
-- estimated savings is greater than 20%
+- source snippets
+- raw ranges
+- raw metrics JSON
+- long diffs
+- undo instructions in model-visible text
 
-Example:
+Undo hints belong in `details.summary` / Pi renderer if renderer lands, not default stream content.
 
-```text
-saved: ~72% payload vs anchor edit
-```
+## UX target: Pi renderer, optional and zero-token-impact for MCP
 
-Do not include source snippets, ranges, raw metrics JSON, or long diffs by default.
+Renderer work is **not** stream-token optimization. It only improves Pi's interactive collapsed display.
 
-## TUI/renderer target: stream-only
-
-Do not build a `/blitz` overlay yet.
-
-Add Pi tool renderers if supported by current ExtensionAPI and package types:
+If current Pi package types allow it without `as any`, add:
 
 - `renderCall` for concise call display.
-- `renderResult` for one-line collapsed stream display.
-- fallback remains plain `content[0].text`.
+- `renderResult` for one-line collapsed Pi stream display.
+- plain `content[0].text` remains canonical fallback.
 
 Collapsed result shape:
 
@@ -105,7 +116,7 @@ Collapsed result shape:
 ✓ blitz patch · src/app.ts · try_catch(handleRequest) · clean · +6/-1 · 42ms
 ```
 
-Partial/running shape:
+Partial/running shape from call args or update details:
 
 ```text
 ◌ blitz patch · running · src/app.ts
@@ -117,9 +128,57 @@ Failure shape:
 ✗ blitz miss · src/app.ts · symbol not found
 ```
 
-Implementation should model `flow-system/src/renderers.ts`, not copy its deck overlay.
+Implementation should model `flow-system/src/renderers.ts` conceptually. Because `pi-blitz` is a separate repo, vendor tiny helpers like `ellipsize` locally rather than importing Pi Rig shared internals.
+
+## Workstream D — Zig safety tests and hardening backlog
+
+Run this early as backfill, before any major Zig refactor. It does not need to block the v0.1.x stream-UX patch.
+
+Target repo: `/home/kenzo/dev/blitz`
+
+Primary files:
+
+- `src/workspace.zig`
+- `src/lock.zig`
+- `src/cmd_read.zig`
+- `src/test_all.zig`
+- new dedicated test files only if added to `build.zig`
+
+Scope for next implementation batch:
+
+- Add named Zig tests for:
+  - `workspace realpath allows in-root file`
+  - `workspace rejects absolute path outside root`
+  - `workspace rejects symlink escape`
+  - `read rejects huge source over cap`
+  - `apply rejects huge stdin over cap`
+  - `lock stale cleanup removes old lock dir`
+- Verify `BLITZ_WORKSPACE` passed by Pi extension stays aligned with CLI `--workspace-root` safety model.
+
+Defer until tests exist:
+
+- PID/owner lock records.
+- clearer lock contention messages.
+- deeper `cmd_apply.zig` split.
+
+Acceptance criteria:
+
+- Each listed scenario has a named test or a tracked follow-up ticket with reason.
+- Existing stress scripts become optional confidence checks, not sole coverage.
+- Linux musl validation remains green.
+
+Validation:
+
+```bash
+~/.local/bin/zig-0.16 build test -Dtarget=x86_64-linux-musl
+~/.local/bin/zig-0.16 build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseFast
+bun scripts/mcp-smoke.ts
+npm pack --dry-run --json
+```
 
 ## Workstream A — Pi stream readability
+
+This is the highest-value v0.1.x patch.
 
 Target repo: `/home/kenzo/dev/pi-blitz`
 
@@ -127,39 +186,53 @@ Primary files:
 
 - `src/tools.ts`
 - `src/tool-runtime.ts`
-- `test/*.test.ts`
+- `test/apply-runtime.test.ts`
+- `test/smoke.test.ts`
+- optional new `test/format.test.ts`
+
+Current gaps:
+
+- `applyResultToText` emits one mechanical dotted sentence.
+- `editMetricsResult` emits a long payload-estimate sentence.
+- `renderSoftText` includes raw `stderr`, which can be multi-line/noisy.
+- Tests do not assert line/char budgets.
 
 Implementation details:
 
-- Refactor `applyResultToText` into small pure helpers:
+- Refactor formatting into small pure helpers:
   - `formatBlitzStatusLine`
   - `formatOpLabel`
   - `formatParseLine`
-  - `formatDiffLine`
+  - `formatDiffWallLine`
   - `formatSavingsLine`
-  - `formatUndoLine`
-- Preserve existing `details` payload.
-- Add `details.summary` for renderer use.
-- Add `details.status`, `details.operation`, `details.file`, `details.diffSummary`, `details.metrics` as today.
-- Add small derived details if useful:
+- Keep canonical structured data in `details`, but avoid duplicate large fields.
+- Add `details.summary` as compact renderer/update source.
+- If adding derived fields, keep them small and non-duplicative:
   - `opLabel`
   - `pathLabel`
   - `durationMs`
-  - `added`
-  - `removed`
+  - `changeLabel`
   - `savingsPct`
-- Improve `renderSoftText` so soft errors are short and actionable.
-- Keep hard errors thrown.
+- Preserve existing detailed `metrics`, `diffSummary`, and `validation` only if already present and useful.
+- Restrict savings line to `applied` + parse clean + savings >= 30%.
+- No savings line for preview.
+- Remove default undo line from stream text.
+- Tighten soft errors:
+  - first stderr line only
+  - max 200 stderr chars before ellipsis
+  - total soft error text max 350 chars
 
 Acceptance criteria:
 
-- Normal success text <= 6 lines.
+- Normal success text <= 5 lines.
 - Normal success text <= 450 chars.
 - Soft error text <= 350 chars.
 - No raw JSON in content text.
 - No source snippets unless `include_diff` explicitly requests CLI diff output.
+- No savings claim on preview or parse-dirty result.
+- `details.summary` present for normal success and soft miss.
 - Existing tests pass.
-- Add/update tests for applied, preview, dirty parse, soft miss.
+- Add tests for applied, preview, dirty parse, soft miss, and multi-operation patch summary.
 
 Validation:
 
@@ -170,47 +243,7 @@ bun run build
 npm pack --dry-run --json
 ```
 
-## Workstream B — Pi renderers and minimal progress updates
-
-Target repo: `/home/kenzo/dev/pi-blitz`
-
-Primary files:
-
-- `src/renderers.ts` (new if needed)
-- `src/tools.ts`
-- `test/*.test.ts`
-
-Implementation details:
-
-- Verify current `ToolDefinition` supports `renderCall` / `renderResult` in installed `@mariozechner/pi-coding-agent` types.
-- Add renderers only if type-safe without `as any`.
-- Use `Text` from `@mariozechner/pi-tui` if available, following flow-system.
-- Use `details.summary` first, then fallback to first text result.
-- Add optional `emitBlitzUpdate` helper using the existing execute signature:
-
-```ts
-execute(toolCallId, params, signal, onUpdate, ctx)
-```
-
-- Emit at most two default updates:
-  - `blitz: running <operation>`
-  - `blitz: done`
-- For very fast operations, it is acceptable to emit no updates beyond Pi's own running indicator.
-- Never include code, diff, or large details in `onUpdate`.
-
-Acceptance criteria:
-
-- Rendered result is one line in normal collapsed stream.
-- Plain result remains readable if renderer unavailable.
-- Update events do not exceed two for normal single-file operations.
-- No extra source/code tokens enter update text.
-
-Validation:
-
-```bash
-bun run typecheck
-bun test
-```
+If repo adds lint/format tooling later, include it here. Do not invent `oxlint`/`oxfmt` unless package config owns those commands.
 
 ## Workstream C — MCP/install docs UX
 
@@ -224,8 +257,10 @@ Primary files:
 External references verified:
 
 - Claude Code MCP docs use `mcpServers`, `command`, `args`, `env`, and CLI `claude mcp add ... -- <command> [args...]`.
+- Claude Desktop currently prefers Desktop Extensions / `.mcpb`; direct JSON remains possible but should not be over-emphasized.
 - VS Code MCP docs use top-level `servers`, `type: "stdio"`, `command`, `args`, and `${workspaceFolder}`.
 - Codex MCP docs use `[mcp_servers.<name>]`, `command`, `args`, optional `env`, `env_vars`, `cwd`.
+- Cursor docs expose MCP but exact current snippet shape is less stable/public; keep wording conservative.
 
 Implementation details:
 
@@ -237,58 +272,117 @@ Implementation details:
 claude mcp add --transport stdio blitz -- npx --yes --package=@codewithkenzo/blitz -- blitz-mcp --workspace "$PWD"
 ```
 
+- Keep JSON snippets secondary.
+- VS Code snippet can use `${workspaceFolder}`.
+- Codex snippet can keep `--workspace`; optionally add `cwd = "/absolute/path/to/project"` note.
 - Keep `BLITZ_BIN` only under custom/source builds.
-- Explain `command`/`args` briefly:
+- Explain `command`/`args` in one sentence:
   - MCP clients launch Blitz as a local subprocess and speak JSON-RPC over stdin/stdout.
 - Do not lead with env vars.
 
 Acceptance criteria:
 
-- A user can install Pi extension without reading source-build instructions.
-- A user can copy one MCP snippet without understanding `BLITZ_WORKSPACE`.
+- First 60 README lines contain no `BLITZ_*` env variable mention.
+- README has one primary copy/paste block per MCP client.
 - Source build is clearly optional.
 - macOS/Windows are described as published but not fully runtime-verified until tested.
+- Snippets only use CLI flags that exist in `blitz-mcp` / Blitz wrapper.
 
-## Workstream D — Zig safety tests and hardening backlog
+## Workstream B1 — Minimal progress updates
 
-Target repo: `/home/kenzo/dev/blitz`
+Optional v0.2 item after Workstream A succeeds.
+
+Target repo: `/home/kenzo/dev/pi-blitz`
 
 Primary files:
 
-- `src/workspace.zig`
-- `src/lock.zig`
-- `src/cmd_read.zig`
-- `src/cmd_apply_tests.zig`
-- `src/test_all.zig`
+- `src/tools.ts`
+- `test/*.test.ts`
 
-Scope for next implementation batch:
+Implementation details:
 
-- Add tests before refactoring hot code.
-- Cover:
-  - `--workspace-root` realpath enforcement
-  - absolute path escape rejection
-  - symlink escape rejection
-  - huge source cap
-  - huge stdin cap
-  - stale lock cleanup behavior
+- Update all 14 tool defs if adopting `onUpdate`:
+  - `read`
+  - `edit`
+  - `batch`
+  - `apply`
+  - `replace_body_span`
+  - `insert_body_span`
+  - `wrap_body`
+  - `compose_body`
+  - `multi_body`
+  - `patch`
+  - `try_catch`
+  - `replace_return`
+  - `rename`
+  - `undo`
+  - `doctor`
+- Note: this list has 15 registered tools including `doctor`; keep implementation exhaustive.
+- Use the full Pi execute signature:
 
-Defer until tests exist:
+```ts
+execute(toolCallId, params, signal, onUpdate, ctx)
+```
 
-- PID/owner lock records.
-- clearer lock contention messages.
-- deeper `cmd_apply.zig` split.
+- Add `emitBlitzUpdate(onUpdate, summary, details)` helper.
+- Emit at most two default updates for normal single-file mutation:
+  - `blitz: running <operation>`
+  - `blitz: done`
+- Consider no updates for very fast read/doctor calls.
+- Never include code, diff, or large details in update text.
 
 Acceptance criteria:
 
-- Existing stress scripts become optional confidence checks, not only coverage.
-- Linux musl validation remains green.
+- Single-file mutation emits <= 2 updates.
+- Read/doctor emit 0 or 1 updates.
+- Updates are <= 120 chars each.
+- Tests mock `onUpdate` and assert call count.
+
+## Workstream B2 — Pi renderers
+
+Optional v0.2 item after Workstream A succeeds. Zero token impact for MCP consumers.
+
+Target repo: `/home/kenzo/dev/pi-blitz`
+
+Primary files:
+
+- `src/renderers.ts` (new if needed)
+- `src/tools.ts`
+- `test/*.test.ts`
+
+Implementation details:
+
+- Verify current `ToolDefinition` supports `renderCall` / `renderResult` in installed package types.
+- Add renderers only if type-safe without `as any`.
+- Define typed details before renderer work:
+
+```ts
+type BlitzDetails = PiBlitzDetails & {
+  summary: string;
+  opLabel?: string;
+  pathLabel?: string;
+  durationMs?: number;
+  changeLabel?: string;
+  savingsPct?: number;
+};
+```
+
+- Prefer a single `BlitzDetails` type unless per-tool details truly diverge.
+- Ensure `details` is always present once renderers depend on it; avoid `details: undefined` for success paths.
+- Use local `ellipsize` helper, not Pi Rig shared import.
+
+Acceptance criteria:
+
+- Rendered result is one line in normal collapsed Pi stream.
+- Plain result remains readable if renderer unavailable.
+- No `as any` in renderer path.
+- Generic `ToolDefinition` typing keeps result/details type-safe.
 
 Validation:
 
 ```bash
-~/.local/bin/zig-0.16 build test -Dtarget=x86_64-linux-musl
-~/.local/bin/zig-0.16 build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseFast
-bun scripts/mcp-smoke.ts
+bun run typecheck
+bun test
 ```
 
 ## Workstream E — Code-shape cleanup
@@ -300,12 +394,14 @@ Primary files:
 - `src/cmd_apply.zig`
 - `src/ast.zig`
 - `src/fallback.zig`
+- `build.zig`
 
 Plan:
 
 1. Read-only scout maps current seams.
-2. Delete unused placeholder files only if build references prove safe.
-3. Split `cmd_apply.zig` only after safety/golden tests exist.
+2. Confirm whether `src/ast.zig` and `src/fallback.zig` are imported or build-referenced.
+3. Delete or clearly document unused placeholder/planned files only if build references prove safe.
+4. Split `cmd_apply.zig` only after safety/golden tests exist.
 
 Potential split:
 
@@ -345,32 +441,39 @@ Acceptance criteria:
 
 - No accidental alpha publish with mismatched platform package versions.
 - Release steps are documented and reproducible.
+- README explicitly states Linux verified / macOS+Windows published-only until runtime smoke runs.
 
-## Subagent execution plan
+## Effect v4 policy
 
-Use isolated worktrees for any coding agents.
+Target package: `/home/kenzo/dev/pi-blitz/package.json`
 
-1. Pi UX worker
-   - Repo: `/home/kenzo/dev/pi-blitz`
-   - Skills: `kenzo-pi-extensions`, `kenzo-bun`, `kenzo-effect-ts`
-   - Scope: Workstream A, maybe B after A passes.
-   - Verify: typecheck, tests, build, pack dry-run.
+- Pin Effect exactly to `=4.0.0-beta.48` until v4 stable or an intentional upgrade ticket.
+- Use `Effect.runPromiseExit` at Pi boundaries.
+- Use `Cause.findErrorOption` as current implementation does.
+- Avoid v3-only helpers.
+- Avoid new heavy Effect DI layers in pi-blitz.
+- Keep TypeBox for schemas; do not migrate tool schemas to Effect Schema.
+- Add typecheck/test coverage so beta API drift fails loudly.
+- Watch `Effect.catch` alias; if beta removes it, switch to `Effect.catchAll` or current v4 equivalent in one dedicated change.
 
-2. Zig scout
-   - Repo: `/home/kenzo/dev/blitz`
-   - Skills: `kenzo-zig`, `kenzo-zig-build`
-   - Scope: Workstream D/E read-only first.
-   - Output: seam map and test-first patch recommendation.
+## Token-efficiency policy
 
-3. Docs/MCP reviewer
-   - Repo: `/home/kenzo/dev/blitz`
-   - Skills: `kenzo-research-tools`, `kenzo-pi-web-search`
-   - Scope: Workstream C.
-   - Output: stale/confusing docs findings and exact snippets.
-
-4. Final reviewer
-   - Review final spec + first implementation diff.
-   - Focus: token bloat, UX regression, safety, over-scoping.
+- `content[0].text` is canonical and model-visible.
+- Renderer output is Pi-only cosmetic.
+- `details` may be visible to some clients; keep it useful but not bloated.
+- Default mutation result <= 450 chars.
+- Default soft error <= 350 chars.
+- `onUpdate` events <= 120 chars each.
+- No raw JSON or source snippets in default text.
+- Savings line only on applied + parse-clean + >= 30% estimated savings.
+- No savings line on preview.
+- Benchmark claims continue to separate:
+  - provider output tokens
+  - tool-call arg tokens
+  - input/cache tokens
+  - correctness
+  - wall time
+  - cost
 
 ## External trend check
 
@@ -393,6 +496,24 @@ Interpretation for Blitz:
 - Token savings proof should be visible in docs/benchmarks and only selectively in stream.
 - Advanced config stays at bottom of README.
 
+## Subagent execution plan
+
+Use isolated worktrees for coding agents.
+
+1. Pi UX worker
+   - Repo: `/home/kenzo/dev/pi-blitz`
+   - Skills: `kenzo-pi-extensions`, `kenzo-bun`, `kenzo-effect-ts`
+   - Scope: Workstream A only first. B1/B2 only after A passes.
+   - Verify: typecheck, tests, build, pack dry-run.
+
+2. Zig scout
+   - Repo: `/home/kenzo/dev/blitz`
+   - Skills: `kenzo-zig`, `kenzo-zig-build`
+   - Scope: Workstream D/E read-only first.
+   - Output: seam map and test-first patch recommendation.
+
+Main agent handles docs/MCP edits inline after researcher/reviewer notes. Final reviewer runs after first implementation diff.
+
 ## Release sequencing
 
 ### v0.1.x patch
@@ -400,11 +521,12 @@ Interpretation for Blitz:
 - Pi stream readability.
 - Soft error text cleanup.
 - README/MCP copy-paste polish.
-- Optional renderers if type-safe and low risk.
+- Optional Effect exact pin if current range is loose.
 
 ### v0.2
 
 - Minimal progress updates.
+- Pi renderers if type-safe and low risk.
 - Zig safety tests.
 - Placeholder cleanup.
 - Initial release/version consistency checks.
@@ -453,3 +575,10 @@ pi install npm:@codewithkenzo/pi-blitz@<version>
 - `onUpdate` helper can become a no-op.
 - Docs changes can be patched without package release.
 - Zig refactors should not start until test coverage exists.
+
+## Open questions
+
+- Cursor exact current MCP snippet: keep conservative until verified in Cursor docs/app.
+- Claude Desktop: decide whether to document `.mcpb`/Desktop Extension later or keep Blitz docs focused on Claude Code.
+- Pi renderer generics: verify package types before implementation.
+- Whether `details` is serialized into LLM context in every client; keep it compact regardless.
