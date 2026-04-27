@@ -2,10 +2,12 @@ const std = @import("std");
 const bindings = @import("tree_sitter/bindings.zig");
 const backup = @import("backup.zig");
 const file_lock = @import("lock.zig");
+const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
 const Dir = Io.Dir;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 const RenameTarget = struct {
     start: usize,
@@ -148,6 +150,7 @@ pub fn run(
 
     const real_path = try Dir.cwd().realPathFileAlloc(io, file_path, allocator);
     defer allocator.free(real_path);
+    try workspace.enforce(real_path);
 
     if (!isValidIdentifier(new_name)) {
         try stderr.print("Error: invalid new identifier '{s}'\n", .{new_name});
@@ -157,7 +160,7 @@ pub fn run(
     const stat = try Dir.cwd().statFile(io, real_path, .{});
     const original_mtime = stat.mtime;
 
-    const original = try Dir.cwd().readFileAlloc(io, real_path, allocator, .unlimited);
+    const original = try Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES));
     defer allocator.free(original);
 
     var parser = bindings.Parser.init();

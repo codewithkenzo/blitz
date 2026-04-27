@@ -18,6 +18,7 @@ const main = @import("main.zig");
 const metrics = @import("metrics.zig");
 const splice = @import("splice.zig");
 const symbols = @import("symbols.zig");
+const workspace = @import("workspace.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 
 test "import module tests" {
@@ -39,6 +40,7 @@ test "import module tests" {
     _ = metrics;
     _ = splice;
     _ = symbols;
+    _ = workspace;
     _ = bindings;
     try std.testing.expect(true);
 }

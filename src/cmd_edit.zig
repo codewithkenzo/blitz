@@ -5,10 +5,12 @@ const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
 const file_lock = @import("lock.zig");
 const metrics = @import("metrics.zig");
+const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
 const Writer = std.Io.Writer;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 pub fn runReplace(
     allocator: std.mem.Allocator,
@@ -79,8 +81,9 @@ fn runEdit(
 
     const real_path = try std.Io.Dir.cwd().realPathFileAlloc(io, file_path, allocator);
     defer allocator.free(real_path);
+    try workspace.enforce(real_path);
 
-    const original_contents = try std.Io.Dir.cwd().readFileAlloc(io, real_path, allocator, .unlimited);
+    const original_contents = try std.Io.Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES));
     defer allocator.free(original_contents);
 
     const apply_result = edit_support.applyToSource(

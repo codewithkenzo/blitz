@@ -3,11 +3,13 @@ const std = @import("std");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
+const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
 const Writer = std.Io.Writer;
 const Dir = Io.Dir;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 const EditSpec = struct {
     snippet: []const u8,
@@ -45,8 +47,9 @@ pub fn run(
 
     const real_path = try Dir.cwd().realPathFileAlloc(io, file_path, allocator);
     defer allocator.free(real_path);
+    try workspace.enforce(real_path);
 
-    const original_contents = try Dir.cwd().readFileAlloc(io, real_path, allocator, .unlimited);
+    const original_contents = try Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES));
     defer allocator.free(original_contents);
 
     const cache_dir = try backup.defaultCacheDir(allocator);

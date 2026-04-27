@@ -1,6 +1,7 @@
 const std = @import("std");
 const backup = @import("backup.zig");
 const file_lock = @import("lock.zig");
+const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
@@ -27,6 +28,7 @@ fn runWithCacheDir(
         else => |e| return e,
     };
     defer allocator.free(real_path);
+    try workspace.enforce(real_path);
 
     if (!try backup.exists(cache_dir, real_path)) {
         try writeMessage(stderr, "No undo history for {s}. Nothing to revert.\n", .{file_path});

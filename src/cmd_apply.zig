@@ -5,11 +5,13 @@ const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
 const file_lock = @import("lock.zig");
 const symbols = @import("symbols.zig");
+const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
 const Writer = std.Io.Writer;
 const Dir = Io.Dir;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 const ApplyOperation = enum {
     replace_body_span,
@@ -200,8 +202,11 @@ pub fn run(
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     defer allocator.free(real_path);
+    workspace.enforce(real_path) catch |err| {
+        return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
 
-    const original = Dir.cwd().readFileAlloc(io, real_path, allocator, .unlimited) catch |err| {
+    const original = Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES)) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     defer allocator.free(original);

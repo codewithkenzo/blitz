@@ -11,9 +11,11 @@ const cmd_batch = @import("cmd_batch.zig");
 const cmd_apply = @import("cmd_apply.zig");
 const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
+const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
 
-pub const version = "0.1.0-alpha.6";
+pub const version = "0.1.0-alpha.7";
+const MAX_STDIN_BYTES = 4 * 1024 * 1024;
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
@@ -59,6 +61,38 @@ pub fn main(init: std.process.Init) !void {
                 break :blk 1;
             };
             break :blk try cmd_read.run(gpa, io, file, stdout, stderr);
+        }
+
+        if (std.mem.eql(u8, cmd, "--workspace-root")) {
+            const root = it.next() orelse {
+                try stderr.writeAll("blitz: --workspace-root expects a path\n");
+                break :blk 1;
+            };
+            workspace.setRoot(root);
+            const next_cmd = it.next() orelse {
+                try stderr.writeAll("blitz: --workspace-root requires a command\n");
+                break :blk 1;
+            };
+            if (std.mem.eql(u8, next_cmd, "read")) {
+                const file = it.next() orelse {
+                    try stderr.writeAll("blitz read: missing <file> argument\n");
+                    break :blk 1;
+                };
+                break :blk try cmd_read.run(gpa, io, file, stdout, stderr);
+            }
+            if (std.mem.eql(u8, next_cmd, "edit")) break :blk try dispatchEdit(gpa, io, &it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "batch-edit")) break :blk try dispatchBatch(gpa, io, &it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "apply")) break :blk try dispatchApply(gpa, io, &it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "rename")) break :blk try dispatchRename(gpa, io, &it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "undo")) {
+                const file = it.next() orelse {
+                    try stderr.writeAll("blitz undo: missing <file> argument\n");
+                    break :blk 1;
+                };
+                break :blk try cmd_undo.run(gpa, io, file, stdout, stderr);
+            }
+            try stderr.print("blitz: unknown command '{s}'. See `blitz --help`.\n", .{next_cmd});
+            break :blk 1;
         }
 
         if (std.mem.eql(u8, cmd, "edit")) {
@@ -292,6 +326,7 @@ fn readAllStdin(gpa: std.mem.Allocator, io: std.Io) ![]u8 {
         var chunk: [4096]u8 = undefined;
         const n = try reader.readSliceShort(&chunk);
         if (n == 0) break;
+        if (list.items.len + n > MAX_STDIN_BYTES) return error.StreamTooLong;
         try list.appendSlice(gpa, chunk[0..n]);
     }
 
