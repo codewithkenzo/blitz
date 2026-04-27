@@ -1,7 +1,5 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-
 const blitz = process.env.BLITZ_BIN ?? "blitz";
 const cwd = process.env.BLITZ_WORKSPACE ?? process.cwd();
 
