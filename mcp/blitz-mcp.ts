@@ -145,7 +145,7 @@ const err = (id: JsonRpc["id"], code: number, message: string) => respond({ json
 const handle = (msg: JsonRpc) => {
   try {
     if (msg.method === "initialize") {
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.0" } });
       return;
     }
     if (msg.method === "notifications/initialized") return;

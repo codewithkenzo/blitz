@@ -12,7 +12,7 @@ Ship an AST-aware edit CLI that preserves fastedit's **output-token savings** an
 - **Zero interpreter** — single static Zig 0.16 binary, target 3-5 MB; see §10 for current evidence.
 - **Zero Python** — nothing to install besides the binary.
 - **Cold-call latency target:** sub-20 ms deterministic path. Internal debug/musl runs are roughly 12-13 ms median; release-mode public numbers reflect benchmark runs in §10.
-- **MIT**, Kenzo-owned, ships via npm prebuilts per platform (esbuild/biome pattern).
+- **MIT**, Kenzo-owned. Alpha package currently embeds a local linux-x64-musl binary for smoke; release packaging will move to npm prebuilts per platform (esbuild/biome pattern).
 
 The extension (`@codewithkenzo/pi-blitz`) is a thin Effect v4 wrapper around the binary.
 
