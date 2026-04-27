@@ -122,17 +122,17 @@ Then check `/help` for `pi_blitz_*` tools or run `pi_blitz_doctor`.
 
 Blitz ships a stdio MCP server. You do not need to clone this repo or point at a local binary for normal use. The published MCP entrypoint runs on Node; `bunx` works too.
 
+MCP clients run Blitz as a stdio subprocess. If launched from a project root, Blitz auto-detects the workspace. Otherwise pass `--workspace` in the config. The workspace is the folder Blitz is allowed to edit; paths outside it, including symlink escapes, are rejected.
+
 Use one of these commands in your agent's MCP config:
 
 ```bash
-npx --yes --package=@codewithkenzo/blitz -- blitz-mcp
+npx --yes --package=@codewithkenzo/blitz -- blitz-mcp --workspace /absolute/path/to/your/project
 ```
 
 ```bash
-bunx -p @codewithkenzo/blitz blitz-mcp
+bunx -p @codewithkenzo/blitz blitz-mcp --workspace /absolute/path/to/your/project
 ```
-
-Set `BLITZ_WORKSPACE` to the project root you want Blitz to edit. The server rejects paths that escape this workspace, including symlink escapes.
 
 Claude Code / Claude Desktop (`.mcp.json`):
 
@@ -141,10 +141,7 @@ Claude Code / Claude Desktop (`.mcp.json`):
   "mcpServers": {
     "blitz": {
       "command": "npx",
-      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"],
-      "env": {
-        "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
-      }
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
     }
   }
 }
@@ -158,10 +155,7 @@ Cursor / VS Code (`mcp.json`):
     "blitz": {
       "type": "stdio",
       "command": "npx",
-      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"],
-      "env": {
-        "BLITZ_WORKSPACE": "${workspaceFolder}"
-      }
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "${workspaceFolder}"]
     }
   }
 }
@@ -172,8 +166,7 @@ Codex (`~/.codex/config.toml` or `.codex/config.toml`):
 ```toml
 [mcp_servers.blitz]
 command = "npx"
-args = ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"]
-env = { BLITZ_WORKSPACE = "/absolute/path/to/your/project" }
+args = ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
 ```
 
 Bun version:
@@ -183,10 +176,7 @@ Bun version:
   "mcpServers": {
     "blitz": {
       "command": "bunx",
-      "args": ["-p", "@codewithkenzo/blitz", "blitz-mcp"],
-      "env": {
-        "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
-      }
+      "args": ["-p", "@codewithkenzo/blitz", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
     }
   }
 }

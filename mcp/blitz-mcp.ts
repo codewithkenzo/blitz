@@ -12,9 +12,28 @@ const parseEnvInt = (name: string, fallback: number, min: number, max: number): 
   return value;
 };
 
+const projectMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "build.zig", "go.mod", "deno.json", "bun.lock"];
+
+const argValue = (name: string): string | undefined => {
+  const idx = process.argv.indexOf(name);
+  if (idx < 0) return undefined;
+  const value = process.argv[idx + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${name} expects a path`);
+  return value;
+};
+
+const looksLikeProject = (dir: string): boolean => projectMarkers.some((marker) => existsSync(resolve(dir, marker)));
+
+const resolveWorkspace = (): string => {
+  const explicit = argValue("--workspace") ?? process.env.BLITZ_WORKSPACE;
+  if (explicit) return realpathSync.native(resolve(explicit));
+  const current = realpathSync.native(process.cwd());
+  if (looksLikeProject(current)) return current;
+  throw new Error("Blitz MCP needs a project workspace. Add --workspace /path/to/project, set BLITZ_WORKSPACE, or run from a project root.");
+};
+
 const blitz = findBlitzBinary() ?? "blitz";
-if (!process.env.BLITZ_WORKSPACE) throw new Error("BLITZ_WORKSPACE must be set to the project root");
-const cwd = realpathSync.native(resolve(process.env.BLITZ_WORKSPACE));
+const cwd = resolveWorkspace();
 const timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30_000, 1, 600_000);
 const maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
 const maxBufferedBytes = maxFrameBytes + 4096;
@@ -133,7 +152,7 @@ const handle = (msg: JsonRpc) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.9" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" } });
       return;
     }
     if (msg.method === "notifications/initialized") return;

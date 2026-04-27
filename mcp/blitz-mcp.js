@@ -52,10 +52,28 @@ var parseEnvInt = (name, fallback, min, max) => {
     throw new Error(`${name} must be an integer from ${min} to ${max}`);
   return value;
 };
+var projectMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "build.zig", "go.mod", "deno.json", "bun.lock"];
+var argValue = (name) => {
+  const idx = process.argv.indexOf(name);
+  if (idx < 0)
+    return;
+  const value = process.argv[idx + 1];
+  if (!value || value.startsWith("--"))
+    throw new Error(`${name} expects a path`);
+  return value;
+};
+var looksLikeProject = (dir) => projectMarkers.some((marker) => existsSync2(resolve(dir, marker)));
+var resolveWorkspace = () => {
+  const explicit = argValue("--workspace") ?? process.env.BLITZ_WORKSPACE;
+  if (explicit)
+    return realpathSync.native(resolve(explicit));
+  const current = realpathSync.native(process.cwd());
+  if (looksLikeProject(current))
+    return current;
+  throw new Error("Blitz MCP needs a project workspace. Add --workspace /path/to/project, set BLITZ_WORKSPACE, or run from a project root.");
+};
 var blitz = findBlitzBinary() ?? "blitz";
-if (!process.env.BLITZ_WORKSPACE)
-  throw new Error("BLITZ_WORKSPACE must be set to the project root");
-var cwd = realpathSync.native(resolve(process.env.BLITZ_WORKSPACE));
+var cwd = resolveWorkspace();
 var timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30000, 1, 600000);
 var maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
 var maxBufferedBytes = maxFrameBytes + 4096;
@@ -175,7 +193,7 @@ var handle = (msg) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.9" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" } });
       return;
     }
     if (msg.method === "notifications/initialized")
