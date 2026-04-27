@@ -36,6 +36,7 @@ type Fixture = {
 	relPath: string;
 	intent: (filePath: string) => string;
 	expectedFile: string; // contents after edit
+	blitzGuidance?: string;
 };
 
 const argv = process.argv.slice(2);
@@ -52,6 +53,7 @@ const iters = parseInt(argFlag("--iters", "1"), 10);
 const verbose = argv.includes("--verbose");
 const timeoutMs = parseInt(argFlag("--timeout-ms", "60000"), 10);
 const caseFilter = argFlag("--case", "");
+const laneFilter = argFlag("--lane", "") as Lane | "";
 
 const fixtureDir = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -63,10 +65,18 @@ Goal: change the body of the smallTarget function so it returns "hello " followe
 Original file contents:
 ${src}`;
 
-const buildHugeIntent = (filePath: string, src: string): string =>
-	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+const buildHugeIntent = (filePath: string, src: string, symbol = "hugeCompute"): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
 
-Goal: change the final return statement of the hugeCompute function from \`return total;\` to \`return total + 1;\`. Leave every other line unchanged.
+Goal: change the final return statement of the ${symbol} function from \`return total;\` to \`return total + 1;\`. Leave every other line unchanged.
+
+Original file contents:
+${src}`;
+
+const buildWrapIntent = (filePath: string, src: string, symbol = "mediumCompute"): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
+
+Goal: wrap the entire body of the ${symbol} function in a try/catch. Preserve every existing statement inside the try block unchanged. In the catch block, call console.error(error); then throw error.
 
 Original file contents:
 ${src}`;
@@ -77,6 +87,20 @@ const FIXTURES: Fixture[] = [
 		relPath: "small.ts",
 		intent: (p: string) => buildSmallIntent(p, smallSrc),
 		expectedFile: "",
+	},
+	{
+		id: "medium-10k/marker-tail",
+		relPath: "medium.ts",
+		intent: (p: string) => buildHugeIntent(p, mediumSrc, "mediumCompute"),
+		expectedFile: "",
+	},
+	{
+		id: "medium-10k/wrap-body",
+		relPath: "medium.ts",
+		intent: (p: string) => buildWrapIntent(p, mediumSrc, "mediumCompute"),
+		expectedFile: "",
+		blitzGuidance:
+			"For this edit, use compact body-marker shape: `  try {\\n    let total = seed;\\n    // ... existing code ...\\n    return total;\\n  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }`.",
 	},
 	{
 		id: "huge-100k/marker-tail",
@@ -95,11 +119,31 @@ const smallExpected = smallSrc.replace(
   return "hello " + name.toUpperCase();
 }`,
 );
+const mediumSrc = await readFile(join(fixtureDir, "medium.ts"), "utf8");
+const mediumExpected = mediumSrc.replace("  return total;", "  return total + 1;");
+const mediumWrapExpected = mediumSrc.replace(
+	`function mediumCompute(seed: number): number {
+  let total = seed;`,
+	`function mediumCompute(seed: number): number {
+  try {
+    let total = seed;`,
+).replace(
+	`  return total;
+}`,
+	`    return total;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}`,
+);
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
 
 FIXTURES[0]!.expectedFile = smallExpected;
-FIXTURES[1]!.expectedFile = hugeExpected;
+FIXTURES[1]!.expectedFile = mediumExpected;
+FIXTURES[2]!.expectedFile = mediumWrapExpected;
+FIXTURES[3]!.expectedFile = hugeExpected;
 
 const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
 
@@ -258,7 +302,16 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 	const original = await readFile(join(fixtureDir, fx.relPath), "utf8");
 	await writeFile(targetPath, original, "utf8");
 
-	const prompt = fx.intent(targetPath);
+	let prompt = fx.intent(targetPath);
+	if (lane === "blitz") {
+		let guidance = "pi_blitz_edit guidance: use replace with only the symbol name. The snippet is only the function body; blitz preserves the signature. For large unchanged bodies, use a keep marker like // ... existing code ... and do not repeat unchanged lines.";
+		if (fx.blitzGuidance) {
+			guidance += ` ${fx.blitzGuidance}`;
+		} else if (fx.id.includes("marker-tail")) {
+			guidance += " For this edit, use the compact body snippet shape: `  let total = seed;\\n  // ... existing code ...\\n  return total + 1;`.";
+		}
+		prompt = `${guidance}\n\n${prompt}`;
+	}
 	const r = runPi(lane, prompt, targetDir);
 	if (r.status !== 0) {
 		if (verbose) console.error(`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
@@ -295,6 +348,7 @@ const main = async () => {
 	console.log(`Iterations: ${iters}`);
 	console.log(`Timeout per Pi run: ${timeoutMs}ms`);
 	if (caseFilter) console.log(`Case filter: ${caseFilter}`);
+	if (laneFilter) console.log(`Lane filter: ${laneFilter}`);
 	console.log(`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`);
 	console.log("");
 
@@ -314,8 +368,9 @@ const main = async () => {
 		: FIXTURES;
 	if (selectedFixtures.length === 0) throw new Error(`no fixtures match --case ${caseFilter}`);
 
+	const selectedLanes = laneFilter ? [laneFilter] : (["core", "blitz"] as Lane[]);
 	for (const fx of selectedFixtures) {
-		for (const lane of ["core", "blitz"] as Lane[]) {
+		for (const lane of selectedLanes) {
 			const runs: LaneResult[] = [];
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx);
@@ -342,8 +397,9 @@ const main = async () => {
 
 	console.log("");
 	for (const fx of selectedFixtures) {
-		const core = rows.find((r) => r.fixture === fx.id && r.lane === "core")!;
-		const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz")!;
+		const core = rows.find((r) => r.fixture === fx.id && r.lane === "core");
+		const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz");
+		if (!core || !blitz) continue;
 		const savedOutput = core.outputMedian
 			? 100 * (1 - blitz.outputMedian / core.outputMedian)
 			: 0;
