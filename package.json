@@ -13,18 +13,27 @@
     "bin/blitz.js",
     "mcp/blitz-mcp.ts",
     "scripts/mcp-smoke.ts",
+    "scripts/resolve-platform-bin.js",
     "README.md",
     "LICENSE",
     "NOTICE.md",
     "docs/blitz.md"
   ],
+  "optionalDependencies": {
+    "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.0",
+    "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.0",
+    "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.0",
+    "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.0",
+    "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.0"
+  },
   "scripts": {
     "bench": "bun bench/run.ts",
     "bench:llm": "bun bench/llm-tokens.ts",
     "bench:large": "bun bench/deep-large-symbol.ts",
     "bench:small-target": "bun bench/deep-small-target.ts",
     "smoke:mcp": "bun scripts/mcp-smoke.ts",
-    "pack:check": "npm pack --dry-run --json"
+    "pack:check": "npm pack --dry-run --json",
+    "pack:linux-x64-musl": "npm pack ./packages/blitz-linux-x64-musl --json"
   },
   "keywords": [
     "ast",

@@ -2,6 +2,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { findBlitzBinary } from "../scripts/resolve-platform-bin.js";
 
 const parseEnvInt = (name: string, fallback: number, min: number, max: number): number => {
   const raw = process.env[name];
@@ -11,7 +12,7 @@ const parseEnvInt = (name: string, fallback: number, min: number, max: number): 
   return value;
 };
 
-const blitz = process.env.BLITZ_BIN ?? "blitz";
+const blitz = findBlitzBinary() ?? "blitz";
 const cwd = realpathSync.native(resolve(process.env.BLITZ_WORKSPACE ?? process.cwd()));
 const timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30_000, 1, 600_000);
 const maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);

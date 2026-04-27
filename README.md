@@ -51,17 +51,17 @@ zig build -Doptimize=ReleaseFast
 ./zig-out/bin/blitz doctor
 ```
 
-### npm wrapper
+### npm
 
 ```bash
 npm install -g @codewithkenzo/blitz
+blitz doctor
 ```
 
-The npm package provides a wrapper. Until native platform packages are published, point it at your local build:
+The npm package installs a small wrapper plus the matching native platform package when available. `BLITZ_BIN` is still supported if you want to point at a custom local build:
 
 ```bash
-export BLITZ_BIN=/abs/path/to/blitz/zig-out/bin/blitz
-blitz doctor
+BLITZ_BIN=/abs/path/to/blitz/zig-out/bin/blitz blitz doctor
 ```
 
 ## Basic CLI usage
