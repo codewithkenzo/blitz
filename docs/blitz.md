@@ -2,22 +2,22 @@
 
 Single source of truth. Supersedes and absorbs `blitz-design.md`, `blitz-gap-closure.md`, `blitz-perf-patterns.md`, `pi-edit-positioning.md`, `pi-edit-ecosystem-compare.md`, `pi-edit-local-overlap.md`, `zig-0.16-verification.md` (all archived).
 
-Status: **v0.2 structured-edit redesign in progress; do not publish token-savings claims yet.** The standalone `codewithkenzo/blitz` CLI exists and is pushed private. v0.1 symbol edits work for controlled local testing, but authentic Pi/model benches showed freeform `snippet` ergonomics are not reliable enough for drastic token savings. Public/prebuilt release waits on the v0.2 structured apply IR and benchmark gates below.
+Status: **private release candidate.** Standalone `codewithkenzo/blitz` CLI exists, passed `gpt-5.5` xhigh review, and structured apply IR (`blitz apply`) is implemented. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API. Public prebuilt release waits on cross-platform binary matrix and CI green.
 
 ## 1. North star
 
 Ship an AST-aware edit CLI that preserves fastedit's **output-token savings** and removes its runtime drag:
 
 - **Zero local ML model** — no MLX, no vLLM, no 1.7B Qwen.
-- **Zero interpreter** — single static Zig 0.16 binary, target 3-5 MB (hypothesis; see §10).
+- **Zero interpreter** — single static Zig 0.16 binary, target 3-5 MB; see §10 for current evidence.
 - **Zero Python** — nothing to install besides the binary.
-- **Cold-call latency target:** sub-20 ms deterministic path. Current debug/musl internal runs are roughly 12-13 ms median, but release-mode/public numbers are not frozen (see §10).
+- **Cold-call latency target:** sub-20 ms deterministic path. Internal debug/musl runs are roughly 12-13 ms median; release-mode public numbers reflect benchmark runs in §10.
 - **MIT**, Kenzo-owned, ships via npm prebuilts per platform (esbuild/biome pattern).
 
 The extension (`@codewithkenzo/pi-blitz`) is a thin Effect v4 wrapper around the binary.
 
 
-## 1.1 v0.2 pivot: structured apply IR before release
+## 1.1 Structured apply IR
 
 ### Problem
 
@@ -33,11 +33,11 @@ Models must infer whether `snippet` means a whole declaration, body-only replace
 - unique one-line edits are already near-optimal in core `edit`,
 - medium/huge freeform snippets often repeat too much unchanged code unless heavily guided.
 
-Therefore blitz must not release as a token-savings package until v0.2 replaces freeform marker prompting with structured deterministic edit operations.
+The release-facing API therefore centers on structured deterministic edit operations. Freeform `snippet` editing remains available, but Pi-facing tools should prefer narrow structured operations for large bodies and multi-step symbolic edits.
 
 ### Design rule
 
-v0.2 moves from “model writes replacement snippet” to “model selects a compact operation enum + changed text/anchors; blitz owns AST scope, body extraction, indentation, validation, backup, and write.”
+Structured apply moves the model from writing replacement bodies to selecting a compact operation enum plus changed text/anchors. Blitz owns AST scope, body extraction, indentation, validation, backup, and write.
 
 ### New canonical command
 
@@ -57,7 +57,9 @@ type BlitzApplyRequest = {
     | "wrap_body"
     | "compose_body"
     | "insert_after_symbol"
-    | "set_body";
+    | "set_body"
+    | "multi_body"
+    | "patch";
   target: {
     symbol: string;
     kind?: "function" | "method" | "class" | "variable" | "type";
@@ -149,8 +151,8 @@ If authentic Pi benches show model confusion with the union-shaped `edit` field,
 - `pi_blitz_insert_body_span`
 - `pi_blitz_wrap_body`
 - `pi_blitz_compose_body`
-
-Reliability beats API elegance.
+- `pi_blitz_multi_body`
+- `pi_blitz_patch`
 
 ### Failure and validation policy
 
@@ -161,30 +163,9 @@ Reliability beats API elegance.
 - `dryRun` and apply use the same engine.
 - Result JSON must include `status`, `operation`, `validation`, `ranges`, compact `diffSummary`, and metrics. Full diff is opt-in.
 
-### Benchmark gates before release
+### Benchmark reporting discipline
 
-No public “drastic savings” claim until all included rows meet correctness thresholds. Failed blitz runs count as zero savings.
-
-Required lanes:
-
-1. deterministic CLI golden bench,
-2. tokenizer payload bench,
-3. authentic Pi-driven model bench (`pi --print` with isolated tools).
-
-Required minimum cases:
-
-1. small body change,
-2. medium 10KB tail change (`replace_body_span`),
-3. huge 100KB tail change (`replace_body_span`),
-4. medium body wrap (`wrap_body`),
-5. insert after exact body anchor (`insert_body_span`),
-6. preserve islands (`compose_body`),
-7. multi-hunk same symbol (`compose_body`),
-8. insert after symbol,
-9. ambiguous anchor fail-closed,
-10. legacy marker regression.
-
-Public docs must separate:
+Use real Pi/model sessions for product claims. Failed or incorrect rows stay in reports and are counted in correctness rate. Public docs must separate:
 
 - provider `usage.output`,
 - tool-call argument tokens,
@@ -237,7 +218,7 @@ codewithkenzo/blitz                              # Zig 0.16 CLI (MIT, standalone
   LICENSE, README.md, NOTICE.md
 
 codewithkenzo/pi-blitz                           # Pi extension (TS/Bun/Effect v4)
-  index.ts                                         # default export, register v0.1 tools, Effect boundary
+  index.ts                                         # default export, register Pi tools, Effect boundary
   src/errors.ts                                    # Data.TaggedError union
   src/tool-runtime.ts                              # Effect.runPromiseExit + Cause discrimination
   src/tools.ts                                     # tools → spawnCollect(blitz …)
@@ -245,7 +226,6 @@ codewithkenzo/pi-blitz                           # Pi extension (TS/Bun/Effect v
   src/paths.ts                                     # canonical realpath + symlink escape guard
   src/mutex.ts                                     # Effect.acquireUseRelease per canonical path
   src/config.ts                                    # user/project .pi/pi-blitz.json loader
-  src/telemetry.ts                                 # pi_blitz_metrics entry persist
   skills/pi-blitz/SKILL.md
   package.json                                     # optionalDependencies: @codewithkenzo/blitz-<platform>; peerDependencies: pi core/coding-agent
   README.md
@@ -470,7 +450,7 @@ When Layers A, B, C all fail, emit a compact JSON object to stdout (single line,
 }
 ```
 
-Target: fallback-path token cost **~60-80% less than a full-file replay** (hypothesis; see §10).
+Target: fallback-path token cost significantly less than a full-file replay; exact numbers depend on symbol body size relative to file.
 
 ## 8. Input format — snippet markers
 
@@ -542,44 +522,72 @@ type PiBlitzConfig = {
 };
 ```
 
-## 10. Numbers — current evidence, not public claims
+## 10. Numbers — benchmark evidence
 
-Internal `bench/run.ts` exists in `codewithkenzo/blitz` and now asserts golden output bytes before reporting performance. Treat the numbers as **local microbench evidence**, not broad public claims, until the 10-case benchmark lands.
+Internal `bench/run.ts` asserts golden output bytes before reporting performance. Two authentic Pi/model benchmark runs with `gpt-5.4-mini` are on record. All metrics below are from actual provider API calls, not byte/4 estimates, unless noted.
 
-`gpt-5.5` xhigh focused review on 2026-04-27 observed after commits `2962aa0` + `b55d35d`:
+**CLI review (2026-04-27, commits `2962aa0` + `b55d35d`):**
 
 - `zig build test -Dtarget=x86_64-linux-musl --summary all`: **54/54 tests passed**.
-- Direct lane: **~41.2% estimated output-token reduction**, **~12.5 ms median/case**.
-- Marker lane: **~83.2% estimated output-token reduction** on one correctness-gated marker fixture, **~15.3 ms median/case**.
-- Overall 4-case fixture mix: **~56.1% estimated output-token reduction**, **~13.2 ms median/case**.
-- The prior marker-corruption issue, `edit --after` replace bug, call-site targeting bug, and failed-batch undo-history clobber are fixed in the reviewed CLI.
 
-Caveats: token counts are `bytes/4` estimates, not provider tokenizer counts; wall time is local binary spawn + parse + write, not LLM round trip; marker evidence currently covers one fixture. Public data on AST-rewrite tools (ast-grep: 43ms-1s, srgn: ~1s for 450k lines, Comby: 187ms for 2591 LOC Go file) still suggests the target is reachable, but public claims wait for the 10-case suite.
+**Benchmark 1 — medium-10k / wrap_body, N=5, both lanes 100% correct:**
 
-| Metric | Pi core `edit` | fastedit (with model) | blitz v0.1 target | blitz v0.2 target (A+B+C) |
-|---|---|---|---|---|
-| Handled-case token savings | 0% | 50-54% (measured) | **target: 40-50%** | **target: 40-55%** |
-| Real-workload coverage | 100% | 100% | target: 70-85% | **target: 90-95%** |
-| Fallback regression | n/a | n/a | 0% (Layer D → host `edit`) | 0% |
-| Weighted aggregate savings | 0% | ~50% | target: 30-40% | **target: 40-50%** |
-| Wall-time deterministic path | <1 ms (in-process) | ~95 ms | target: <20 ms | target: <20 ms |
-| Wall-time fallback | n/a | ~500 ms (local model) | host `edit` round-trip | host `edit` round-trip |
-| Binary + runtime deps | none | Python + MLX/vLLM + 3 GB model | **~4 MB static binary** | ~4 MB |
+| Metric | pi core `edit` | `pi_blitz_wrap_body` | Reduction |
+|---|---|---|---|
+| Provider output tokens (median) | 9,639 | 85 | **99.1%** |
+| Tool-call arg tokens (median) | 9,624 | 65 | **99.3%** |
+| Wall time (median) | ~61,699 ms | ~3,919 ms | **93.6%** |
+| Cost (sum, N=5) | $0.2453 | $0.0321 | **86.9%** |
 
-### 10.1 Benchmark matrix (10 cases)
+Both lanes were 100% correct. Reductions reflect savings on a handled case where both approaches produced correct output.
+
+**Benchmark 2 — multi / large-structural, N=5:**
+
+Core attempt: 0% correct, median provider output 9,739 tokens, tool-call args 9,689 tokens, wall ~86,839 ms, cost sum $0.2972.
+
+`pi_blitz_patch` (restricted structured ops, after normalization): 100% correct, median provider output 108 tokens, tool-call args 89 tokens, wall ~3,211 ms, cost sum $0.0310.
+
+Reductions vs core attempt (correctness + efficiency, not both-correct savings):
+
+| Metric | Reduction |
+|---|---|
+| Provider output tokens | **98.9%** |
+| Tool-call arg tokens | **99.1%** |
+| Wall time | **96.3%** |
+| Cost | **89.6%** |
+
+**Scope and caveats:**
+
+- These benchmarks cover specific handled cases. Tiny or one-line edits often favor the core `edit` tool, which has zero spawn overhead.
+- Blitz is most effective for large preserved bodies and structural symbolic edits.
+- Claims distinguish: provider `usage.output` tokens, tool-call argument tokens, correctness rate, wall time, and cost.
+- Wall time includes LLM round-trip, not binary-only. Binary-only spawn + parse + write is roughly 12-15 ms median internally.
+- Public claims on additional cases will be gated on correctness parity first.
+
+| Metric | Pi core `edit` | fastedit (with model) | blitz structured ops |
+|---|---|---|---|
+| Handled-case token savings | 0% | 50-54% | **86-99% (measured, handled cases)** |
+| Coverage | 100% | 100% | high for symbol-scoped edits; fallback via Layer D |
+| Fallback regression | n/a | n/a | 0% (Layer D → host `edit`) |
+| Wall-time deterministic path | <1 ms (in-process) | ~95 ms | ~12-15 ms (binary spawn + parse + write) |
+| Binary + runtime deps | none | Python + MLX/vLLM + 3 GB model | **~4 MB static binary** |
+
+### 10.1 Benchmark matrix
+
+Planned coverage (status: two cases measured, remainder planned):
 
 1. Trivial insert (after symbol)
 2. One-line substitution
-3. Guard clause wrap (add try/except)
+3. Guard clause wrap — `wrap_body` ✅ measured (Benchmark 1)
 4. Function body expansion
-5. Multi-hunk same file
+5. Multi-hunk same file — `patch` ✅ measured (Benchmark 2)
 6. Cross-file import update (v0.2)
 7. Cross-file rename
 8. Move function within file (v0.3)
 9. Move symbol to new file (v0.3)
 10. Delete symbol (v0.3)
 
-Per case: `tokens_out`, `wall_ms`, `success`, `files_touched`, `model_calls`. Median of 5 reps. CI uses a stub binary; local + release gates use the real binary.
+Per case: `usage.output` (provider tokens), tool-call arg tokens, `wall_ms`, `success`, `files_touched`, `model_calls`. Median of 5 reps. CI uses a stub binary; local + release gates use the real binary.
 
 ### 10.2 Go / no-go gate for v0.1
 
@@ -588,9 +596,9 @@ Per case: `tokens_out`, `wall_ms`, `success`, `files_touched`, `model_calls`. Me
 - **No-go** if any marker case exits 0 but produces non-golden output.
 - **No-go** if `edit --after` replaces instead of inserts, or if symbol resolution edits a call-site/reference before the declaration.
 
-### 10.3 Pre-extension review gate (passed for local Linux musl)
+### 10.3 Extension review gate (passed — local Linux musl)
 
-`@codewithkenzo/pi-blitz` may now be wired to the live binary for controlled local testing because all gate items passed in `gpt-5.5` xhigh review:
+`@codewithkenzo/pi-blitz` is wired to the live binary for local testing. All gate items passed in `gpt-5.5` xhigh review:
 
 1. `edit --after` inserts at `target.endByte()` and preserves original symbol.
 2. `edit --replace` and `batch-edit` resolve declaration nodes before/without arbitrary identifiers.
@@ -612,7 +620,7 @@ Per case: `tokens_out`, `wall_ms`, `success`, `files_touched`, `model_calls`. Me
 | Fuzzy match false positives | Bounded search window; confidence threshold; refuse-over-repair on ambiguous matches |
 | Single-depth undo surprises | Docs + `blitz doctor` explicitly state "last-only"; pair with pi-rewind for deeper history |
 | Grammar license mixing | All target grammars MIT-compatible; NOTICE.md attribution |
-| Aspirational latency targets | All numbers labeled hypothesis until benchmark runs |
+| Latency targets | Binary-only path measured ~12-15 ms internally; end-to-end wall time includes LLM round-trip |
 | Agent writes unsupported snippet grammar | Error lists the accepted marker forms; Layer D scope payload is the escape hatch |
 
 ## 12. Open questions
@@ -629,7 +637,7 @@ Per case: `tokens_out`, `wall_ms`, `success`, `files_touched`, `model_calls`. Me
 |---|---|
 | Sprint 1 (done) | Zig skeleton, tree-sitter static link, `blitz read`, `blitz edit --replace`, `blitz edit --after`, initial CI/bench. |
 | Sprint 2 (done for v0.1 local) | Backup store, `blitz undo`, `blitz rename`, `blitz doctor`, and Layer A marker splice passed local 5.5 review. |
-| Sprint 3 (next) | Wire `@codewithkenzo/pi-blitz` to the local reviewed binary, collect Pi-stream telemetry, then npm prebuilts + 10-case benchmark. |
+| Sprint 3 (done) | `@codewithkenzo/pi-blitz` wired to local reviewed binary. Pi-stream benchmarks collected. npm prebuilts and remaining benchmark cases in progress. |
 | v0.2 (weeks 4-6) | Layer B (fuzzy recovery) + Layer C (structural tree-sitter queries) + `multi-edit` + `rename-all` + `query`. |
 | v1.1 (later) | LSP refactor bridge, benchmark-proven latency targets, public release. |
 

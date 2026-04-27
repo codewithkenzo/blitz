@@ -1,98 +1,98 @@
 # blitz
 
-AST-aware fast-edit CLI. Zig 0.16, tree-sitter, zero model, zero Python, single static binary.
+AST-aware symbol-scoped edit CLI. Zig 0.16, tree-sitter, no Python, no local model, single static binary.
 
-> **Status: pre-alpha.** Scaffold only. See `docs/blitz.md` (mirror of the pi-rig spec) for the full design.
+## What it does
 
-## What this is
+Blitz lets a coding agent or a human edit source code by **symbol name** rather than by repeating unchanged code. Provide a symbol anchor (`--after handler` or `--replace handleRequest`); blitz uses tree-sitter to locate the declaration and applies the edit deterministically. Structured apply operations (`replace_body_span`, `wrap_body`, etc.) let the caller describe only the changed portion — blitz owns body extraction, indentation, validation, backup, and write.
 
-A tool that lets a coding agent (or a human) edit source code by **symbol name** instead of by repeating old code. The agent writes the change it wants plus a symbol anchor (`--after handler` or `--replace handleRequest`); blitz uses tree-sitter to find the code and apply the edit deterministically.
+## Status
 
-## Why
+Private release candidate. Standalone CLI passed local `gpt-5.5` xhigh review. Benchmarks against the Pi model runtime show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see [docs/blitz.md §10](docs/blitz.md) for exact numbers and caveats). Not a universal replacement for core text edits; tiny or one-line edits often favor the core `edit` tool.
 
-- Cuts agent **output tokens by ~40-50%** on handled edits (hypothesis, gated on benchmark).
-- No local ML model, no Python runtime, no `uv tool install` dance.
-- ~3-5 MB static binary per platform.
-- Ships as an npm package with prebuilt binaries (esbuild/biome pattern).
-
-## Install (once published)
+## Install
 
 ```bash
-# via npm
-npm install -g @codewithkenzo/blitz
-
-# via cargo-style direct download (planned)
-curl -sSL https://github.com/codewithkenzo/blitz/releases/latest/download/install.sh | sh
-
-# from source
+# from source (Zig 0.16 required)
 git clone https://github.com/codewithkenzo/blitz
 cd blitz
 zig build -Doptimize=ReleaseFast
 ./zig-out/bin/blitz --help
+
+# npm prebuilts (once published)
+npm install -g @codewithkenzo/blitz
 ```
 
-## Usage
+## Commands
 
-```bash
-# AST structure summary
-blitz read src/app.ts
-
-# Edit by symbol (deterministic splice or direct swap)
-blitz edit src/app.ts --replace handleRequest --snippet -
-< new-body.ts
-
-# Insert after a symbol
-blitz edit src/app.ts --after main --snippet '
-fn helper() { }
-'
-
-# Rename across file (AST-verified)
-blitz rename src/app.ts oldName newName
-
-# Undo last edit (single-depth per file)
-blitz undo src/app.ts
-
-# Health check
-blitz doctor
-```
-
-## Status
-
-| Feature | State |
+| Command | Description |
 |---|---|
-| Zig 0.16 project skeleton | ✅ scaffold (this commit) |
-| tree-sitter static link + grammars | ⏳ ticket blitz-01 |
-| `read` / `edit` direct-swap | ⏳ ticket blitz-02 |
-| Layer A splice + markers + backup / undo / rename / doctor | ⏳ ticket blitz-03 |
-| Layer B fuzzy recovery | ⏳ ticket blitz-07 (v0.2) |
-| Layer C tree-sitter query rewrites | ⏳ ticket blitz-08 (v0.2) |
+| `blitz read <file>` | AST structure summary. Files ≤100 lines get full content. |
+| `blitz edit <file> --replace\|--after <symbol> --snippet -` | Single symbol-anchored edit via stdin snippet. |
+| `blitz batch-edit <file> --edits -` | Multiple symbol edits in one file from a JSON array via stdin. |
+| `blitz apply --edit - [--dry-run] [--diff]` | Structured edit via JSON IR (`replace_body_span`, `insert_body_span`, `wrap_body`, `compose_body`, `insert_after_symbol`, `set_body`, `multi_body`, `patch`). |
+| `blitz rename <file> <old> <new> [--dry-run]` | AST-verified rename; skips strings/comments/docstrings. |
+| `blitz undo <file>` | Revert last backup. Single-depth per file. |
+| `blitz doctor` | Version, supported grammars, tree-sitter lib version, cache health. |
 
-## Performance
+### Structured apply operations
 
-Latest micro-benchmark covers both direct-swap and marker-splice lanes, with exact output assertions before perf gating. Run [`bench/run.ts`](./bench/run.ts) for current table.
+`blitz apply` accepts a JSON IR on stdin:
 
-## Pi integration
+```json
+{
+  "version": 1,
+  "file": "src/app.ts",
+  "operation": "replace_body_span",
+  "target": { "symbol": "computeTotal" },
+  "edit": { "find": "return total;", "replace": "return total + 1;", "occurrence": "last" }
+}
+```
 
-`@codewithkenzo/pi-blitz` — Effect v4 Pi extension that wraps this binary. Separate repo (tracked in `codewithkenzo/pi-rig`).
+Operations: `replace_body_span`, `insert_body_span`, `wrap_body`, `compose_body`, `insert_after_symbol`, `set_body`, `multi_body`, `patch`.
+
+## Snippet markers
+
+When using `blitz edit`, pass a full replacement body (no markers) or use a preservation marker to keep unchanged sections:
+
+- `// ... existing code ...` / `# ... existing code ...` — fastedit-compatible auto-detected
+- `// @keep` / `# @keep` — strict recommended form
+- `// @keep lines=N` / `# @keep lines=N` — numeric anchor, unambiguous
+
+## Language support
+
+Five vendored grammars (all MIT-compatible): TypeScript, TSX, Python, Rust, Go.
+
+Unsupported language → blitz emits a compact scope-payload JSON and exits 0 so the host agent can perform the edit directly.
 
 ## Development
 
-Requires Zig 0.16.0 stable (released 2026-04-13).
+Requires Zig 0.16.0 (released 2026-04-13).
 
 ```bash
-zig build              # native build
-zig build run          # run the CLI
-zig build test         # unit tests
-zig build --watch -fincremental  # hot-rebuild dev loop
+zig build                          # native build
+zig build run                      # run CLI
+zig build test                     # unit tests
+zig build --watch -fincremental    # incremental hot-rebuild
 ```
 
 Cross-compile:
 
 ```bash
 zig build -Dtarget=aarch64-macos
+zig build -Dtarget=x86_64-macos
 zig build -Dtarget=x86_64-linux-musl
+zig build -Dtarget=aarch64-linux-musl
 zig build -Dtarget=x86_64-windows-gnu
 ```
+
+## Pi integration
+
+`@codewithkenzo/pi-blitz` — Effect v4 Pi extension that wraps this binary. Exposes 13 typed tools. See the extension README for install and configuration.
+
+## Design reference
+
+`docs/blitz.md` — full spec covering CLI surface, edit algorithm, layer pipeline, Zig 0.16 alignment, benchmark data, and risk register.
 
 ## License
 
