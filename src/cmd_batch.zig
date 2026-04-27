@@ -52,11 +52,6 @@ pub fn run(
     const cache_dir = try backup.defaultCacheDir(allocator);
     defer allocator.free(cache_dir);
 
-    backup.store(allocator, io, cache_dir, real_path, original_contents) catch |err| {
-        try stderr.print("failed to create backup: {s}\n", .{@errorName(err)});
-        return 1;
-    };
-
     var working_contents = try allocator.dupe(u8, original_contents);
     defer allocator.free(working_contents);
 
@@ -65,14 +60,12 @@ pub fn run(
         const has_replace = edit.replace != null;
 
         if ((has_after and has_replace) or (!has_after and !has_replace)) {
-            dropBackup(cache_dir, real_path);
             try stderr.print("edit[{d}]: exactly one of 'after' or 'replace' must be set\n", .{edit_index});
             return 1;
         }
 
         const symbol = edit.after orelse edit.replace.?;
         if (edit.snippet.len == 0) {
-            dropBackup(cache_dir, real_path);
             try stderr.print("edit[{d}]: snippet must be non-empty\n", .{edit_index});
             return 1;
         }
@@ -86,7 +79,6 @@ pub fn run(
             edit.snippet,
             mode,
         ) catch |err| {
-            dropBackup(cache_dir, real_path);
             switch (err) {
                 error.ParseFailed => {
                     try stderr.print("edit[{d}]: edited file does not parse for {s}\n", .{ edit_index, file_path });
@@ -114,8 +106,12 @@ pub fn run(
         working_contents = next;
     }
 
+    backup.store(allocator, io, cache_dir, real_path, original_contents) catch |err| {
+        try stderr.print("failed to create backup: {s}\n", .{@errorName(err)});
+        return 1;
+    };
+
     backup.atomicWrite(allocator, io, real_path, working_contents) catch |err| {
-        dropBackup(cache_dir, real_path);
         try stderr.print("failed to write file: {s}\n", .{@errorName(err)});
         return 1;
     };
@@ -124,10 +120,6 @@ pub fn run(
     const latency_ms = start.durationTo(end).toMilliseconds();
     try stdout.print("Applied {d} edits to {s}. latency: {d}ms, 0 tok/s, 0 tokens\n", .{ edits.len, file_path, latency_ms });
     return 0;
-}
-
-fn dropBackup(cache_dir: []const u8, real_path: []const u8) void {
-    backup.drop(cache_dir, real_path) catch {};
 }
 
 test "batch edit replaces multiple symbols and keeps backup" {
@@ -283,6 +275,47 @@ test "batch edit mixed valid and invalid mode fails and leaves file unchanged" {
     try std.testing.expect(!try backup.exists(cache_dir, abs_path));
 
     try std.testing.expect(std.mem.indexOf(u8, stderr_buf.written(), "edit[1]: exactly one of 'after' or 'replace' must be set") != null);
+    try std.testing.expectEqualStrings("", stdout_buf.written());
+}
+
+test "failed batch preserves existing undo backup" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original = "function greet() {}\n";
+    const prior_snapshot = "function prior() {}\n";
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    const cache_dir = try backup.defaultCacheDir(allocator);
+    defer allocator.free(cache_dir);
+    try backup.store(allocator, io, cache_dir, abs_path, prior_snapshot);
+    defer backup.drop(cache_dir, abs_path) catch {};
+
+    const edits_json =
+        "[{\"snippet\":\"function greet() { return 1; }\",\"replace\":\"greet\"}," ++
+        " {\"snippet\":\"function missing() {}\",\"replace\":\"missing\"}]";
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try run(allocator, io, abs_path, edits_json, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    try std.testing.expectEqualSlices(u8, original, contents);
+
+    const snapshot = try backup.load(allocator, io, cache_dir, abs_path);
+    defer allocator.free(snapshot);
+    try std.testing.expectEqualSlices(u8, prior_snapshot, snapshot);
+    try std.testing.expect(std.mem.indexOf(u8, stderr_buf.written(), "edit[1]: symbol 'missing' not found") != null);
     try std.testing.expectEqualStrings("", stdout_buf.written());
 }
 
