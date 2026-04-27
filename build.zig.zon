@@ -1,6 +1,6 @@
 .{
     .name = .blitz,
-    .version = "0.1.0-alpha.3",
+    .version = "0.1.0-alpha.5",
     .fingerprint = 0xe8a54ff40bfcad73,
     .minimum_zig_version = "0.16.0",
     .paths = .{

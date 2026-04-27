@@ -66,6 +66,13 @@ const bindPath = (file: string): string => {
   throw new Error(`path escapes workspace: ${file}`);
 };
 
+const applyArgs = (args: Record<string, unknown>): string[] => {
+  const argv = ["apply", "--edit", "-", "--json"];
+  if (args.dry_run === true) argv.push("--dry-run");
+  if (args.include_diff === true) argv.push("--diff");
+  return argv;
+};
+
 const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult => {
   switch (name) {
     case "blitz_doctor": return run(["doctor"]);
@@ -74,20 +81,20 @@ const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult 
     case "blitz_patch": {
       const file = bindPath(requiredString(args, "file"));
       if (!Array.isArray(args.ops) || args.ops.length === 0) throw new Error("missing ops array");
-      return run(["apply", "--edit", "-", "--json"], JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops }, dry_run: args.dry_run, include_diff: args.include_diff }));
+      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
     }
     case "blitz_try_catch": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const catchBody = requiredString(args, "catchBody");
       const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
-      return run(["apply", "--edit", "-", "--json"], JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] }, dry_run: args.dry_run, include_diff: args.include_diff }));
+      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
     }
     case "blitz_replace_return": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
-      return run(["apply", "--edit", "-", "--json"], JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...(args.occurrence !== undefined ? [args.occurrence] : [])]] }, dry_run: args.dry_run, include_diff: args.include_diff }));
+      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...(args.occurrence !== undefined ? [args.occurrence] : [])]] } }));
     }
     default: throw new Error(`unknown tool ${name}`);
   }
@@ -104,7 +111,7 @@ const handle = (msg: JsonRpc) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.3" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.5" } });
       return;
     }
     if (msg.method === "notifications/initialized") return;
