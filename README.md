@@ -2,6 +2,8 @@
 
 Fast edits for coding agents. Less token waste, less waiting.
 
+On a 10k-function try/catch wrap benchmark, Blitz used 85 provider output tokens instead of 9,640 and finished in 4.6s instead of 61s.
+
 Blitz lets an agent change a large function without printing the large function back to you. Instead of sending thousands of tokens of replacement code, the model can send a tiny instruction like “wrap `handleRequest` in try/catch” or “replace the last return in `computeTotal`.” Blitz finds the code, applies the change, validates it, and keeps an undo snapshot.
 
 ## Why use it
@@ -30,7 +32,7 @@ Good Blitz edits are usually:
 - doing several small structural edits in one file
 - renaming an identifier without touching comments or strings
 
-On a measured 10k-token function wrap, Blitz reduced model output from 9,640 tokens to 85 tokens and cut wall time from 61s to 4.6s. On a larger three-edit structural patch, Blitz used 107 output tokens where a core edit attempt used 9,708 and failed the expected output. For smaller semantic edits, the savings are smaller but still useful: try/catch wrappers cut tool-call arguments by 66–72%, and return-expression rewrites cut them by 22–28% in the current Pi bench.
+On a larger three-edit structural patch, Blitz used 107 output tokens where a core edit attempt used 9,708 and failed the expected output. For smaller semantic edits, the savings are smaller but still useful: try/catch wrappers cut tool-call arguments by 66–72%, and return-expression rewrites cut them by 22–28% in the current Pi bench.
 
 Small one-line edits still belong to normal text editing tools.
 
