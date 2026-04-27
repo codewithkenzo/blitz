@@ -28,23 +28,27 @@ const Snapshot = struct {
 };
 
 fn getEnvVarOwnedMaybe(allocator: Allocator, name: []const u8) !?[]u8 {
-    if (@hasDecl(std.process, "getEnvVarOwned")) {
-        return @field(std.process, "getEnvVarOwned")(allocator, name);
-    }
-
-    if (@hasDecl(std.posix, "getenv")) {
-        if (std.posix.getenv(name)) |value| {
-            return try allocator.dupe(u8, std.mem.span(value));
-        }
-    }
-
-    return null;
+    // libc getenv (we link libc; std.posix.getenv was removed in Zig 0.16).
+    if (name.len == 0 or name.len > 255) return null;
+    var key_buf: [256]u8 = undefined;
+    @memcpy(key_buf[0..name.len], name);
+    key_buf[name.len] = 0;
+    const key_z: [*:0]const u8 = @ptrCast(&key_buf);
+    const value_ptr = std.c.getenv(key_z) orelse return null;
+    const value = std.mem.span(value_ptr);
+    if (value.len == 0) return null;
+    return try allocator.dupe(u8, value);
 }
 
 pub fn defaultCacheDir(allocator: Allocator) ![]u8 {
-    if (try getEnvVarOwnedMaybe(allocator, "XDG_CACHE_HOME")) |xdg| return xdg;
+    if (try getEnvVarOwnedMaybe(allocator, "XDG_CACHE_HOME")) |xdg| {
+        if (xdg.len > 0) return xdg;
+        allocator.free(xdg);
+    }
 
-    const home = try getEnvVarOwnedMaybe(allocator, "HOME") orelse return error.CacheDirUnavailable;
+    const home = (try getEnvVarOwnedMaybe(allocator, "HOME")) orelse {
+        return error.CacheDirUnavailable;
+    };
     defer allocator.free(home);
     return std.fs.path.join(allocator, &.{ home, ".cache" });
 }
@@ -68,23 +72,18 @@ fn ensureBackupDir(allocator: Allocator, io: Io, cache_dir: []const u8) !Dir {
 
 fn snapshotTarget(allocator: Allocator, io: Io, target_path: []const u8) !Snapshot {
     const real_path = try Dir.cwd().realPathFileAlloc(io, target_path, allocator);
-    errdefer allocator.free(real_path);
+    defer allocator.free(real_path);
 
-    const stat = try Dir.cwd().statFile(io, real_path, .{});
-    const mtime_ns: i128 = @intCast(stat.mtime.nanoseconds);
-
-    var mtime_buf: [64]u8 = undefined;
-    const mtime_text = try std.fmt.bufPrint(&mtime_buf, "{d}", .{mtime_ns});
-
+    // Single-depth backup per file: key on realpath only. Including mtime
+    // would break the post-edit lookup path because atomicWrite changes the
+    // mtime, and undo needs to find the backup we just stored. Matches
+    // fastedit's BackupStore semantics (latest pre-edit snapshot).
     var hasher = std.crypto.hash.sha2.Sha256.init(.{});
     hasher.update(real_path);
-    hasher.update(&.{0});
-    hasher.update(mtime_text);
     const digest = hasher.finalResult();
     const hex = std.fmt.bytesToHex(digest, .lower);
 
     const backup_name = try std.fmt.allocPrint(allocator, "{s}.bak", .{hex[0..]});
-    allocator.free(real_path);
     return .{ .backup_name = backup_name };
 }
 
@@ -254,14 +253,18 @@ test "exists returns false when target not backed up" {
     try std.testing.expect(!try exists(cache_root, target_path));
 }
 
-test "exists returns false after mtime changes" {
+test "exists survives mtime changes (single-depth undo round-trip)" {
+    // With single-depth-per-path keying, a backup must remain reachable
+    // after the target file's mtime changes. The post-edit undo path
+    // depends on this: edit -> store(pre_edit) -> atomicWrite (changes
+    // mtime) -> undo finds the backup.
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
 
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{ .sub_path = "target.txt", .data = "mtime" });
+    try tmp.dir.writeFile(io, .{ .sub_path = "target.txt", .data = "v1" });
 
     const cache_root = try tmp.dir.realPathFileAlloc(io, ".", allocator);
     defer allocator.free(cache_root);
@@ -269,13 +272,13 @@ test "exists returns false after mtime changes" {
     defer allocator.free(target_path);
 
     const old_stat = try tmp.dir.statFile(io, "target.txt", .{});
-    try store(allocator, io, cache_root, target_path, "mtime");
+    try store(allocator, io, cache_root, target_path, "v1");
 
     var file = try tmp.dir.openFile(io, "target.txt", .{ .mode = .read_write });
     defer file.close(io);
     try file.setTimestamps(io, .{ .modify_timestamp = .{ .new = std.Io.Timestamp.fromNanoseconds(old_stat.mtime.nanoseconds + 1) } });
 
-    try std.testing.expect(!try exists(cache_root, target_path));
+    try std.testing.expect(try exists(cache_root, target_path));
 }
 
 test "drop removes backup file" {
