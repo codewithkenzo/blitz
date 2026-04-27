@@ -1,0 +1,7 @@
+# Keep vendored tree-sitter C sources out of GitHub language stats.
+third_party/** linguist-vendored
+grammars/** linguist-vendored
+
+# Generated parser sources should not dominate diffs/stats.
+grammars/**/src/parser.c linguist-generated
+grammars/**/src/scanner.c linguist-generated
