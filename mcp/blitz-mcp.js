@@ -68,7 +68,14 @@ var tools = [
   { name: "blitz_replace_return", description: "Replace a return expression in a symbol body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, expr: { type: "string" }, occurrence: { anyOf: [{ type: "string" }, { type: "number" }] }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "expr"], additionalProperties: false } },
   { name: "blitz_undo", description: "Undo the last Blitz mutation for a file.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } }
 ];
-var jsonText = (text, isError = false) => ({ content: [{ type: "text", text }], ...isError ? { isError: true } : {} });
+var redact = (text) => {
+  let out = text.replaceAll(cwd, "$WORKSPACE");
+  const home = process.env.HOME;
+  if (home)
+    out = out.replaceAll(home, "$HOME");
+  return out;
+};
+var jsonText = (text, isError = false) => ({ content: [{ type: "text", text: redact(text) }], ...isError ? { isError: true } : {} });
 var run = (args, stdin) => {
   const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
     cwd,
@@ -88,7 +95,7 @@ var run = (args, stdin) => {
   const stdout = (result.stdout ?? "").trim();
   const stderr = (result.stderr ?? "").trim();
   const text = result.status === 0 ? stdout : [stdout, stderr ? `stderr:
-${stderr.replaceAll(cwd, "$WORKSPACE")}` : ""].filter(Boolean).join(`
+${stderr}` : ""].filter(Boolean).join(`
 `);
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
 };
@@ -168,7 +175,7 @@ var handle = (msg) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.7" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.8" } });
       return;
     }
     if (msg.method === "notifications/initialized")

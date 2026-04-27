@@ -1,5 +1,6 @@
 const std = @import("std");
 const bindings = @import("tree_sitter/bindings.zig");
+const workspace = @import("workspace.zig");
 
 const Writer = std.Io.Writer;
 
@@ -19,7 +20,11 @@ pub fn run(
         return 0;
     };
 
-    const contents = try readFileAlloc(allocator, io, file_path);
+    const real_path = try std.Io.Dir.cwd().realPathFileAlloc(io, file_path, allocator);
+    defer allocator.free(real_path);
+    try workspace.enforce(real_path);
+
+    const contents = try readFileAlloc(allocator, io, real_path);
     defer allocator.free(contents);
 
     const line_count = countLines(contents);

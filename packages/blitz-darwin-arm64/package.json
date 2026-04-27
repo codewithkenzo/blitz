@@ -1,6 +1,6 @@
 {
   "name": "@codewithkenzo/blitz-darwin-arm64",
-  "version": "0.1.0-alpha.7",
+  "version": "0.1.0-alpha.8",
   "description": "darwin arm64 binary for @codewithkenzo/blitz",
   "license": "MIT",
   "os": [

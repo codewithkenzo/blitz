@@ -16,6 +16,8 @@ pub const LockError = error{
     LockInvalidPath,
 } || anyerror;
 
+const STALE_LOCK_NS: i96 = 5 * std.time.ns_per_min;
+
 pub const FileLock = struct {
     allocator: Allocator,
     io: Io,
@@ -59,6 +61,7 @@ pub fn acquire(allocator: Allocator, io: Io, real_path: []const u8) LockError!Fi
     while (attempts < 600) : (attempts += 1) {
         Dir.cwd().createDir(io, path, .default_dir) catch |err| switch (err) {
             error.PathAlreadyExists => {
+                if (isStale(io, path)) Dir.cwd().deleteDir(io, path) catch {};
                 try Io.sleep(io, Io.Duration.fromMilliseconds(50), Io.Clock.awake);
                 continue;
             },
@@ -67,6 +70,12 @@ pub fn acquire(allocator: Allocator, io: Io, real_path: []const u8) LockError!Fi
         return .{ .allocator = allocator, .io = io, .path = path };
     }
     return error.LockContended;
+}
+
+fn isStale(io: Io, path: []const u8) bool {
+    const stat = Dir.cwd().statFile(io, path, .{}) catch return false;
+    const now = Io.Timestamp.now(io, Io.Clock.awake);
+    return now.nanoseconds > stat.mtime.nanoseconds and now.nanoseconds - stat.mtime.nanoseconds > STALE_LOCK_NS;
 }
 
 test "lock name is stable" {

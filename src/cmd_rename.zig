@@ -265,9 +265,7 @@ test "rename TypeScript identifier in two places and skip string literal" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{
-        .sub_path = "sample.ts",
-        .data =
+    try tmp.dir.writeFile(io, .{ .sub_path = "sample.ts", .data = 
         \\const oldFoo = 1;
         \\console.log(oldFoo);
         \\const s = "oldFoo";
@@ -288,12 +286,13 @@ test "rename TypeScript identifier in two places and skip string literal" {
 
     const contents = try tmp.dir.readFileAlloc(io, "sample.ts", allocator, .unlimited);
     defer allocator.free(contents);
-    try std.testing.expectEqualSlices(u8,
+    try std.testing.expectEqualSlices(
+        u8,
         \\const newFoo = 1;
         \\console.log(newFoo);
         \\const s = "oldFoo";
         \\
-        ,
+    ,
         contents,
     );
 }
@@ -305,9 +304,7 @@ test "rename rejects invalid new identifier" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{
-        .sub_path = "invalid.ts",
-        .data =
+    try tmp.dir.writeFile(io, .{ .sub_path = "invalid.ts", .data = 
         \\const oldFoo = 1;
         \\oldFoo();
         \\
@@ -337,9 +334,7 @@ test "dry_run returns 0 and does not modify file" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{
-        .sub_path = "dry.ts",
-        .data =
+    try tmp.dir.writeFile(io, .{ .sub_path = "dry.ts", .data = 
         \\const oldFoo = 1;
         \\oldFoo();
         \\
@@ -358,11 +353,12 @@ test "dry_run returns 0 and does not modify file" {
 
     const contents = try tmp.dir.readFileAlloc(io, "dry.ts", allocator, .unlimited);
     defer allocator.free(contents);
-    try std.testing.expectEqualSlices(u8,
+    try std.testing.expectEqualSlices(
+        u8,
         \\const oldFoo = 1;
         \\oldFoo();
         \\
-        ,
+    ,
         contents,
     );
 
@@ -377,9 +373,7 @@ test "no occurrences returns 1 with no code references" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{
-        .sub_path = "none.ts",
-        .data =
+    try tmp.dir.writeFile(io, .{ .sub_path = "none.ts", .data = 
         \\const s = "oldFoo";
         \\
     });
@@ -404,9 +398,7 @@ test "real rename writes backup snapshot" {
     const io = std.testing.io;
     const allocator = std.testing.allocator;
 
-    try tmp.dir.writeFile(io, .{
-        .sub_path = "backup.ts",
-        .data =
+    try tmp.dir.writeFile(io, .{ .sub_path = "backup.ts", .data = 
         \\const oldFoo = 1;
         \\oldFoo();
         \\

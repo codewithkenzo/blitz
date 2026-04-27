@@ -32,7 +32,14 @@ const tools = [
   { name: "blitz_undo", description: "Undo the last Blitz mutation for a file.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
 ] as const;
 
-const jsonText = (text: string, isError = false): ToolResult => ({ content: [{ type: "text", text }], ...(isError ? { isError: true } : {}) });
+const redact = (text: string): string => {
+  let out = text.replaceAll(cwd, "$WORKSPACE");
+  const home = process.env.HOME;
+  if (home) out = out.replaceAll(home, "$HOME");
+  return out;
+};
+
+const jsonText = (text: string, isError = false): ToolResult => ({ content: [{ type: "text", text: redact(text) }], ...(isError ? { isError: true } : {}) });
 
 const run = (args: string[], stdin?: string): ToolResult => {
   const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
@@ -52,7 +59,7 @@ const run = (args: string[], stdin?: string): ToolResult => {
   });
   const stdout = (result.stdout ?? "").trim();
   const stderr = (result.stderr ?? "").trim();
-  const text = result.status === 0 ? stdout : [stdout, stderr ? `stderr:\n${stderr.replaceAll(cwd, "$WORKSPACE")}` : ""].filter(Boolean).join("\n");
+  const text = result.status === 0 ? stdout : [stdout, stderr ? `stderr:\n${stderr}` : ""].filter(Boolean).join("\n");
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
 };
 
@@ -126,7 +133,7 @@ const handle = (msg: JsonRpc) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.7" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.8" } });
       return;
     }
     if (msg.method === "notifications/initialized") return;

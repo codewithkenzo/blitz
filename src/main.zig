@@ -14,7 +14,7 @@ const cmd_undo = @import("cmd_undo.zig");
 const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
 
-pub const version = "0.1.0-alpha.7";
+pub const version = "0.1.0-alpha.8";
 const MAX_STDIN_BYTES = 4 * 1024 * 1024;
 
 pub fn main(init: std.process.Init) !void {
@@ -73,6 +73,7 @@ pub fn main(init: std.process.Init) !void {
                 try stderr.writeAll("blitz: --workspace-root requires a command\n");
                 break :blk 1;
             };
+            if (std.mem.eql(u8, next_cmd, "doctor")) break :blk try cmd_doctor.run(gpa, io, stdout);
             if (std.mem.eql(u8, next_cmd, "read")) {
                 const file = it.next() orelse {
                     try stderr.writeAll("blitz read: missing <file> argument\n");
