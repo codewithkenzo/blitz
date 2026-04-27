@@ -90,11 +90,15 @@ Escape check:
 
 ## Current status
 
-This is a working spike, not release-final MCP packaging yet.
+This is a working alpha MCP bridge.
 
-Before release:
+Done:
+
+- stdio config snippet documented in README
+- automated smoke exists at `scripts/mcp-smoke.ts` / `npm run smoke:mcp`
+- smoke covers mutation, absolute escape rejection, and symlink escape rejection
+
+Still later:
 
 - test with Pi MCP adapter / Claude Desktop style config
-- document stdio config snippet in README
-- add automated MCP smoke script
 - consider native `blitz mcp` later, after protocol surface is stable

@@ -712,4 +712,4 @@ External sources this design relies on (URLs frozen at research time):
 Internal:
 - Pi Rig `pi-extension-surface-notes.md` — pi-mono ExtensionAPI reference (shared across plugins).
 - Pi Rig `roadmap.md` — master roadmap (plugin rows).
-- `docs/archive/` — prior Blitz drafts kept for context only.
+- `reports/archive/` — superseded benchmark/report snapshots kept for audit only.

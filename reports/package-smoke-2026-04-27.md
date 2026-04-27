@@ -119,7 +119,7 @@ npm --prefix ./node_modules/@codewithkenzo/blitz run smoke:mcp --silent
 Result:
 
 ```json
-{"ok":true,"frames":4}
+{"ok":true,"frames":5,"symlinkRejected":true}
 ```
 
 ## Remaining package release decisions
