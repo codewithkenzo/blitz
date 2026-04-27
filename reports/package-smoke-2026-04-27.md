@@ -49,7 +49,7 @@ Result: **passed**.
 
 ```text
 blitz doctor
-  version:     0.0.1
+  version:     0.1.0-alpha.0
   stage:       v0.1
   tree-sitter: linked
   grammars:    rust ok, typescript ok, tsx ok, python ok, go ok
@@ -112,7 +112,6 @@ Manual framed JSON-RPC smoke passed in `reports/mcp-stdio-smoke-2026-04-27.md`.
 
 ## Remaining package release decisions
 
-- Align package version with CLI doctor version (`0.1.0-alpha.0` vs doctor `0.0.1`).
 - Decide whether first alpha ships embedded linux-x64-musl binary only or platform optional packages.
-- Add a true postinstall/platform resolution script if using optional packages.
-- Add a real automated MCP protocol smoke script.
+- Add a postinstall/platform resolution script if using optional packages.
+- Keep `scripts/mcp-smoke.ts` as the automated MCP protocol smoke.
