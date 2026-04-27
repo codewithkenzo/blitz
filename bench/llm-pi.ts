@@ -4,7 +4,7 @@
  *
  * For each fixture, runs `pi -p` in two isolated configurations:
  *   core lane:  --no-extensions --no-skills --no-context-files --no-prompt-templates --tools edit
- *   blitz lane: --no-extensions --extension <pi-blitz dist/index.js> --tools pi_blitz_edit
+ *   blitz lane: --no-extensions --extension <pi-blitz dist/index.js> --tools pi_blitz_apply
  *
  * Both lanes get identical prompts that include the file contents inline,
  * so the model never needs a read tool.
@@ -121,22 +121,11 @@ const smallExpected = smallSrc.replace(
 );
 const mediumSrc = await readFile(join(fixtureDir, "medium.ts"), "utf8");
 const mediumExpected = mediumSrc.replace("  return total;", "  return total + 1;");
-const mediumWrapExpected = mediumSrc.replace(
-	`function mediumCompute(seed: number): number {
-  let total = seed;`,
-	`function mediumCompute(seed: number): number {
-  try {
-    let total = seed;`,
-).replace(
-	`  return total;
-}`,
-	`    return total;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}`,
+const mediumBody = mediumSrc.slice(
+	mediumSrc.indexOf("{\n") + 2,
+	mediumSrc.lastIndexOf("\n}"),
 );
+const mediumWrapExpected = `function mediumCompute(seed: number): number {\n  try {\n${mediumBody.replace(/^/gm, "  ")}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}\n`;
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
 
@@ -180,7 +169,7 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		"pi_blitz_edit",
+		"pi_blitz_apply",
 		prompt,
 	];
 };
@@ -262,7 +251,7 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 				if (part?.type === "toolCall") {
 					if (
 						(lane === "core" && part.name === "edit") ||
-						(lane === "blitz" && (part.name === "pi_blitz_edit" || part.name === "pi_blitz_batch"))
+						(lane === "blitz" && part.name === "pi_blitz_apply")
 					) {
 						editCalls.push({ name: part.name, arguments: part.arguments });
 						editToolName = part.name;
@@ -304,11 +293,15 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 
 	let prompt = fx.intent(targetPath);
 	if (lane === "blitz") {
-		let guidance = "pi_blitz_edit guidance: use replace with only the symbol name. The snippet is only the function body; blitz preserves the signature. For large unchanged bodies, use a keep marker like // ... existing code ... and do not repeat unchanged lines.";
-		if (fx.blitzGuidance) {
-			guidance += ` ${fx.blitzGuidance}`;
-		} else if (fx.id.includes("marker-tail")) {
-			guidance += " For this edit, use the compact body snippet shape: `  let total = seed;\\n  // ... existing code ...\\n  return total + 1;`.";
+		let guidance = "pi_blitz_apply guidance: use operation enum + tiny structured edit payload. Do not repeat unchanged code. Use target.symbol only, no source code in symbol.";
+		if (fx.id.includes("wrap-body")) {
+			guidance += " For this edit, use operation `wrap_body`, target.symbol `mediumCompute`, edit `{ before: \"\\n  try {\", keep: \"body\", after: \"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\", indentKeptBodyBy: 2 }`.";
+		} else if (fx.id.includes("medium-10k/marker-tail")) {
+			guidance += " For this edit, use operation `replace_body_span`, target.symbol `mediumCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
+		} else if (fx.id.includes("huge-100k/marker-tail")) {
+			guidance += " For this edit, use operation `replace_body_span`, target.symbol `hugeCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
+		} else if (fx.id.includes("small")) {
+			guidance += " For this edit, use operation `replace_body_span`, target.symbol `smallTarget`, edit `{ find: \"return \\\"hi \\\" + name;\", replace: \"return \\\"hello \\\" + name.toUpperCase();\", occurrence: \"only\" }`.";
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
