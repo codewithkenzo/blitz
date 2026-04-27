@@ -71,7 +71,7 @@ pub fn run(
         }
 
         const mode: edit_support.EditMode = if (has_after) .after else .replace;
-        const next = edit_support.applyToSource(
+        const apply_result = edit_support.applyToSource(
             allocator,
             lang,
             working_contents,
@@ -103,7 +103,7 @@ pub fn run(
         };
 
         allocator.free(working_contents);
-        working_contents = next;
+        working_contents = apply_result.contents;
     }
 
     backup.store(allocator, io, cache_dir, real_path, original_contents) catch |err| {

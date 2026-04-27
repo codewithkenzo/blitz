@@ -10,6 +10,16 @@ pub const EditMode = enum {
     after,
 };
 
+pub const ApplyResult = struct {
+    contents: []u8,
+    target_start: usize,
+    target_end: usize,
+    target_bytes_before: usize,
+    target_bytes_after: usize,
+    snippet_bytes: usize,
+    used_markers: bool,
+};
+
 const typescript_comment_styles = [_][]const u8{ "//", "/*" };
 const python_comment_styles = [_][]const u8{"#"};
 
@@ -20,7 +30,7 @@ pub fn applyToSource(
     symbol: []const u8,
     snippet: []const u8,
     mode: EditMode,
-) ![]u8 {
+) !ApplyResult {
     var parser = bindings.Parser.init();
     defer parser.deinit();
 
@@ -34,6 +44,7 @@ pub fn applyToSource(
     const target_end: usize = @intCast(target.endByte());
 
     var replacement: []const u8 = snippet;
+    var used_markers = false;
     var owned_replacement: ?[]u8 = null;
     defer if (owned_replacement) |owned| allocator.free(owned);
 
@@ -54,6 +65,7 @@ pub fn applyToSource(
 
             if (maybe_merged) |merged| {
                 replacement = merged.merged;
+                used_markers = merged.used_markers;
                 owned_replacement = merged.merged;
             }
         },
@@ -75,7 +87,15 @@ pub fn applyToSource(
     @memcpy(next_contents[replace_start + replacement.len ..], source[replace_end..]);
 
     try validateEditedSourceIncremental(&parser, &tree, source, next_contents);
-    return next_contents;
+    return .{
+        .contents = next_contents,
+        .target_start = target_start,
+        .target_end = target_end,
+        .target_bytes_before = target_end - target_start,
+        .target_bytes_after = replacement.len,
+        .snippet_bytes = snippet.len,
+        .used_markers = used_markers,
+    };
 }
 
 pub fn validateSource(lang: bindings.Language, source: []const u8) !void {

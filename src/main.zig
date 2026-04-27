@@ -104,6 +104,7 @@ fn dispatchEdit(
     var snippet_arg: ?[]const u8 = null;
     var after_arg: ?[]const u8 = null;
     var replace_arg: ?[]const u8 = null;
+    var json_output = false;
 
     while (it.next()) |flag| {
         if (std.mem.eql(u8, flag, "--snippet")) {
@@ -122,6 +123,8 @@ fn dispatchEdit(
                 try stderr.writeAll("blitz edit: --replace expects a symbol\n");
                 return 1;
             };
+        } else if (std.mem.eql(u8, flag, "--json")) {
+            json_output = true;
         } else {
             try stderr.print("blitz edit: unknown flag '{s}'\n", .{flag});
             return 1;
@@ -145,9 +148,15 @@ fn dispatchEdit(
     defer gpa.free(snippet_bytes);
 
     if (after_arg) |sym| {
-        return try cmd_edit.runAfter(gpa, io, file, sym, snippet_bytes, stdout, stderr);
+        return if (json_output)
+            try cmd_edit.runAfterJson(gpa, io, file, sym, snippet_bytes, stdout, stderr)
+        else
+            try cmd_edit.runAfter(gpa, io, file, sym, snippet_bytes, stdout, stderr);
     }
-    return try cmd_edit.runReplace(gpa, io, file, replace_arg.?, snippet_bytes, stdout, stderr);
+    return if (json_output)
+        try cmd_edit.runReplaceJson(gpa, io, file, replace_arg.?, snippet_bytes, stdout, stderr)
+    else
+        try cmd_edit.runReplace(gpa, io, file, replace_arg.?, snippet_bytes, stdout, stderr);
 }
 
 fn dispatchBatch(

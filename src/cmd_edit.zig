@@ -3,6 +3,7 @@ const std = @import("std");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
+const metrics = @import("metrics.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
@@ -17,7 +18,19 @@ pub fn runReplace(
     stdout: *std.Io.Writer,
     stderr: *std.Io.Writer,
 ) !u8 {
-    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .replace);
+    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .replace, false);
+}
+
+pub fn runReplaceJson(
+    allocator: std.mem.Allocator,
+    io: std.Io,
+    file_path: []const u8,
+    symbol: []const u8,
+    snippet: []const u8,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
+) !u8 {
+    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .replace, true);
 }
 
 pub fn runAfter(
@@ -29,7 +42,19 @@ pub fn runAfter(
     stdout: *std.Io.Writer,
     stderr: *std.Io.Writer,
 ) !u8 {
-    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .after);
+    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .after, false);
+}
+
+pub fn runAfterJson(
+    allocator: std.mem.Allocator,
+    io: std.Io,
+    file_path: []const u8,
+    symbol: []const u8,
+    snippet: []const u8,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
+) !u8 {
+    return runEdit(allocator, io, file_path, symbol, snippet, stdout, stderr, .after, true);
 }
 
 fn runEdit(
@@ -41,6 +66,7 @@ fn runEdit(
     stdout: *Writer,
     stderr: *Writer,
     mode: edit_support.EditMode,
+    json_output: bool,
 ) !u8 {
     const start = Io.Clock.awake.now(io);
 
@@ -56,7 +82,7 @@ fn runEdit(
     const original_contents = try std.Io.Dir.cwd().readFileAlloc(io, real_path, allocator, .unlimited);
     defer allocator.free(original_contents);
 
-    const new_contents = edit_support.applyToSource(
+    const apply_result = edit_support.applyToSource(
         allocator,
         lang,
         original_contents,
@@ -86,18 +112,56 @@ fn runEdit(
         },
         else => return err,
     };
-    defer allocator.free(new_contents);
+    defer allocator.free(apply_result.contents);
 
     const cache_dir = try backup.defaultCacheDir(allocator);
     defer allocator.free(cache_dir);
 
     try backup.store(allocator, io, cache_dir, real_path, original_contents);
-    try backup.atomicWrite(allocator, io, real_path, new_contents);
+    try backup.atomicWrite(allocator, io, real_path, apply_result.contents);
 
     const end = Io.Clock.awake.now(io);
     const latency_ms = start.durationTo(end).toMilliseconds();
-    try stdout.print("Applied edit to {s}. latency: {d}ms, 0 tok/s, 0 tokens\n", .{ file_path, latency_ms });
+    if (json_output) {
+        const payload = metrics.computePayload(
+            apply_result.target_bytes_before,
+            apply_result.target_bytes_after,
+            apply_result.snippet_bytes,
+            symbol.len,
+        );
+        try (metrics.EditMetrics{
+            .mode = if (mode == .after) "after" else "replace",
+            .lane = if (apply_result.used_markers) "marker" else "direct",
+            .language = languageName(lang),
+            .file = real_path,
+            .symbol = symbol,
+            .file_bytes_before = original_contents.len,
+            .file_bytes_after = apply_result.contents.len,
+            .symbol_bytes_before = apply_result.target_bytes_before,
+            .symbol_bytes_after = apply_result.target_bytes_after,
+            .snippet_bytes = apply_result.snippet_bytes,
+            .blitz_payload_bytes = payload.blitz_payload_bytes,
+            .core_equivalent_payload_bytes = payload.core_equivalent_payload_bytes,
+            .estimated_payload_saved_bytes = payload.estimated_payload_saved_bytes,
+            .estimated_payload_saved_pct = payload.estimated_payload_saved_pct,
+            .estimated_tokens_saved_bytes_div4 = payload.estimated_tokens_saved_bytes_div4,
+            .used_markers = apply_result.used_markers,
+            .wall_ms = @intCast(latency_ms),
+        }).writeJson(stdout);
+    } else {
+        try stdout.print("Applied edit to {s}. latency: {d}ms, 0 tok/s, 0 tokens\n", .{ file_path, latency_ms });
+    }
     return 0;
+}
+
+fn languageName(lang: bindings.Language) []const u8 {
+    return switch (lang) {
+        .rust => "rust",
+        .typescript => "typescript",
+        .tsx => "tsx",
+        .python => "python",
+        .go => "go",
+    };
 }
 
 // Tests

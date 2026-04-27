@@ -14,6 +14,7 @@ const fallback = @import("fallback.zig");
 const incremental = @import("incremental.zig");
 const lock = @import("lock.zig");
 const main = @import("main.zig");
+const metrics = @import("metrics.zig");
 const splice = @import("splice.zig");
 const symbols = @import("symbols.zig");
 const bindings = @import("tree_sitter/bindings.zig");
@@ -33,6 +34,7 @@ test "import module tests" {
     _ = incremental;
     _ = lock;
     _ = main;
+    _ = metrics;
     _ = splice;
     _ = symbols;
     _ = bindings;
