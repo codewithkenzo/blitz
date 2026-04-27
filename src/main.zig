@@ -7,6 +7,7 @@ const std = @import("std");
 const cli = @import("cli.zig");
 const cmd_read = @import("cmd_read.zig");
 const cmd_edit = @import("cmd_edit.zig");
+const cmd_batch = @import("cmd_batch.zig");
 const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
@@ -61,6 +62,10 @@ pub fn main(init: std.process.Init) !void {
 
         if (std.mem.eql(u8, cmd, "edit")) {
             break :blk try dispatchEdit(gpa, io, &it, stdout, stderr);
+        }
+
+        if (std.mem.eql(u8, cmd, "batch-edit")) {
+            break :blk try dispatchBatch(gpa, io, &it, stdout, stderr);
         }
 
         if (std.mem.eql(u8, cmd, "rename")) {
@@ -143,6 +148,45 @@ fn dispatchEdit(
         return try cmd_edit.runAfter(gpa, io, file, sym, snippet_bytes, stdout, stderr);
     }
     return try cmd_edit.runReplace(gpa, io, file, replace_arg.?, snippet_bytes, stdout, stderr);
+}
+
+fn dispatchBatch(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    it: *std.process.Args.Iterator,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
+) !u8 {
+    const file = it.next() orelse {
+        try stderr.writeAll("blitz batch-edit: missing <file> argument\n");
+        return 1;
+    };
+
+    var edits_arg: ?[]const u8 = null;
+    while (it.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--edits")) {
+            edits_arg = it.next() orelse {
+                try stderr.writeAll("blitz batch-edit: --edits expects a value\n");
+                return 1;
+            };
+        } else {
+            try stderr.print("blitz batch-edit: unknown flag '{s}'\n", .{flag});
+            return 1;
+        }
+    }
+
+    const edits_value = edits_arg orelse {
+        try stderr.writeAll("blitz batch-edit: --edits is required\n");
+        return 1;
+    };
+
+    const edits_bytes = if (std.mem.eql(u8, edits_value, "-"))
+        try readAllStdin(gpa, io)
+    else
+        try gpa.dupe(u8, edits_value);
+    defer gpa.free(edits_bytes);
+
+    return try cmd_batch.run(gpa, io, file, edits_bytes, stdout, stderr);
 }
 
 fn dispatchRename(
