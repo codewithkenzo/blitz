@@ -1,0 +1,31 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 5,
+  "timeoutMs": 150000,
+  "generatedAt": "2026-04-27T18:14:59.560Z",
+  "rows": [
+    {
+      "fixture": "multi/large-structural",
+      "className": "multi_body_large_structural",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 86839.186094,
+      "outputMedian": 9739,
+      "argsTokensMedian": 9689,
+      "correctRate": 0,
+      "costSum": 0.29722485
+    },
+    {
+      "fixture": "multi/large-structural",
+      "className": "multi_body_large_structural",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3141.8272710000165,
+      "outputMedian": 104,
+      "argsTokensMedian": 85,
+      "correctRate": 0.6,
+      "costSum": 0.031166700000000002
+    }
+  ]
+}

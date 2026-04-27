@@ -1,0 +1,31 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 5,
+  "timeoutMs": 150000,
+  "generatedAt": "2026-04-27T18:06:35.029Z",
+  "rows": [
+    {
+      "fixture": "medium-10k/wrap-body",
+      "className": "medium_wrap_body",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 61699.33848299997,
+      "outputMedian": 9639,
+      "argsTokensMedian": 9624,
+      "correctRate": 1,
+      "costSum": 0.24526229999999996
+    },
+    {
+      "fixture": "medium-10k/wrap-body",
+      "className": "medium_wrap_body",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3918.8232359999674,
+      "outputMedian": 85,
+      "argsTokensMedian": 65,
+      "correctRate": 1,
+      "costSum": 0.032079300000000005
+    }
+  ]
+}
