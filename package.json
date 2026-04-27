@@ -1,13 +1,13 @@
 {
   "name": "@codewithkenzo/blitz",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.2",
   "description": "AST-aware fast edit CLI for Pi and MCP workflows",
   "type": "module",
   "license": "MIT",
   "private": false,
   "bin": {
-    "blitz": "./bin/blitz.js",
-    "blitz-mcp": "./mcp/blitz-mcp.ts"
+    "blitz": "bin/blitz.js",
+    "blitz-mcp": "mcp/blitz-mcp.ts"
   },
   "files": [
     "bin/blitz.js",
@@ -20,11 +20,11 @@
     "docs/blitz.md"
   ],
   "optionalDependencies": {
-    "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.0",
-    "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.0",
-    "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.0",
-    "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.0",
-    "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.0"
+    "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.2",
+    "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.2",
+    "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.2",
+    "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.2",
+    "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.2"
   },
   "scripts": {
     "bench": "bun bench/run.ts",
