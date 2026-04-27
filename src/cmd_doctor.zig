@@ -100,7 +100,7 @@ pub fn run(
 
     try stdout.writeAll(
         \\  extensions:  .rs .ts .tsx .py .go
-        \\  commands:    read, edit, batch-edit, rename, undo, doctor
+        \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply
         \\
     );
 
