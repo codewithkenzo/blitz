@@ -134,32 +134,62 @@ Configure the binary:
 
 ### MCP server
 
-Blitz also ships a stdio MCP server:
+Blitz ships a stdio MCP server. You do not need to clone this repo or point at a local binary for normal use.
+
+Use one of these commands in your agent's MCP config:
 
 ```bash
-BLITZ_BIN=/abs/path/to/blitz/zig-out/bin/blitz \
-BLITZ_WORKSPACE=/abs/path/to/project \
-bun /abs/path/to/blitz/mcp/blitz-mcp.ts
+npx --yes --package=@codewithkenzo/blitz -- blitz-mcp
 ```
 
-Example `.mcp.json`:
+```bash
+bunx -p @codewithkenzo/blitz blitz-mcp
+```
+
+Set `BLITZ_WORKSPACE` to the project root you want Blitz to edit. The server rejects paths that escape this workspace, including symlink escapes.
+
+Copy/paste MCP config:
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "blitz": {
-      "command": "bun",
-      "args": ["/abs/path/to/blitz/mcp/blitz-mcp.ts"],
+      "command": "npx",
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"],
       "env": {
-        "BLITZ_BIN": "/abs/path/to/blitz/zig-out/bin/blitz",
-        "BLITZ_WORKSPACE": "/abs/path/to/project"
+        "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
       }
     }
   }
 }
 ```
 
-The MCP server rejects paths that escape `BLITZ_WORKSPACE`, including symlink escapes.
+Bun version:
+
+```json
+{
+  "mcpServers": {
+    "blitz": {
+      "command": "bunx",
+      "args": ["-p", "@codewithkenzo/blitz", "blitz-mcp"],
+      "env": {
+        "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+Optional override for custom/source builds:
+
+```json
+{
+  "env": {
+    "BLITZ_BIN": "/absolute/path/to/blitz",
+    "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
+  }
+}
+```
 
 ## When to use Blitz
 

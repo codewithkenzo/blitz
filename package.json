@@ -1,6 +1,6 @@
 {
   "name": "@codewithkenzo/blitz",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "AST-aware fast edit CLI for Pi and MCP workflows",
   "type": "module",
   "license": "MIT",
