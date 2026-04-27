@@ -138,7 +138,10 @@ pub fn store(
     var backup_dir = try ensureBackupDir(allocator, io, cache_dir);
     defer backup_dir.close(io);
 
-    try writeAtomicFile(allocator, io, backup_dir, snapshot.backup_name, pre_edit_contents, false);
+    // replace=true: each new edit overwrites the prior backup so we always
+    // hold the latest pre-edit snapshot for this realpath. Single-depth
+    // semantics from fastedit's BackupStore.
+    try writeAtomicFile(allocator, io, backup_dir, snapshot.backup_name, pre_edit_contents, true);
 }
 
 /// Checks whether latest backup exists for current target mtime.
