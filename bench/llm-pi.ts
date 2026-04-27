@@ -4,7 +4,7 @@
  *
  * For each fixture, runs `pi -p` in two isolated configurations:
  *   core lane:  --no-extensions --no-skills --no-context-files --no-prompt-templates --tools edit
- *   blitz lane: --no-extensions --extension <pi-blitz dist/index.js> --tools pi_blitz_apply
+ *   blitz lane: --no-extensions --extension <pi-blitz dist/index.js> --tools narrow pi_blitz_* structured apply tools
  *
  * Both lanes get identical prompts that include the file contents inline,
  * so the model never needs a read tool.
@@ -201,7 +201,7 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		"pi_blitz_apply",
+		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body",
 		prompt,
 	];
 };
@@ -283,7 +283,7 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 				if (part?.type === "toolCall") {
 					if (
 						(lane === "core" && part.name === "edit") ||
-						(lane === "blitz" && part.name === "pi_blitz_apply")
+						(lane === "blitz" && typeof part.name === "string" && part.name.startsWith("pi_blitz_"))
 					) {
 						editCalls.push({ name: part.name, arguments: part.arguments });
 						editToolName = part.name;
@@ -325,18 +325,18 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 
 	let prompt = fx.intent(targetPath);
 	if (lane === "blitz") {
-		let guidance = "pi_blitz_apply guidance: use operation enum + tiny structured edit payload. Do not repeat unchanged code. Use target.symbol only, no source code in symbol.";
+		let guidance = "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
 		if (fx.id.includes("wrap-body")) {
-			guidance += " For this edit, use operation `wrap_body`, target.symbol `mediumCompute`, edit `{ before: \"\\n  try {\", keep: \"body\", after: \"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\", indentKeptBodyBy: 2 }`.";
+			guidance += " For this edit, call `pi_blitz_wrap_body` with symbol `mediumCompute`, before `\\n  try {`, after `  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n`, and indentKeptBodyBy 2.";
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
-				" For this edit, use operation `compose_body`, target.symbol `mediumCompute`, target.range `body`. Suggested shape: `{ segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: \"only\" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\\"seed must be finite\\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: \"last\" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: \"last\" } } ] }`.";
+				" For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: \"only\" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\\"seed must be finite\\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: \"last\" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: \"last\" } } ].";
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			guidance += " For this edit, use operation `replace_body_span`, target.symbol `mediumCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
+			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
-			guidance += " For this edit, use operation `replace_body_span`, target.symbol `hugeCompute`, edit `{ find: \"return total;\", replace: \"return total + 1;\", occurrence: \"last\" }`.";
+			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("small")) {
-			guidance += " For this edit, route to core oldText/newText (no compose).";
+			guidance += " For this edit, route to core oldText/newText.";
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
