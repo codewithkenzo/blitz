@@ -2,7 +2,7 @@
 
 Single source of truth. Supersedes and absorbs `blitz-design.md`, `blitz-gap-closure.md`, `blitz-perf-patterns.md`, `pi-edit-positioning.md`, `pi-edit-ecosystem-compare.md`, `pi-edit-local-overlap.md`, `zig-0.16-verification.md` (all archived).
 
-Status: **`0.1.0-alpha.0`.** Standalone `codewithkenzo/blitz` CLI passed `gpt-5.5` xhigh review. 54/54 unit tests pass (x86_64-linux-musl). Structured apply IR (`blitz apply`) is implemented. MCP stdio server (`mcp/blitz-mcp.ts`) ships in this repo and is usable today. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API. npm prebuilt binaries are not yet published; install from source. `@codewithkenzo/pi-blitz` (Effect v4 Pi extension) is a separate repo; MCP server covers the same tool surface for local use until the extension ships.
+Status: **`0.1.0-alpha.9`.** Standalone `codewithkenzo/blitz` CLI, npm platform packages, MCP stdio server, and `@codewithkenzo/pi-blitz` are published. Structured apply IR (`blitz apply`) is implemented. MCP stdio server ships as `blitz-mcp` with a Node entrypoint and workspace guard. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API.
 
 ## 1. North star
 
@@ -12,7 +12,7 @@ Ship an AST-aware edit CLI that preserves fastedit's **output-token savings** an
 - **Zero interpreter** — single static Zig 0.16 binary, target 3-5 MB; see §10 for current evidence.
 - **Zero Python** — nothing to install besides the binary.
 - **Cold-call latency target:** sub-20 ms deterministic path. Internal debug/musl runs are roughly 12-13 ms median; release-mode public numbers reflect benchmark runs in §10.
-- **MIT**, Kenzo-owned. Alpha package ships a Node wrapper and MCP bridge, not native prebuilts. Set `BLITZ_BIN` to a local Zig-built binary until npm prebuilts per platform land.
+- **MIT**, Kenzo-owned. Alpha package ships a Node wrapper, MCP bridge, and native platform packages. `BLITZ_BIN` remains an override for custom/source builds.
 
 The extension (`@codewithkenzo/pi-blitz`) is a thin Effect v4 wrapper around the binary.
 
@@ -205,8 +205,8 @@ codewithkenzo/blitz                              # Zig 0.16 CLI (MIT, standalone
   src/fuzzy.zig                                    # whitespace-insensitive + relative-indent recovery (v0.2, Layer B)
   src/queries.zig                                  # structural tree-sitter query rewrites (v0.2, Layer C)
   src/backup.zig                                   # SHA-keyed backup store + atomic write
-  src/lock.zig                                     # per-file fcntl advisory lock
-  src/fallback.zig                                 # host-LLM scope payload emitter
+  src/lock.zig                                     # per-file mkdir lock with stale cleanup
+  src/fallback.zig                                 # planned host-LLM scope payload emitter
   grammars/tree-sitter-rust/{parser.c,scanner.c}   # vendored, MIT-compat
   grammars/tree-sitter-typescript/…
   grammars/tree-sitter-tsx/…
@@ -522,7 +522,7 @@ type PiBlitzConfig = {
 
 ### 9.5 MCP stdio server
 
-`mcp/blitz-mcp.ts` is a self-contained MCP server (JSON-RPC over stdio, protocol `2025-06-18`). It runs with Bun and calls the blitz binary as a subprocess. Use it when the Pi extension is not yet installed or when targeting any MCP-capable host (Claude Desktop, Claude Code, Cursor, etc.).
+`blitz-mcp` is a self-contained MCP server (JSON-RPC over stdio, protocol `2025-06-18`). The published package exposes a Node entrypoint (`mcp/blitz-mcp.js`) and keeps `mcp/blitz-mcp.ts` as source. Use it for MCP-capable hosts (Claude Desktop, Claude Code, Cursor, Codex, etc.).
 
 **Tools:**
 
@@ -559,13 +559,13 @@ Build the binary first (`zig build -Doptimize=ReleaseFast`), then point `BLITZ_B
 | Variable | Default | Description |
 |---|---|---|
 | `BLITZ_BIN` | `blitz` (PATH) | Binary used by the MCP server and `bin/blitz.js` npm wrapper. |
-| `BLITZ_WORKSPACE` | `process.cwd()` | Workspace root for MCP path resolution. All file arguments are resolved relative to this directory. |
+| `BLITZ_WORKSPACE` | required | Workspace root for MCP path resolution. All file arguments are resolved relative to this directory and rechecked by the Zig CLI. |
 | `BLITZ_MCP_TIMEOUT_MS` | `30000` | Per-call timeout in ms for MCP subprocess invocations. |
 | `BLITZ_MCP_MAX_FRAME_BYTES` | `1048576` | Maximum JSON-RPC frame size in bytes. |
 
 ### 9.7 Workspace safety
 
-The MCP server enforces a path escape guard: every file argument is resolved via `path.resolve(BLITZ_WORKSPACE, file)` and rejected with an error if the result is outside `BLITZ_WORKSPACE`. No reads or writes outside the workspace root are possible through the MCP tools.
+The MCP server enforces a path escape guard: every file argument is resolved via `path.resolve(BLITZ_WORKSPACE, file)` and rejected with an error if the result is outside `BLITZ_WORKSPACE`. The server also passes `--workspace-root` to the Zig CLI so the native layer rechecks real paths before reads/writes.
 
 The Pi extension enforces the same guard via `src/paths.ts` (`canonicalRealpath` + symlink check against canonical cwd).
 
@@ -617,7 +617,7 @@ Reductions vs core attempt (correctness + efficiency, not both-correct savings):
 | Coverage | 100% | 100% | high for symbol-scoped edits; fallback via Layer D |
 | Fallback regression | n/a | n/a | 0% (Layer D → host `edit`) |
 | Wall-time deterministic path | <1 ms (in-process) | ~95 ms | ~12-15 ms (binary spawn + parse + write) |
-| Binary + runtime deps | none | Python + MLX/vLLM + 3 GB model | **~4 MB static binary** |
+| Binary + runtime deps | none | Python + MLX/vLLM + 3 GB model | Native Zig binary; current platform packages are ~0.8-2.5 MB compressed |
 
 ### 10.1 Benchmark matrix
 

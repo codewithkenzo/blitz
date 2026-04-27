@@ -260,7 +260,7 @@ const mediumWrapExpected = `function mediumCompute(seed: number): number {\n  tr
 const multiSrc = await readFile(join(fixtureDir, "multi.ts"), "utf8");
 const multiExpected = multiSrc
 	.replace("  return base;", "  return base + 1;")
-	.replace("  const marker = value;\n", "  const marker = value;\n  const markerUpper = value.toUpperCase();\n\n")
+	.replace("  const marker = value;\n", "  const marker = value;\n  const markerUpper = value.toUpperCase();\n")
 	.replace(
 		`export function risky(value: number): number {\n  return value;\n}`,
 		`export function risky(value: number): number {\n  try {\n    return value;\n  } catch (error) {\n    throw error;\n  }\n}`,
