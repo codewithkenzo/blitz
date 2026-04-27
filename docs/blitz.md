@@ -709,7 +709,7 @@ External sources this design relies on (URLs frozen at research time):
 - ast-grep performance notes: https://ast-grep.github.io/blog/optimize-ast-grep.html
 - Comby FAQ (perf numbers): https://comby.dev/docs/faq
 
-Internal (this repo):
-- `pi-extension-surface-notes.md` — pi-mono ExtensionAPI reference (shared across plugins).
-- `roadmap.md` — master roadmap (plugin rows).
-- `archive/` — prior drafts (fastedit wrapper, pi-rollback, first-pass review, ecosystem/positioning/overlap one-offs; kept for context only).
+Internal:
+- Pi Rig `pi-extension-surface-notes.md` — pi-mono ExtensionAPI reference (shared across plugins).
+- Pi Rig `roadmap.md` — master roadmap (plugin rows).
+- `docs/archive/` — prior Blitz drafts kept for context only.
