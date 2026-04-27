@@ -243,7 +243,7 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body",
+		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch",
 		prompt,
 	];
 };
@@ -376,7 +376,7 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
-			guidance += " For this edit, call `pi_blitz_multi_body` with edits [{symbol:`adjust`,op:`replace_body_span`,find:`return base;`,replace:`return base + 1;`,occurrence:`only`}, {symbol:`emit`,op:`insert_body_span`,anchor:`const marker = value;`,position:`after`,text:`\n  const markerUpper = value.toUpperCase();\n`,occurrence:`only`}, {symbol:`risky`,op:`wrap_body`,before:`\n  try {`,keep:`body`,after:`  } catch (error) {\n    throw error;\n  }\n`,indentKeptBodyBy:2}].";
+			guidance += " For this edit, call `pi_blitz_patch` with ops [[`replace`,`adjust`,`return base;`,`return base + 1;`,`only`], [`insert_after`,`emit`,`const marker = value;`,`\n  const markerUpper = value.toUpperCase();`,`only`], [`try_catch`,`risky`,`throw error;`]].";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("small")) {
