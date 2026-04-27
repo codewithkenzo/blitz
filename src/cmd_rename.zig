@@ -163,8 +163,8 @@ pub fn run(
     defer targets.deinit(allocator);
 
     while (worklist.items.len > 0) {
-        const node = worklist.pop();
-        const parent_kind = parent_kinds.pop();
+        const node = worklist.pop() orelse break;
+        const parent_kind = parent_kinds.pop() orelse null;
 
         const kind = node.kind();
         if ((isRenameKind(kind)) and !isExcludedParent(parent_kind orelse "")) {
