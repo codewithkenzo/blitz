@@ -123,11 +123,14 @@ fn runEdit(
     const end = Io.Clock.awake.now(io);
     const latency_ms = start.durationTo(end).toMilliseconds();
     if (json_output) {
-        const payload = metrics.computePayload(
+        const anchor = metrics.computeMinimalAnchor(original_contents, apply_result.contents);
+        const payload = metrics.computePayloadEstimate(
             apply_result.target_bytes_before,
             apply_result.target_bytes_after,
             apply_result.snippet_bytes,
             symbol.len,
+            anchor.old_bytes,
+            anchor.new_bytes,
         );
         try (metrics.EditMetrics{
             .mode = if (mode == .after) "after" else "replace",
@@ -141,10 +144,13 @@ fn runEdit(
             .symbol_bytes_after = apply_result.target_bytes_after,
             .snippet_bytes = apply_result.snippet_bytes,
             .blitz_payload_bytes = payload.blitz_payload_bytes,
-            .core_equivalent_payload_bytes = payload.core_equivalent_payload_bytes,
-            .estimated_payload_saved_bytes = payload.estimated_payload_saved_bytes,
-            .estimated_payload_saved_pct = payload.estimated_payload_saved_pct,
-            .estimated_tokens_saved_bytes_div4 = payload.estimated_tokens_saved_bytes_div4,
+            .core_full_symbol_payload_bytes = payload.core_full_symbol_payload_bytes,
+            .core_minimal_anchor_payload_bytes = payload.core_minimal_anchor_payload_bytes,
+            .estimated_payload_saved_bytes_vs_full_symbol = payload.saved_bytes_vs_full_symbol,
+            .estimated_payload_saved_pct_vs_full_symbol = payload.saved_pct_vs_full_symbol,
+            .estimated_payload_saved_bytes_vs_minimal_anchor = payload.saved_bytes_vs_minimal_anchor,
+            .estimated_payload_saved_pct_vs_minimal_anchor = payload.saved_pct_vs_minimal_anchor,
+            .estimated_tokens_saved_bytes_div4_vs_minimal_anchor = payload.tokens_saved_div4_vs_minimal_anchor,
             .used_markers = apply_result.used_markers,
             .wall_ms = @intCast(latency_ms),
         }).writeJson(stdout);

@@ -16,10 +16,13 @@ pub const EditMetrics = struct {
     symbol_bytes_after: usize,
     snippet_bytes: usize,
     blitz_payload_bytes: usize,
-    core_equivalent_payload_bytes: usize,
-    estimated_payload_saved_bytes: usize,
-    estimated_payload_saved_pct: f64,
-    estimated_tokens_saved_bytes_div4: usize,
+    core_full_symbol_payload_bytes: usize,
+    core_minimal_anchor_payload_bytes: usize,
+    estimated_payload_saved_bytes_vs_full_symbol: usize,
+    estimated_payload_saved_pct_vs_full_symbol: f64,
+    estimated_payload_saved_bytes_vs_minimal_anchor: i64,
+    estimated_payload_saved_pct_vs_minimal_anchor: f64,
+    estimated_tokens_saved_bytes_div4_vs_minimal_anchor: i64,
     used_markers: bool,
     wall_ms: u64,
 
@@ -38,38 +41,81 @@ pub const EditMetrics = struct {
         try intField(out, "symbolBytesAfter", self.symbol_bytes_after);
         try intField(out, "snippetBytes", self.snippet_bytes);
         try intField(out, "blitzPayloadBytes", self.blitz_payload_bytes);
-        try intField(out, "coreEquivalentPayloadBytes", self.core_equivalent_payload_bytes);
-        try intField(out, "estimatedPayloadSavedBytes", self.estimated_payload_saved_bytes);
-        try out.print(",\"estimatedPayloadSavedPct\":{d:.2}", .{self.estimated_payload_saved_pct});
-        try intField(out, "estimatedTokensSavedBytesDiv4", self.estimated_tokens_saved_bytes_div4);
+        try intField(out, "coreFullSymbolPayloadBytes", self.core_full_symbol_payload_bytes);
+        try intField(out, "coreMinimalAnchorPayloadBytes", self.core_minimal_anchor_payload_bytes);
+        try intField(out, "estimatedPayloadSavedBytesVsFullSymbol", self.estimated_payload_saved_bytes_vs_full_symbol);
+        try out.print(",\"estimatedPayloadSavedPctVsFullSymbol\":{d:.2}", .{self.estimated_payload_saved_pct_vs_full_symbol});
+        try out.print(",\"estimatedPayloadSavedBytesVsMinimalAnchor\":{d}", .{self.estimated_payload_saved_bytes_vs_minimal_anchor});
+        try out.print(",\"estimatedPayloadSavedPctVsMinimalAnchor\":{d:.2}", .{self.estimated_payload_saved_pct_vs_minimal_anchor});
+        try out.print(",\"estimatedTokensSavedBytesDiv4VsMinimalAnchor\":{d}", .{self.estimated_tokens_saved_bytes_div4_vs_minimal_anchor});
         try out.print(",\"usedMarkers\":{}", .{self.used_markers});
         try intField(out, "wallMs", self.wall_ms);
         try out.writeAll("}\n");
     }
 };
 
-pub fn computePayload(
+pub const PayloadEstimate = struct {
+    blitz_payload_bytes: usize,
+    core_full_symbol_payload_bytes: usize,
+    core_minimal_anchor_payload_bytes: usize,
+    saved_bytes_vs_full_symbol: usize,
+    saved_pct_vs_full_symbol: f64,
+    saved_bytes_vs_minimal_anchor: i64,
+    saved_pct_vs_minimal_anchor: f64,
+    tokens_saved_div4_vs_minimal_anchor: i64,
+};
+
+pub fn computePayloadEstimate(
     symbol_bytes_before: usize,
     symbol_bytes_after: usize,
     snippet_bytes: usize,
     symbol_name_bytes: usize,
-) struct {
-    blitz_payload_bytes: usize,
-    core_equivalent_payload_bytes: usize,
-    estimated_payload_saved_bytes: usize,
-    estimated_payload_saved_pct: f64,
-    estimated_tokens_saved_bytes_div4: usize,
-} {
+    minimal_old_anchor_bytes: usize,
+    minimal_new_anchor_bytes: usize,
+) PayloadEstimate {
     const blitz_payload = snippet_bytes + symbol_name_bytes + EDIT_TOOL_OVERHEAD_BYTES;
-    const core_payload = symbol_bytes_before + symbol_bytes_after;
-    const saved = if (core_payload > blitz_payload) core_payload - blitz_payload else 0;
-    const pct = if (core_payload == 0) 0 else 100.0 * (1.0 - (@as(f64, @floatFromInt(blitz_payload)) / @as(f64, @floatFromInt(core_payload))));
+    const core_full = symbol_bytes_before + symbol_bytes_after;
+    const core_min = minimal_old_anchor_bytes + minimal_new_anchor_bytes;
+
+    const saved_full = if (core_full > blitz_payload) core_full - blitz_payload else 0;
+    const pct_full = if (core_full == 0) 0 else 100.0 * (1.0 - (@as(f64, @floatFromInt(blitz_payload)) / @as(f64, @floatFromInt(core_full))));
+
+    const blitz_i: i64 = @intCast(blitz_payload);
+    const core_min_i: i64 = @intCast(core_min);
+    const saved_min: i64 = core_min_i - blitz_i;
+    const pct_min = if (core_min == 0) 0 else 100.0 * (1.0 - (@as(f64, @floatFromInt(blitz_payload)) / @as(f64, @floatFromInt(core_min))));
+    const tokens_min: i64 = @divTrunc(saved_min, 4);
+
     return .{
         .blitz_payload_bytes = blitz_payload,
-        .core_equivalent_payload_bytes = core_payload,
-        .estimated_payload_saved_bytes = saved,
-        .estimated_payload_saved_pct = pct,
-        .estimated_tokens_saved_bytes_div4 = (saved + 3) / 4,
+        .core_full_symbol_payload_bytes = core_full,
+        .core_minimal_anchor_payload_bytes = core_min,
+        .saved_bytes_vs_full_symbol = saved_full,
+        .saved_pct_vs_full_symbol = pct_full,
+        .saved_bytes_vs_minimal_anchor = saved_min,
+        .saved_pct_vs_minimal_anchor = pct_min,
+        .tokens_saved_div4_vs_minimal_anchor = tokens_min,
+    };
+}
+
+pub const MinimalAnchor = struct {
+    old_bytes: usize,
+    new_bytes: usize,
+};
+
+pub fn computeMinimalAnchor(before: []const u8, after: []const u8) MinimalAnchor {
+    var prefix: usize = 0;
+    const min_len = @min(before.len, after.len);
+    while (prefix < min_len and before[prefix] == after[prefix]) : (prefix += 1) {}
+    var before_end = before.len;
+    var after_end = after.len;
+    while (before_end > prefix and after_end > prefix and before[before_end - 1] == after[after_end - 1]) {
+        before_end -= 1;
+        after_end -= 1;
+    }
+    return .{
+        .old_bytes = before_end - prefix,
+        .new_bytes = after_end - prefix,
     };
 }
 
@@ -96,10 +142,27 @@ fn writeJsonString(out: *std.Io.Writer, value: []const u8) !void {
     try out.writeByte('"');
 }
 
-test "computePayload estimates saved bytes" {
-    const p = computePayload(1000, 1004, 91, 11);
+test "computeMinimalAnchor returns changed window byte counts" {
+    const before = "function f() {\n  return total;\n}\n";
+    const after = "function f() {\n  return total + 1;\n}\n";
+    const a = computeMinimalAnchor(before, after);
+    try std.testing.expectEqual(@as(usize, 0), a.old_bytes);
+    try std.testing.expectEqual(@as(usize, 4), a.new_bytes);
+}
+
+test "computeMinimalAnchor counts replacement of mid-line slice" {
+    const before = "let x = 1;\n";
+    const after = "let x = 2;\n";
+    const a = computeMinimalAnchor(before, after);
+    try std.testing.expectEqual(@as(usize, 1), a.old_bytes);
+    try std.testing.expectEqual(@as(usize, 1), a.new_bytes);
+}
+
+test "computePayloadEstimate exposes both baselines" {
+    const p = computePayloadEstimate(1000, 1004, 91, 11, 1, 5);
     try std.testing.expectEqual(@as(usize, 134), p.blitz_payload_bytes);
-    try std.testing.expectEqual(@as(usize, 2004), p.core_equivalent_payload_bytes);
-    try std.testing.expectEqual(@as(usize, 1870), p.estimated_payload_saved_bytes);
-    try std.testing.expectEqual(@as(usize, 468), p.estimated_tokens_saved_bytes_div4);
+    try std.testing.expectEqual(@as(usize, 2004), p.core_full_symbol_payload_bytes);
+    try std.testing.expectEqual(@as(usize, 6), p.core_minimal_anchor_payload_bytes);
+    try std.testing.expectEqual(@as(i64, -128), p.saved_bytes_vs_minimal_anchor);
+    try std.testing.expect(p.saved_pct_vs_minimal_anchor < 0);
 }
