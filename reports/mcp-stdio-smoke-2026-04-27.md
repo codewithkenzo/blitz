@@ -14,17 +14,31 @@ BLITZ_WORKSPACE=/path/to/workspace \
 bun /home/kenzo/dev/blitz/mcp/blitz-mcp.ts
 ```
 
+Optional env:
+
+```text
+BLITZ_MCP_TIMEOUT_MS=30000
+BLITZ_MCP_MAX_FRAME_BYTES=1048576
+```
+
 ## Protocol support
 
 - JSON-RPC 2.0
-- MCP stdio `Content-Length` framing
-- newline-delimited JSON fallback for simple manual tests
+- MCP stdio `Content-Length` framing only
 - `initialize`
 - `notifications/initialized`
 - `tools/list`
 - `tools/call`
 
 Server logs nothing to stdout except JSON-RPC frames.
+
+## Safety behavior
+
+- Tool file paths are resolved under `BLITZ_WORKSPACE` / process cwd.
+- Absolute paths outside workspace are rejected.
+- Frames above `BLITZ_MCP_MAX_FRAME_BYTES` are rejected.
+- Blitz subprocess calls use `BLITZ_MCP_TIMEOUT_MS`.
+- HTTP transport is not implemented.
 
 ## Tools exposed
 
@@ -37,13 +51,13 @@ Server logs nothing to stdout except JSON-RPC frames.
 
 ## Smoke
 
-Manual client sent three framed messages:
+Manual client sent framed messages:
 
 1. `initialize`
-2. `tools/list`
-3. `tools/call` for `blitz_try_catch`
+2. `tools/call` for `blitz_try_catch`
+3. `tools/call` for `blitz_read` on `/etc/passwd`
 
-Result: all responses valid `Content-Length` JSON-RPC frames. File mutated correctly.
+Result: valid `Content-Length` JSON-RPC frames. Mutation succeeded. Escape read rejected.
 
 Input:
 
@@ -68,14 +82,19 @@ function handle(value: number): number {
 }
 ```
 
+Escape check:
+
+```json
+{"code":-32000,"message":"path escapes workspace: /etc/passwd"}
+```
+
 ## Current status
 
 This is a working spike, not release-final MCP packaging yet.
 
 Before release:
 
-- decide whether MCP bridge ships inside `@codewithkenzo/blitz` package or separate `@codewithkenzo/blitz-mcp`
-- add a real MCP smoke script/test
 - test with Pi MCP adapter / Claude Desktop style config
-- document stdio config snippet
+- document stdio config snippet in README
+- add automated MCP smoke script
 - consider native `blitz mcp` later, after protocol surface is stable

@@ -1,7 +1,11 @@
 #!/usr/bin/env bun
 import { spawnSync } from "node:child_process";
+import { isAbsolute, resolve, relative } from "node:path";
+
 const blitz = process.env.BLITZ_BIN ?? "blitz";
-const cwd = process.env.BLITZ_WORKSPACE ?? process.cwd();
+const cwd = resolve(process.env.BLITZ_WORKSPACE ?? process.cwd());
+const timeoutMs = Number(process.env.BLITZ_MCP_TIMEOUT_MS ?? 30_000);
+const maxFrameBytes = Number(process.env.BLITZ_MCP_MAX_FRAME_BYTES ?? 1024 * 1024);
 
 type JsonRpc = { jsonrpc?: "2.0"; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 
@@ -77,7 +81,7 @@ const tools = [
 const jsonText = (text: string, isError = false): ToolResult => ({ content: [{ type: "text", text }], ...(isError ? { isError: true } : {}) });
 
 const run = (args: string[], stdin?: string): ToolResult => {
-  const result = spawnSync(blitz, args, { cwd, input: stdin, encoding: "utf8", maxBuffer: 1024 * 1024 * 8 });
+  const result = spawnSync(blitz, args, { cwd, input: stdin, encoding: "utf8", maxBuffer: 1024 * 1024 * 8, timeout: timeoutMs });
   const text = [result.stdout, result.stderr].filter(Boolean).join(result.stdout && result.stderr ? "\n" : "");
   return jsonText(text.trim(), (result.status ?? 1) !== 0);
 };
@@ -88,23 +92,30 @@ const requiredString = (args: Record<string, unknown>, key: string): string => {
   return value;
 };
 
+const bindPath = (file: string): string => {
+  const abs = resolve(cwd, file);
+  const rel = relative(cwd, abs);
+  if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) return abs;
+  throw new Error(`path escapes workspace: ${file}`);
+};
+
 const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult => {
   switch (name) {
     case "blitz_doctor":
       return run(["doctor"]);
     case "blitz_read":
-      return run(["read", requiredString(args, "file")]);
+      return run(["read", bindPath(requiredString(args, "file"))]);
     case "blitz_undo":
-      return run(["undo", requiredString(args, "file")]);
+      return run(["undo", bindPath(requiredString(args, "file"))]);
     case "blitz_patch": {
-      const file = requiredString(args, "file");
+      const file = bindPath(requiredString(args, "file"));
       const ops = args.ops;
       if (!Array.isArray(ops) || ops.length === 0) throw new Error("missing ops array");
       const payload = { version: 1, file, operation: "patch", edit: { ops }, dry_run: args.dry_run, include_diff: args.include_diff };
       return run(["apply", "--edit", "-", "--json"], JSON.stringify(payload));
     }
     case "blitz_try_catch": {
-      const file = requiredString(args, "file");
+      const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const catchBody = requiredString(args, "catchBody");
       const op = ["try_catch", symbol, catchBody, ...(typeof args.indent === "number" ? [args.indent] : [])];
@@ -112,7 +123,7 @@ const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult 
       return run(["apply", "--edit", "-", "--json"], JSON.stringify(payload));
     }
     case "blitz_replace_return": {
-      const file = requiredString(args, "file");
+      const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
       const op = ["replace_return", symbol, expr, ...(args.occurrence !== undefined ? [args.occurrence] : [])];
@@ -165,6 +176,7 @@ const tryReadMessage = (): JsonRpc | undefined => {
     const match = /^Content-Length:\s*(\d+)$/im.exec(header);
     if (!match) throw new Error("missing Content-Length");
     const len = Number(match[1]);
+    if (!Number.isSafeInteger(len) || len < 0 || len > maxFrameBytes) throw new Error("invalid Content-Length");
     const start = headerEnd + 4;
     if (buffer.length < start + len) return undefined;
     const raw = buffer.subarray(start, start + len).toString("utf8");
@@ -172,13 +184,6 @@ const tryReadMessage = (): JsonRpc | undefined => {
     return JSON.parse(raw);
   }
 
-  const nl = buffer.indexOf("\n");
-  if (nl >= 0) {
-    const raw = buffer.subarray(0, nl).toString("utf8").trim();
-    buffer = buffer.subarray(nl + 1);
-    if (!raw) return undefined;
-    return JSON.parse(raw);
-  }
   return undefined;
 };
 
