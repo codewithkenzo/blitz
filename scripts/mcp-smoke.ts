@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 
 const root = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const server = join(root, "mcp/blitz-mcp.ts");
-const blitz = process.env.BLITZ_BIN ?? join(root, "zig-out/bin/blitz");
+const blitz = process.env.BLITZ_BIN ?? join(root, "bin/blitz");
 const tmp = await mkdtemp(join(tmpdir(), "blitz-mcp-smoke-"));
 const file = join(tmp, "a.ts");
 await writeFile(file, `function handle(value: number): number {\n  const doubled = value * 2;\n  return doubled;\n}\n`);
