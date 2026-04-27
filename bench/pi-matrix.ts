@@ -222,10 +222,14 @@ const multiLargeBody = multiLargeSrc.slice(
 	multiLargeSrc.indexOf("{\n") + 2,
 	multiLargeSrc.indexOf("\n}\n\nexport function auditEvent"),
 );
+const multiLargeIndented = multiLargeBody
+	.split("\n")
+	.map((line) => `  ${line}`)
+	.join("\n");
 const multiLargeExpected = multiLargeSrc
 	.replace(
 		`function mediumCompute(seed: number): number {\n${multiLargeBody}\n}`,
-		`function mediumCompute(seed: number): number {\n  try {\n${multiLargeBody.replace(/^/gm, "  ")}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}`,
+		`function mediumCompute(seed: number): number {\n  try {\n${multiLargeIndented}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}`,
 	)
 	.replace("  const normalized = event.trim();\n", "  const normalized = event.trim();\n  const tagged = `[audit] ${normalized}`;\n")
 	.replace("  return status;", "  return status.toUpperCase();");
@@ -249,6 +253,7 @@ const piArgs = (
 	prompt: string,
 	sessionDir: string,
 	cwd: string,
+	toolsOverride?: string,
 ): string[] => {
 	const common = [
 		"--offline",
@@ -275,14 +280,14 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch",
+		toolsOverride ?? "pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch",
 		prompt,
 	];
 };
 
-const runPi = (lane: Lane, prompt: string, cwd: string) => {
+const runPi = (lane: Lane, prompt: string, cwd: string, toolsOverride?: string) => {
 	const sessionDir = join(cwd, `sessions-${lane}`);
-	const args = piArgs(lane, prompt, sessionDir, cwd);
+	const args = piArgs(lane, prompt, sessionDir, cwd, toolsOverride);
 	const t0 = performance.now();
 	const r = spawnSync("pi", args, { cwd, encoding: "utf8", maxBuffer: 200 * 1024 * 1024, timeout: timeoutMs, killSignal: "SIGTERM" });
 	const ms = performance.now() - t0;
@@ -418,7 +423,8 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
-	const r = runPi(lane, prompt, targetDir);
+	const toolsOverride = lane === "blitz" && fx.id.includes("multi/large-structural") ? "pi_blitz_patch" : undefined;
+	const r = runPi(lane, prompt, targetDir, toolsOverride);
 	if (r.status !== 0) {
 		if (verbose) console.error(`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
 	}

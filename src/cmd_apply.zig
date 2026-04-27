@@ -839,7 +839,8 @@ fn resolveCompactPatchEdits(
         if (std.mem.eql(u8, op_name, "try_catch")) {
             if (op_arr.items.len < 3) return ApplyError.MissingField;
             if (lang != .typescript and lang != .tsx) return ApplyError.UnsupportedMultiEditOperation;
-            const catch_body = try requireTupleString(op_arr, 2);
+            const catch_body = try normalizeMultilineTrim(allocator, try requireTupleString(op_arr, 2));
+            defer allocator.free(catch_body);
             const indent = try tupleOptionalIndent(op_arr, 3, 2);
             const body_for_try = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
             defer allocator.free(body_for_try);
@@ -894,11 +895,37 @@ fn isReturnNodeKind(kind: []const u8) bool {
 }
 
 fn buildReturnReplacement(allocator: Allocator, lang: bindings.Language, expr: []const u8) ![]u8 {
+    const cleaned = trimReturnExpr(expr);
     const suffix = switch (lang) {
         .python => "",
         else => ";",
     };
-    return concat3(allocator, "return ", expr, suffix);
+    return concat3(allocator, "return ", cleaned, suffix);
+}
+
+fn trimAscii(value: []const u8) []const u8 {
+    return std.mem.trim(u8, value, " \t\r\n");
+}
+
+fn trimReturnExpr(value: []const u8) []const u8 {
+    var cleaned = trimAscii(value);
+    if (cleaned.len > 0 and cleaned[cleaned.len - 1] == ';') {
+        cleaned = trimAscii(cleaned[0 .. cleaned.len - 1]);
+    }
+    return cleaned;
+}
+
+fn normalizeMultilineTrim(allocator: Allocator, value: []const u8) ![]u8 {
+    const cleaned = trimAscii(value);
+    var out = std.ArrayList(u8).empty;
+    var it = std.mem.splitScalar(u8, cleaned, '\n');
+    var first = true;
+    while (it.next()) |line| {
+        if (!first) try out.append(allocator, '\n');
+        first = false;
+        try out.appendSlice(allocator, trimAscii(line));
+    }
+    return out.toOwnedSlice(allocator);
 }
 
 fn requireTupleString(items: std.json.Array, index: usize) ![]const u8 {
