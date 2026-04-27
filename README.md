@@ -8,6 +8,20 @@ Blitz lets an agent change a large function without printing the large function 
 
 Coding agents are slow and expensive when they rewrite code they mostly want to keep. Blitz is built for edits where most of the file should stay unchanged.
 
+### Current benchmark snapshot
+
+`gpt-5.4-mini`, live Pi tool calls, N=1 full matrix plus prior N=5 checks on strong classes:
+
+| Edit class | Core edit | Blitz | Result |
+|---|---:|---:|---|
+| 10k function try/catch wrap | 9,640 output tokens / 61s | 85 output tokens / 4.6s | 99.1% fewer output tokens |
+| Large structural patch, 3 edits | 9,708 output tokens / failed output | 107 output tokens / correct | 98.9% fewer output tokens vs failed core attempt |
+| Async try/catch wrapper | 149 arg tokens | 42 arg tokens | 71.8% fewer tool-call arg tokens |
+| Class method try/catch wrapper | 118 arg tokens | 40 arg tokens | 66.1% fewer tool-call arg tokens |
+| TSX return replacement | 67 arg tokens | 48 arg tokens | 28.4% fewer tool-call arg tokens |
+
+Full reports live under `reports/`. Public claims should keep correctness and token categories separate.
+
 Good Blitz edits are usually:
 
 - wrapping a large function body
@@ -16,7 +30,9 @@ Good Blitz edits are usually:
 - doing several small structural edits in one file
 - renaming an identifier without touching comments or strings
 
-On a measured 10k-token function wrap, Blitz reduced model output from about 9,600 tokens to about 85 tokens and cut wall time from about 62s to about 4s. Small one-line edits still belong to normal text editing tools.
+On a measured 10k-token function wrap, Blitz reduced model output from 9,640 tokens to 85 tokens and cut wall time from 61s to 4.6s. On a larger three-edit structural patch, Blitz used 107 output tokens where a core edit attempt used 9,708 and failed the expected output. For smaller semantic edits, the savings are smaller but still useful: try/catch wrappers cut tool-call arguments by 66–72%, and return-expression rewrites cut them by 22–28% in the current Pi bench.
+
+Small one-line edits still belong to normal text editing tools.
 
 ## How it works
 

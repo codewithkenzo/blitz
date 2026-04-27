@@ -1,0 +1,262 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 1,
+  "timeoutMs": 120000,
+  "generatedAt": "2026-04-27T20:20:22.068Z",
+  "rows": [
+    {
+      "fixture": "small/wrap-tail",
+      "className": "tiny_unique_replace",
+      "recommendedLane": "core",
+      "lane": "core",
+      "wallMsMedian": 3166.230888,
+      "outputMedian": 93,
+      "argsTokensMedian": 77,
+      "correctRate": 1,
+      "costSum": 0.0027045000000000003
+    },
+    {
+      "fixture": "medium-10k/marker-tail",
+      "className": "medium_tail_replace",
+      "recommendedLane": "core",
+      "lane": "core",
+      "wallMsMedian": 3614.2770219999998,
+      "outputMedian": 62,
+      "argsTokensMedian": 46,
+      "correctRate": 1,
+      "costSum": 0.0064969500000000005
+    },
+    {
+      "fixture": "medium-10k/marker-tail",
+      "className": "medium_tail_replace",
+      "recommendedLane": "core",
+      "lane": "blitz",
+      "wallMsMedian": 3090.6821010000012,
+      "outputMedian": 65,
+      "argsTokensMedian": 44,
+      "correctRate": 1,
+      "costSum": 0.0076089
+    },
+    {
+      "fixture": "medium-10k/wrap-body",
+      "className": "medium_wrap_body",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 61244.000479999995,
+      "outputMedian": 9640,
+      "argsTokensMedian": 9624,
+      "correctRate": 1,
+      "costSum": 0.04884839999999999
+    },
+    {
+      "fixture": "medium-10k/wrap-body",
+      "className": "medium_wrap_body",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 4604.767252000005,
+      "outputMedian": 85,
+      "argsTokensMedian": 65,
+      "correctRate": 1,
+      "costSum": 0.005339699999999999
+    },
+    {
+      "fixture": "medium-10k/compose-preserve-islands",
+      "className": "compose_preserve_islands",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 3734.4955740000005,
+      "outputMedian": 157,
+      "argsTokensMedian": 141,
+      "correctRate": 0,
+      "costSum": 0.0066786
+    },
+    {
+      "fixture": "medium-10k/compose-preserve-islands",
+      "className": "compose_preserve_islands",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 4298.517353000003,
+      "outputMedian": 244,
+      "argsTokensMedian": 206,
+      "correctRate": 1,
+      "costSum": 0.0095757
+    },
+    {
+      "fixture": "multi/three-body-ops",
+      "className": "multi_body_three_ops",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 7354.873704000012,
+      "outputMedian": 157,
+      "argsTokensMedian": 141,
+      "correctRate": 0,
+      "costSum": 0.0017728499999999999
+    },
+    {
+      "fixture": "multi/three-body-ops",
+      "className": "multi_body_three_ops",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3194.0879130000103,
+      "outputMedian": 108,
+      "argsTokensMedian": 89,
+      "correctRate": 0,
+      "costSum": 0.00681
+    },
+    {
+      "fixture": "multi/large-structural",
+      "className": "multi_body_large_structural",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 61377.541946,
+      "outputMedian": 9708,
+      "argsTokensMedian": 9692,
+      "correctRate": 0,
+      "costSum": 0.050691299999999995
+    },
+    {
+      "fixture": "multi/large-structural",
+      "className": "multi_body_large_structural",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3955.6716510000115,
+      "outputMedian": 107,
+      "argsTokensMedian": 88,
+      "correctRate": 1,
+      "costSum": 0.0067356000000000004
+    },
+    {
+      "fixture": "huge-100k/marker-tail",
+      "className": "huge_tail_replace",
+      "recommendedLane": "core",
+      "lane": "core",
+      "wallMsMedian": 6605.011780000001,
+      "outputMedian": 64,
+      "argsTokensMedian": 48,
+      "correctRate": 1,
+      "costSum": 0.03967485
+    },
+    {
+      "fixture": "huge-100k/marker-tail",
+      "className": "huge_tail_replace",
+      "recommendedLane": "core",
+      "lane": "blitz",
+      "wallMsMedian": 5491.625010000018,
+      "outputMedian": 67,
+      "argsTokensMedian": 46,
+      "correctRate": 1,
+      "costSum": 0.04216695
+    },
+    {
+      "fixture": "semantic/async-try-catch",
+      "className": "async_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 4433.949468000006,
+      "outputMedian": 165,
+      "argsTokensMedian": 149,
+      "correctRate": 1,
+      "costSum": 0.0018951000000000003
+    },
+    {
+      "fixture": "semantic/async-try-catch",
+      "className": "async_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 2483.5963150000025,
+      "outputMedian": 63,
+      "argsTokensMedian": 42,
+      "correctRate": 1,
+      "costSum": 0.0014631
+    },
+    {
+      "fixture": "semantic/class-method-try-catch",
+      "className": "class_method_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 3638.4669339999964,
+      "outputMedian": 134,
+      "argsTokensMedian": 118,
+      "correctRate": 1,
+      "costSum": 0.0031095
+    },
+    {
+      "fixture": "semantic/class-method-try-catch",
+      "className": "class_method_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 2579.892001,
+      "outputMedian": 61,
+      "argsTokensMedian": 40,
+      "correctRate": 1,
+      "costSum": 0.0014361
+    },
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 4582.120691000018,
+      "outputMedian": 62,
+      "argsTokensMedian": 46,
+      "correctRate": 1,
+      "costSum": 0.0013446
+    },
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 4275.742547000002,
+      "outputMedian": 56,
+      "argsTokensMedian": 36,
+      "correctRate": 1,
+      "costSum": 0.00139635
+    },
+    {
+      "fixture": "semantic/nested-return-occurrence",
+      "className": "nested_return_occurrence",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 3593.463552000001,
+      "outputMedian": 62,
+      "argsTokensMedian": 46,
+      "correctRate": 1,
+      "costSum": 0.0027270000000000003
+    },
+    {
+      "fixture": "semantic/nested-return-occurrence",
+      "className": "nested_return_occurrence",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3148.8064719999966,
+      "outputMedian": 56,
+      "argsTokensMedian": 36,
+      "correctRate": 1,
+      "costSum": 0.00139635
+    },
+    {
+      "fixture": "semantic/tsx-replace-return",
+      "className": "tsx_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "wallMsMedian": 3432.611316000024,
+      "outputMedian": 83,
+      "argsTokensMedian": 67,
+      "correctRate": 1,
+      "costSum": 0.0012853500000000002
+    },
+    {
+      "fixture": "semantic/tsx-replace-return",
+      "className": "tsx_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 2880.520495999983,
+      "outputMedian": 68,
+      "argsTokensMedian": 48,
+      "correctRate": 1,
+      "costSum": 0.00303435
+    }
+  ]
+}
