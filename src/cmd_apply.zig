@@ -1195,7 +1195,7 @@ fn resolveMultiBodyEdits(
                 });
             },
             .compose_body => {
-                // TODO: multi-body compose_body not implemented yet due nested span risk.
+                // Multi-body compose_body stays unsupported until nested span composition is proven safe.
                 return ApplyError.UnsupportedMultiEditOperation;
             },
             .multi_body, .insert_after_symbol => return ApplyError.UnsupportedMultiEditOperation,
