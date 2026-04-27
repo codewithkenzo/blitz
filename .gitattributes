@@ -5,3 +5,6 @@ grammars/** linguist-vendored
 # Generated parser sources should not dominate diffs/stats.
 grammars/**/src/parser.c linguist-generated
 grammars/**/src/scanner.c linguist-generated
+
+# Bench harnesses and synthetic fixtures are not product/runtime code.
+bench/** linguist-vendored
