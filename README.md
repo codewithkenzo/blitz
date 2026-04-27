@@ -67,6 +67,10 @@ blitz doctor
 | Layer B fuzzy recovery | ⏳ ticket blitz-07 (v0.2) |
 | Layer C tree-sitter query rewrites | ⏳ ticket blitz-08 (v0.2) |
 
+## Performance
+
+Latest micro-benchmark (v0.1 direct-swap; Layer A markers ship in d1o-cewc): median ~8.6 ms wall-time, ~19% direct-swap savings. See [`bench/run.ts`](./bench/run.ts).
+
 ## Pi integration
 
 `@codewithkenzo/pi-blitz` — Effect v4 Pi extension that wraps this binary. Separate repo (tracked in `codewithkenzo/pi-rig`).

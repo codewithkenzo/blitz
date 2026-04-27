@@ -31,6 +31,11 @@ const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BINARY = `${REPO_ROOT}/zig-out/bin/blitz`;
 const ITERATIONS = 5;
 
+const DEFAULT_THRESHOLDS = {
+	maxWallMs: 25,
+	minSavingsPct: 5,
+} as const;
+
 type Case = {
 	id: string;
 	fixture: string; // basename under bench/fixtures/
@@ -45,7 +50,7 @@ const CASES: Case[] = [
 		symbol: "greet",
 		new_body: `function greet(name: string): string {
   try {
-    return \`hello \${name.toUpperCase()}\`;
+    return "hello " + name.toUpperCase();
   } catch (e) {
     return "error";
   }
@@ -146,8 +151,26 @@ const CASES: Case[] = [
   }
 
   const totalDuration = performance.now() - startTime;
-  console.log(\`[processBatch] \${items.length} items in \${totalDuration.toFixed(2)}ms\`);
+  console.log("[processBatch] " + items.length + " items in " + totalDuration.toFixed(2) + "ms");
   return results;
+}`,
+	},
+	{
+		id: "marker/analyze-values",
+		fixture: "marker.ts",
+		symbol: "analyzeValues",
+		new_body: `function analyzeValues(values: ReadonlyArray<number>): string {
+  if (values.length === 0) {
+    return "n/a";
+  }
+
+  const sorted = [...values].filter(Number.isFinite);
+  const count = sorted.length + 0;
+  const min = sorted[0]!;
+  let outliers = 0;
+  // ... existing code ...
+  const report = "report:${'${'}body} range=${'${'}min}..${'${'}max}";
+  return report + " [bounded]";
 }`,
 	},
 ];
@@ -213,8 +236,34 @@ type Row = {
 	blitz_snippet_tokens: number;
 	blitz_total_tokens: number; // snippet + symbol-name + small flag overhead
 	tokens_saved: number;
-	pct_saved: string;
-	median_wall_ms: string;
+	pct_saved: number;
+	median_wall_ms: number;
+};
+
+type RegressionThresholds = {
+	maxWallMs: number;
+	minSavingsPct: number;
+};
+
+const readThresholds = async (): Promise<RegressionThresholds> => {
+	const thresholdPath = join(REPO_ROOT, "bench", "regression-thresholds.json");
+	try {
+		const raw = await readFile(thresholdPath, "utf8");
+		const parsed = JSON.parse(raw);
+		const maxWallMs = typeof parsed?.maxWallMs === "number" ? parsed.maxWallMs : DEFAULT_THRESHOLDS.maxWallMs;
+		const minSavingsPct =
+			typeof parsed?.minSavingsPct === "number"
+				? parsed.minSavingsPct
+				: DEFAULT_THRESHOLDS.minSavingsPct;
+		return { maxWallMs, minSavingsPct };
+	} catch (err) {
+		const maybeNodeErr = err as NodeJS.ErrnoException;
+		if (maybeNodeErr.code === "ENOENT") {
+			return DEFAULT_THRESHOLDS;
+		}
+		console.error("WARN: cannot read regression thresholds, using defaults", String(err));
+		return DEFAULT_THRESHOLDS;
+	}
 };
 
 const main = async () => {
@@ -222,6 +271,12 @@ const main = async () => {
 	console.log(`Binary:    ${BLITZ_BINARY}`);
 	console.log(`Iterations per case: ${ITERATIONS}`);
 	console.log(`Generated: ${new Date().toISOString()}\n`);
+
+	const thresholds = await readThresholds();
+	console.log(
+		`Regression thresholds: max wall ${thresholds.maxWallMs}ms, min savings ${thresholds.minSavingsPct}%`,
+	);
+	console.log(`Using thresholds from ${join(REPO_ROOT, "bench", "regression-thresholds.json")} if present.\n`);
 
 	const rows: Row[] = [];
 
@@ -250,7 +305,8 @@ const main = async () => {
 		// Symbol name + envelope overhead: roughly 8 tokens for tool wrapper
 		const blitzTotal = blitzSnippet + estimateTokens(c.symbol) + 8;
 		const saved = coreTotal - blitzTotal;
-		const pct = (saved / coreTotal) * 100;
+		const pctSaved = (saved / coreTotal) * 100;
+		const medianWallMs = median(wallTimes);
 
 		rows.push({
 			case_id: c.id,
@@ -260,34 +316,60 @@ const main = async () => {
 			blitz_snippet_tokens: blitzSnippet,
 			blitz_total_tokens: blitzTotal,
 			tokens_saved: saved,
-			pct_saved: pct.toFixed(1) + "%",
-			median_wall_ms: median(wallTimes).toFixed(1),
+			pct_saved: pctSaved,
+			median_wall_ms: medianWallMs,
 		});
 	}
 
 	const cols = [
-		{ key: "case_id", label: "Case" },
-		{ key: "core_total_tokens", label: "core (oldT+newT)" },
-		{ key: "blitz_total_tokens", label: "blitz (snippet+sym)" },
-		{ key: "tokens_saved", label: "saved" },
-		{ key: "pct_saved", label: "%" },
-		{ key: "median_wall_ms", label: "wall ms (median)" },
+		{ key: "case_id" as const, label: "Case", format: (v: string) => v },
+		{ key: "core_total_tokens" as const, label: "core (oldT+newT)", format: (v: number) => String(v) },
+		{ key: "blitz_total_tokens" as const, label: "blitz (snippet+sym)", format: (v: number) => String(v) },
+		{ key: "tokens_saved" as const, label: "saved", format: (v: number) => String(v) },
+		{ key: "pct_saved" as const, label: "%", format: (v: number) => `${v.toFixed(1)}%` },
+		{ key: "median_wall_ms" as const, label: "wall ms (median)", format: (v: number) => v.toFixed(1) },
 	] as const;
 
-	const widths = cols.map((c) => Math.max(c.label.length, ...rows.map((r) => String(r[c.key]).length)));
+	type Col = (typeof cols)[number];
+	const widths = cols.map((c: Col) => {
+		const cellWidths = rows.map((r) => c.format(r[c.key]).length);
+		return Math.max(c.label.length, ...cellWidths);
+	});
 	const header = cols.map((c, i) => c.label.padEnd(widths[i]!)).join(" | ");
 	const sep = widths.map((w) => "-".repeat(w)).join("-|-");
 	console.log(`| ${header} |`);
 	console.log(`|-${sep}-|`);
 	for (const r of rows) {
-		const cells = cols.map((c, i) => String(r[c.key]).padEnd(widths[i]!));
+		const cells = cols.map((c, i) => c.format(r[c.key]).padEnd(widths[i]!));
 		console.log(`| ${cells.join(" | ")} |`);
 	}
 
 	console.log("");
-	const avgPct = rows.reduce((acc, r) => acc + parseFloat(r.pct_saved), 0) / rows.length;
-	const avgMs = rows.reduce((acc, r) => acc + parseFloat(r.median_wall_ms), 0) / rows.length;
-	console.log(`Aggregate: ~${avgPct.toFixed(1)}% output-token reduction, median wall-time ~${avgMs.toFixed(1)}ms / call.`);
+	const totalCoreTokens = rows.reduce((acc, r) => acc + r.core_total_tokens, 0);
+	const totalSaved = rows.reduce((acc, r) => acc + r.tokens_saved, 0);
+	const aggregateSavingsPct = totalCoreTokens > 0 ? (totalSaved / totalCoreTokens) * 100 : 0;
+	const aggregateMedianWallMs = median(rows.map((r) => r.median_wall_ms));
+	console.log(
+		`Aggregate: ~${aggregateSavingsPct.toFixed(1)}% output-token reduction, median wall-time ~${aggregateMedianWallMs.toFixed(1)}ms / case.`,
+	);
+
+	if (aggregateMedianWallMs > thresholds.maxWallMs) {
+		console.log(
+			`FAIL: aggregate median wall-time ${aggregateMedianWallMs.toFixed(1)}ms exceeded threshold ${thresholds.maxWallMs}ms`,
+		);
+		console.log("FAIL: benchmark regression threshold exceeded.");
+		process.exit(1);
+	}
+
+	if (aggregateSavingsPct < thresholds.minSavingsPct) {
+		console.log(
+			`FAIL: aggregate savings ${aggregateSavingsPct.toFixed(1)}% below threshold ${thresholds.minSavingsPct}%`,
+		);
+		console.log("FAIL: benchmark regression threshold exceeded.");
+		process.exit(1);
+	}
+
+	console.log("PASS: benchmark regression gate satisfied.");
 	console.log("");
 	console.log("Caveats:");
 	console.log("- Tokens are bytes/4 estimate, not real tokenizer output.");

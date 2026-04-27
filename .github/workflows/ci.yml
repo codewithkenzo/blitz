@@ -39,6 +39,22 @@ jobs:
       - name: Build
         run: zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSafe
 
+      - name: Setup Bun (linux-musl only)
+        if: matrix.target == 'x86_64-linux-musl'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Smoke version
+        if: matrix.target == 'aarch64-macos' || matrix.target == 'x86_64-macos' || matrix.target == 'x86_64-linux-musl'
+        run: ./zig-out/bin/blitz --version
+
+      - name: Smoke doctor
+        if: matrix.target == 'aarch64-macos' || matrix.target == 'x86_64-macos' || matrix.target == 'x86_64-linux-musl'
+        run: ./zig-out/bin/blitz doctor
+
+      - name: Smoke benchmark regression gate
+        if: matrix.target == 'x86_64-linux-musl'
+        run: bun run bench/run.ts
+
       - name: Test (native only)
         if: matrix.target == 'x86_64-linux-musl' || matrix.target == 'aarch64-macos'
         run: zig build test
