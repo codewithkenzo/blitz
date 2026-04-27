@@ -145,12 +145,12 @@ fn parseStrict(parser: *bindings.Parser, source: []const u8) !bindings.Tree {
     return tree;
 }
 
-const ByteRange = struct {
+pub const ByteRange = struct {
     start: usize,
     end: usize,
 };
 
-fn replacementRangeFor(lang: bindings.Language, source: []const u8, target: bindings.Node) ByteRange {
+pub fn replacementRangeFor(lang: bindings.Language, source: []const u8, target: bindings.Node) ByteRange {
     const fallback: ByteRange = .{ .start = @intCast(target.startByte()), .end = @intCast(target.endByte()) };
     const body = findBodyNode(target) orelse return fallback;
     const body_start: usize = @intCast(body.startByte());
@@ -163,7 +163,7 @@ fn replacementRangeFor(lang: bindings.Language, source: []const u8, target: bind
     };
 }
 
-fn findBodyNode(target: bindings.Node) ?bindings.Node {
+pub fn findBodyNode(target: bindings.Node) ?bindings.Node {
     var i: u32 = 0;
     while (i < target.childCount()) : (i += 1) {
         if (target.fieldNameForChild(i)) |field_name| {
@@ -183,7 +183,7 @@ fn findBodyNode(target: bindings.Node) ?bindings.Node {
     return null;
 }
 
-fn braceInteriorRange(source: []const u8, start: usize, end: usize) ?ByteRange {
+pub fn braceInteriorRange(source: []const u8, start: usize, end: usize) ?ByteRange {
     if (end <= start + 1 or end > source.len) return null;
     var left = start;
     while (left < end and std.ascii.isWhitespace(source[left])) : (left += 1) {}

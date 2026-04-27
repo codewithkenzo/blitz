@@ -8,6 +8,7 @@ const cli = @import("cli.zig");
 const cmd_read = @import("cmd_read.zig");
 const cmd_edit = @import("cmd_edit.zig");
 const cmd_batch = @import("cmd_batch.zig");
+const cmd_apply = @import("cmd_apply.zig");
 const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
@@ -66,6 +67,10 @@ pub fn main(init: std.process.Init) !void {
 
         if (std.mem.eql(u8, cmd, "batch-edit")) {
             break :blk try dispatchBatch(gpa, io, &it, stdout, stderr);
+        }
+
+        if (std.mem.eql(u8, cmd, "apply")) {
+            break :blk try dispatchApply(gpa, io, &it, stdout, stderr);
         }
 
         if (std.mem.eql(u8, cmd, "rename")) {
@@ -196,6 +201,51 @@ fn dispatchBatch(
     defer gpa.free(edits_bytes);
 
     return try cmd_batch.run(gpa, io, file, edits_bytes, stdout, stderr);
+}
+
+
+fn dispatchApply(
+    gpa: std.mem.Allocator,
+    io: std.Io,
+    it: *std.process.Args.Iterator,
+    stdout: *std.Io.Writer,
+    stderr: *std.Io.Writer,
+) !u8 {
+    var edit_arg: ?[]const u8 = null;
+    var dry_run = false;
+    var diff = false;
+    var json_output = false;
+
+    while (it.next()) |flag| {
+        if (std.mem.eql(u8, flag, "--edit")) {
+            edit_arg = it.next() orelse {
+                try stderr.writeAll("blitz apply: --edit expects a value\n");
+                return 1;
+            };
+        } else if (std.mem.eql(u8, flag, "--dry-run")) {
+            dry_run = true;
+        } else if (std.mem.eql(u8, flag, "--diff")) {
+            diff = true;
+        } else if (std.mem.eql(u8, flag, "--json")) {
+            json_output = true;
+        } else {
+            try stderr.print("blitz apply: unknown flag '{s}'\n", .{flag});
+            return 1;
+        }
+    }
+
+    const request_bytes = edit_arg orelse {
+        try stderr.writeAll("blitz apply: --edit is required\n");
+        return 1;
+    };
+
+    const request_data = if (std.mem.eql(u8, request_bytes, "-"))
+        try readAllStdin(gpa, io)
+    else
+        try gpa.dupe(u8, request_bytes);
+    defer gpa.free(request_data);
+
+    return try cmd_apply.run(gpa, io, request_data, dry_run, diff, json_output, stdout, stderr);
 }
 
 fn dispatchRename(
