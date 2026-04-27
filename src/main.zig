@@ -14,7 +14,7 @@ const cmd_undo = @import("cmd_undo.zig");
 const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
 
-pub const version = "0.1.0-alpha.8";
+pub const version = "0.1.0-alpha.9";
 const MAX_STDIN_BYTES = 4 * 1024 * 1024;
 
 pub fn main(init: std.process.Init) !void {

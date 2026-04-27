@@ -3,6 +3,7 @@ const bindings = @import("tree_sitter/bindings.zig");
 const workspace = @import("workspace.zig");
 
 const Writer = std.Io.Writer;
+const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 pub fn run(
     allocator: std.mem.Allocator,
@@ -58,6 +59,7 @@ fn readFileAlloc(allocator: std.mem.Allocator, io: std.Io, file_path: []const u8
 
     const stat = try file.stat(io);
     const capacity = std.math.cast(usize, stat.size) orelse return error.FileTooBig;
+    if (capacity > MAX_SOURCE_BYTES) return error.FileTooBig;
     const buffer = try allocator.alloc(u8, capacity);
     errdefer allocator.free(buffer);
 
