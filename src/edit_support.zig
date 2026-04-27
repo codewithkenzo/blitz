@@ -183,6 +183,13 @@ pub fn findBodyNode(target: bindings.Node) ?bindings.Node {
             std.mem.eql(u8, kind, "class_body") or
             std.mem.eql(u8, kind, "declaration_list")) return child;
     }
+
+    i = 0;
+    while (i < target.namedChildCount()) : (i += 1) {
+        const child = target.namedChild(i) orelse continue;
+        if (findBodyNode(child)) |body| return body;
+    }
+
     return null;
 }
 

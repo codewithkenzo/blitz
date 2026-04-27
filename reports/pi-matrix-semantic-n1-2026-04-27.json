@@ -1,0 +1,64 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 1,
+  "timeoutMs": 120000,
+  "generatedAt": "2026-04-27T19:28:33.609Z",
+  "rows": [
+    {
+      "fixture": "semantic/async-try-catch",
+      "className": "async_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 6013.248033,
+      "outputMedian": 61,
+      "argsTokensMedian": 40,
+      "correctRate": 1,
+      "costSum": 0.0028274999999999997
+    },
+    {
+      "fixture": "semantic/class-method-try-catch",
+      "className": "class_method_try_catch",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3212.5873699999993,
+      "outputMedian": 62,
+      "argsTokensMedian": 41,
+      "correctRate": 1,
+      "costSum": 0.0014451000000000002
+    },
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 2761.1505819999984,
+      "outputMedian": 55,
+      "argsTokensMedian": 35,
+      "correctRate": 1,
+      "costSum": 0.00138735
+    },
+    {
+      "fixture": "semantic/nested-return-occurrence",
+      "className": "nested_return_occurrence",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3281.946806,
+      "outputMedian": 55,
+      "argsTokensMedian": 35,
+      "correctRate": 1,
+      "costSum": 0.00138735
+    },
+    {
+      "fixture": "semantic/tsx-replace-return",
+      "className": "tsx_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 3124.0941249999996,
+      "outputMedian": 69,
+      "argsTokensMedian": 49,
+      "correctRate": 1,
+      "costSum": 0.0013153499999999999
+    }
+  ]
+}

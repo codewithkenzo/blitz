@@ -859,12 +859,7 @@ fn resolveCompactPatchEdits(
             const catch_body = try normalizeMultilineTrim(allocator, try requireTupleString(op_arr, 2));
             defer allocator.free(catch_body);
             const indent = try tupleOptionalIndent(op_arr, 3, 2);
-            const body_for_try = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
-            defer allocator.free(body_for_try);
-            const catch_indent = if (indent == 0) @as(usize, 0) else indent * 2;
-            const catch_for_try = if (catch_indent == 0) try allocator.dupe(u8, catch_body) else try indentBody(allocator, catch_body, catch_indent);
-            defer allocator.free(catch_for_try);
-            const wrapped = try concat5(allocator, "\n  try {", body_for_try, "  } catch (error) {\n", catch_for_try, "\n  }\n");
+            const wrapped = try buildTryCatchWrapped(allocator, body, catch_body, indent);
             try resolved.append(allocator, .{
                 .start = body_range.start,
                 .end = body_range.end,
@@ -1308,6 +1303,57 @@ fn spliceText(allocator: Allocator, source: []const u8, start: usize, end: usize
     @memcpy(out[0..start], source[0..start]);
     @memcpy(out[start .. start + replacement.len], replacement);
     @memcpy(out[start + replacement.len ..], source[end..]);
+    return out;
+}
+
+fn firstContentIndent(body: []const u8) usize {
+    var i: usize = 0;
+    while (i < body.len) {
+        var count: usize = 0;
+        while (i < body.len and body[i] == ' ') : (i += 1) count += 1;
+        if (i >= body.len) return 0;
+        if (body[i] == '\n') {
+            i += 1;
+            continue;
+        }
+        if (body[i] == '\r') {
+            i += 1;
+            if (i < body.len and body[i] == '\n') i += 1;
+            continue;
+        }
+        return count;
+    }
+    return 0;
+}
+
+fn spaces(allocator: Allocator, count: usize) ![]u8 {
+    const out = try allocator.alloc(u8, count);
+    @memset(out, ' ');
+    return out;
+}
+
+fn buildTryCatchWrapped(allocator: Allocator, body: []const u8, catch_body: []const u8, indent: usize) ![]u8 {
+    const body_clean = std.mem.trimEnd(u8, body, " \t");
+    const trailing_outer = body[body_clean.len..];
+    const base_indent = firstContentIndent(body_clean);
+    const base = try spaces(allocator, base_indent);
+    defer allocator.free(base);
+    const catch_indent = base_indent + indent;
+    const catch_prefix = try spaces(allocator, catch_indent);
+    defer allocator.free(catch_prefix);
+    const body_for_try = if (indent == 0) try allocator.dupe(u8, body_clean) else try indentBody(allocator, body_clean, indent);
+    defer allocator.free(body_for_try);
+    const catch_for_try = if (catch_indent == 0) try allocator.dupe(u8, catch_body) else try indentBody(allocator, catch_body, catch_indent);
+    defer allocator.free(catch_for_try);
+
+    const len = 1 + base.len + "try {".len + body_for_try.len + base.len + "} catch (error) {\n".len + catch_for_try.len + 1 + base.len + "}\n".len + trailing_outer.len;
+    const out = try allocator.alloc(u8, len);
+    var pos: usize = 0;
+    const parts = [_][]const u8{ "\n", base, "try {", body_for_try, base, "} catch (error) {\n", catch_for_try, "\n", base, "}\n", trailing_outer };
+    for (parts) |part| {
+        @memcpy(out[pos .. pos + part.len], part);
+        pos += part.len;
+    }
     return out;
 }
 

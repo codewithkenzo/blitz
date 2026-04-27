@@ -121,6 +121,14 @@ Goal: make three edits in the same file:
 Original file contents:
 ${src}`;
 
+const buildSemanticIntent = (filePath: string, src: string, goal: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
+
+Goal: ${goal}
+
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
@@ -181,6 +189,46 @@ const FIXTURES: Fixture[] = [
 		recommendedLane: "core",
 		className: "huge_tail_replace",
 	},
+	{
+		id: "semantic/async-try-catch",
+		relPath: "semantic.ts",
+		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "wrap the entire body of async function loadUser in try/catch. Preserve all await statements unchanged. Catch should call console.error(error); then throw error."),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "async_try_catch",
+	},
+	{
+		id: "semantic/class-method-try-catch",
+		relPath: "semantic.ts",
+		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "wrap the entire body of class method renderScore in try/catch. Catch should call console.error(error); then throw error."),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "class_method_try_catch",
+	},
+	{
+		id: "semantic/arrow-replace-return",
+		relPath: "semantic.ts",
+		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "in arrow function pickLabel, replace the last return expression with \"unknown\". Leave the earlier active return unchanged."),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "arrow_replace_return",
+	},
+	{
+		id: "semantic/nested-return-occurrence",
+		relPath: "semantic.ts",
+		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "in function classify, replace only the last return expression with \"other\". Leave the negative and zero returns unchanged."),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "nested_return_occurrence",
+	},
+	{
+		id: "semantic/tsx-replace-return",
+		relPath: "component.tsx",
+		intent: (p: string) => buildSemanticIntent(p, componentSrc, "in function StatusBadge, replace the return expression with <strong className=\"badge\">{label.toUpperCase()}</strong>."),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "tsx_replace_return",
+	},
 ];
 
 const smallSrc = await readFile(join(fixtureDir, "small.ts"), "utf8");
@@ -235,6 +283,46 @@ const multiLargeExpected = multiLargeSrc
 	.replace("  return status;", "  return status.toUpperCase();");
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
+const semanticSrc = await readFile(join(fixtureDir, "semantic.ts"), "utf8");
+const asyncTryCatchExpected = semanticSrc.replace(
+	`export async function loadUser(id: string): Promise<string> {
+  const response = await fetch(\`/api/users/\${id}\`);
+  const payload = await response.json();
+  return payload.name;
+}`,
+	`export async function loadUser(id: string): Promise<string> {
+  try {
+    const response = await fetch(\`/api/users/\${id}\`);
+    const payload = await response.json();
+    return payload.name;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}`,
+);
+const classTryCatchExpected = semanticSrc.replace(
+	`  renderScore(score: number): string {
+    const rounded = Math.round(score);
+    return \`score:\${rounded}\`;
+  }`,
+	`  renderScore(score: number): string {
+    try {
+      const rounded = Math.round(score);
+      return \`score:\${rounded}\`;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }`,
+);
+const arrowReturnExpected = semanticSrc.replace(`  return "idle";`, `  return "unknown";`);
+const nestedReturnExpected = semanticSrc.replace(`  return "positive";`, `  return "other";`);
+const componentSrc = await readFile(join(fixtureDir, "component.tsx"), "utf8");
+const componentReturnExpected = componentSrc.replace(
+	`  return <span className="badge">{label}</span>;`,
+	`  return <strong className="badge">{label.toUpperCase()}</strong>;`,
+);
 
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
@@ -243,6 +331,11 @@ FIXTURES[3]!.expectedFile = mediumComposeExpected;
 FIXTURES[4]!.expectedFile = multiExpected;
 FIXTURES[5]!.expectedFile = multiLargeExpected;
 FIXTURES[6]!.expectedFile = hugeExpected;
+FIXTURES[7]!.expectedFile = asyncTryCatchExpected;
+FIXTURES[8]!.expectedFile = classTryCatchExpected;
+FIXTURES[9]!.expectedFile = arrowReturnExpected;
+FIXTURES[10]!.expectedFile = nestedReturnExpected;
+FIXTURES[11]!.expectedFile = componentReturnExpected;
 
 const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
 
@@ -280,7 +373,7 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		toolsOverride ?? "pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch",
+		toolsOverride ?? "pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return",
 		prompt,
 	];
 };
@@ -418,12 +511,33 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 			guidance += " For this edit, call `pi_blitz_patch` with ops [[`try_catch`,`mediumCompute`,`console.error(error);\nthrow error;`], [`insert_after`,`auditEvent`,`const normalized = event.trim();`,`\n  const tagged = `[audit] ${normalized}`;`,`only`], [`replace_return`,`formatStatus`,`status.toUpperCase()`,`only`]].";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+		} else if (fx.id.includes("semantic/async-try-catch")) {
+			guidance += " For this edit, call `pi_blitz_try_catch` with symbol `loadUser`, catchBody `console.error(error);\nthrow error;`, and indent 2.";
+		} else if (fx.id.includes("semantic/class-method-try-catch")) {
+			guidance += " For this edit, call `pi_blitz_try_catch` with symbol `renderScore`, catchBody `console.error(error);\nthrow error;`, and indent 2.";
+		} else if (fx.id.includes("semantic/arrow-replace-return")) {
+			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, expr `\"unknown\"`, occurrence `last`.";
+		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
+			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `classify`, expr `\"other\"`, occurrence `last`.";
+		} else if (fx.id.includes("semantic/tsx-replace-return")) {
+			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, expr `<strong className=\"badge\">{label.toUpperCase()}</strong>`, occurrence `only`.";
 		} else if (fx.id.includes("small")) {
 			guidance += " For this edit, route to core oldText/newText.";
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
-	const toolsOverride = lane === "blitz" && fx.id.includes("multi/large-structural") ? "pi_blitz_patch" : undefined;
+	const semanticTools: Record<string, string> = {
+		"semantic/async-try-catch": "pi_blitz_try_catch",
+		"semantic/class-method-try-catch": "pi_blitz_try_catch",
+		"semantic/arrow-replace-return": "pi_blitz_replace_return",
+		"semantic/nested-return-occurrence": "pi_blitz_replace_return",
+		"semantic/tsx-replace-return": "pi_blitz_replace_return",
+	};
+	const toolsOverride = lane !== "blitz"
+		? undefined
+		: fx.id.includes("multi/large-structural")
+			? "pi_blitz_patch"
+			: semanticTools[fx.id];
 	const r = runPi(lane, prompt, targetDir, toolsOverride);
 	if (r.status !== 0) {
 		if (verbose) console.error(`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
