@@ -79,6 +79,7 @@ pub const c = struct {
     pub extern fn ts_node_named_child(self: TSNode, child_index: u32) TSNode;
     pub extern fn ts_node_named_child_count(self: TSNode) u32;
     pub extern fn ts_node_is_null(self: TSNode) bool;
+    pub extern fn ts_node_has_error(self: TSNode) bool;
     pub extern fn ts_query_new(
         language: *const TSLanguage,
         source: [*]const u8,
@@ -185,6 +186,10 @@ pub const Node = struct {
 
     pub fn kind(self: Node) []const u8 {
         return std.mem.span(c.ts_node_type(self.raw));
+    }
+
+    pub fn hasError(self: Node) bool {
+        return c.ts_node_has_error(self.raw);
     }
 
     pub fn startByte(self: Node) u32 {

@@ -2,38 +2,17 @@ const std = @import("std");
 
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
+const edit_support = @import("edit_support.zig");
 
 const Allocator = std.mem.Allocator;
 const Io = std.Io;
 const Writer = std.Io.Writer;
 const Dir = Io.Dir;
 
-const EditMode = enum {
-    replace,
-    after,
-};
-
 const EditSpec = struct {
     snippet: []const u8,
     after: ?[]const u8 = null,
     replace: ?[]const u8 = null,
-};
-
-const supported_kinds = [_][]const u8{
-    "function_declaration",
-    "function_definition",
-    "function_item",
-    "method_declaration",
-    "class_declaration",
-    "class_definition",
-    "impl_item",
-    "struct_item",
-    "enum_item",
-    "interface_declaration",
-    "type_alias_declaration",
-    "variable_declarator",
-    "lexical_declaration",
-    "identifier",
 };
 
 pub fn run(
@@ -98,8 +77,8 @@ pub fn run(
             return 1;
         }
 
-        const mode: EditMode = if (has_after) .after else .replace;
-        const next = applyEdit(
+        const mode: edit_support.EditMode = if (has_after) .after else .replace;
+        const next = edit_support.applyToSource(
             allocator,
             lang,
             working_contents,
@@ -110,10 +89,19 @@ pub fn run(
             dropBackup(cache_dir, real_path);
             switch (err) {
                 error.ParseFailed => {
-                    try stderr.print("edit[{d}]: failed to parse {s}\n", .{ edit_index, file_path });
+                    try stderr.print("edit[{d}]: edited file does not parse for {s}\n", .{ edit_index, file_path });
                 },
                 error.SymbolNotFound => {
                     try stderr.print("edit[{d}]: symbol '{s}' not found in {s}\n", .{ edit_index, symbol, file_path });
+                },
+                error.AnchorNotFound => {
+                    try stderr.print("edit[{d}]: marker splice failed: anchor not found\n", .{edit_index});
+                },
+                error.MarkerGrammarInvalid => {
+                    try stderr.print("edit[{d}]: marker splice failed: invalid marker grammar\n", .{edit_index});
+                },
+                error.AmbiguousAnchor => {
+                    try stderr.print("edit[{d}]: marker splice failed: ambiguous anchors\n", .{edit_index});
                 },
                 else => {
                     try stderr.print("edit[{d}]: {s}\n", .{ edit_index, @errorName(err) });
@@ -136,97 +124,6 @@ pub fn run(
     const latency_ms = start.durationTo(end).toMilliseconds();
     try stdout.print("Applied {d} edits to {s}. latency: {d}ms, 0 tok/s, 0 tokens\n", .{ edits.len, file_path, latency_ms });
     return 0;
-}
-
-fn applyEdit(
-    allocator: Allocator,
-    lang: bindings.Language,
-    source: []const u8,
-    symbol: []const u8,
-    snippet: []const u8,
-    mode: EditMode,
-) ![]u8 {
-    var parser = bindings.Parser.init();
-    defer parser.deinit();
-
-    if (!parser.setLanguage(lang)) return error.UnsupportedLanguage;
-    var tree = parser.parseString(source) orelse return error.ParseFailed;
-    defer tree.deinit();
-
-    const root = tree.rootNode();
-    const target = findSymbolNode(source, root, symbol) orelse return error.SymbolNotFound;
-
-    const start_byte: usize = @intCast(target.startByte());
-    const end_byte: usize = @intCast(target.endByte());
-
-    const replacement = switch (mode) {
-        .replace => snippet,
-        .after => try normalizeAfterSnippet(allocator, snippet),
-    };
-    defer if (mode == .after) allocator.free(replacement);
-
-    const new_len = source.len - (end_byte - start_byte) + replacement.len;
-    const next_contents = try allocator.alloc(u8, new_len);
-
-    @memcpy(next_contents[0..start_byte], source[0..start_byte]);
-    @memcpy(next_contents[start_byte .. start_byte + replacement.len], replacement);
-    @memcpy(next_contents[start_byte + replacement.len ..], source[end_byte..]);
-    return next_contents;
-}
-
-fn normalizeAfterSnippet(allocator: Allocator, snippet: []const u8) ![]u8 {
-    const trimmed = std.mem.trimEnd(u8, snippet, " \t\r\n\x0b\x0c");
-    const out = try allocator.alloc(u8, trimmed.len + 1);
-    @memcpy(out[0..trimmed.len], trimmed);
-    out[trimmed.len] = '\n';
-    return out;
-}
-
-fn isSupportedKind(kind: []const u8) bool {
-    inline for (supported_kinds) |candidate| {
-        if (std.mem.eql(u8, kind, candidate)) return true;
-    }
-    return false;
-}
-
-fn nodeText(source: []const u8, node: bindings.Node) []const u8 {
-    return source[@intCast(node.startByte())..@intCast(node.endByte())];
-}
-
-fn nodeMatchesSymbol(source: []const u8, node: bindings.Node, symbol: []const u8) bool {
-    if (std.mem.eql(u8, node.kind(), "identifier")) {
-        return std.mem.eql(u8, nodeText(source, node), symbol);
-    }
-
-    const child_count = node.childCount();
-    var child_i: u32 = 0;
-    while (child_i < child_count) : (child_i += 1) {
-        if (node.fieldNameForChild(child_i)) |field_name| {
-            if (std.mem.eql(u8, field_name, "name")) {
-                if (node.child(child_i)) |child| {
-                    if (std.mem.eql(u8, nodeText(source, child), symbol)) return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-fn findSymbolNode(source: []const u8, node: bindings.Node, symbol: []const u8) ?bindings.Node {
-    if (isSupportedKind(node.kind()) and nodeMatchesSymbol(source, node, symbol)) {
-        return node;
-    }
-
-    const named_count = node.namedChildCount();
-    var child_i: u32 = 0;
-    while (child_i < named_count) : (child_i += 1) {
-        if (node.namedChild(child_i)) |child| {
-            if (findSymbolNode(source, child, symbol)) |found| return found;
-        }
-    }
-
-    return null;
 }
 
 fn dropBackup(cache_dir: []const u8, real_path: []const u8) void {
@@ -274,6 +171,80 @@ test "batch edit replaces multiple symbols and keeps backup" {
 
     try std.testing.expectEqualStrings("", stderr_buf.written());
     try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "Applied 3 edits to") != null);
+}
+
+test "batch edit supports marker splice for replace edits" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\function greet(name: string): string {
+        \\  const prefix = "hi ";
+        \\  return prefix + name;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    const edits_json =
+        "[{\"snippet\":\"function greet(name: string): string {\\n  // ... existing code ...\\n  return prefix + name.toUpperCase();\\n}\",\"replace\":\"greet\"}]";
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try run(allocator, io, abs_path, edits_json, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    const expected =
+        \\function greet(name: string): string {
+        \\  const prefix = "hi ";
+        \\  return prefix + name.toUpperCase();
+        \\}
+    ;
+    try std.testing.expectEqualSlices(u8, expected, contents);
+}
+
+test "batch edit chooses declaration when call-site appears first" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\const x = greet();
+        \\function greet() {}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    const edits_json =
+        "[{\"snippet\":\"function greet() { return 1; }\",\"replace\":\"greet\"}]";
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try run(allocator, io, abs_path, edits_json, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    const expected =
+        \\const x = greet();
+        \\function greet() { return 1; }
+    ;
+    try std.testing.expectEqualSlices(u8, expected, contents);
 }
 
 test "batch edit mixed valid and invalid mode fails and leaves file unchanged" {

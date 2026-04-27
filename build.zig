@@ -115,8 +115,17 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_exe.step);
 
     // ---- tests ----
+    const test_root = b.createModule(.{
+        .root_source_file = b.path("src/test_all.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    test_root.addIncludePath(b.path("third_party/tree-sitter/lib/include"));
+    test_root.linkLibrary(ts_lib);
+    for (grammar_libs) |glib| test_root.linkLibrary(glib);
+
     const tests = b.addTest(.{
-        .root_module = root,
+        .root_module = test_root,
     });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests");

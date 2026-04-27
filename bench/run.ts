@@ -1,25 +1,17 @@
 #!/usr/bin/env bun
 /**
- * blitz vs pi-core-edit micro-benchmark — v0.1 direct-swap only.
+ * blitz vs pi-core-edit micro-benchmark.
  *
- * Measures TWO things per case:
- *
- *   1. Output-token cost — what the LLM has to emit to produce the edit.
- *      - core edit: { oldText: <full original symbol body>, newText: <full new body> }
- *      - blitz:     { snippet: <full new body>, replace: <symbol name> }
- *      Tokens estimated as bytes / 4 (rough OpenAI/Claude average for code).
- *
- *   2. Wall time end-to-end — real spawn of the blitz binary against
- *      a fresh copy of the fixture.
- *
- * IMPORTANT: this benchmark only exercises full-symbol replace (direct
- * swap). It does NOT yet measure the marker-preservation case
- * (`// ... existing code ...`) which is where fastedit reports its
- * largest gains; that requires Layer A splice (ticket d1o-cewc).
+ * Measures per case:
+ *   1. Output-token cost.
+ *      - core edit: { oldText: <full original symbol body>, newText: <full final body> }
+ *      - blitz:     { snippet: <edit snippet>, replace: <symbol name> }
+ *   2. Wall time end-to-end for spawned blitz binary.
+ *   3. Exact output bytes after each run. Bench aborts on mismatch before regression gate.
  *
  * Run:
  *   bun run bench/run.ts
- *   bun run bench/run.ts --target=x86_64-linux-musl   # match release build
+ *   bun run bench/run.ts --target=x86_64-linux-musl
  */
 
 import { readFile, mkdtemp, writeFile, rm } from "node:fs/promises";
@@ -36,19 +28,28 @@ const DEFAULT_THRESHOLDS = {
 	minSavingsPct: 5,
 } as const;
 
+type Lane = "direct" | "marker";
+
 type Case = {
 	id: string;
-	fixture: string; // basename under bench/fixtures/
+	lane: Lane;
+	fixture: string;
 	symbol: string;
-	new_body: string; // what the LLM would emit for both lanes
+	snippet: string;
+	expectedSymbolBody?: string;
+	expectedOutput?: string;
 };
+
+const materializeTemplateText = (text: string): string =>
+	text.replaceAll("§", "`").replaceAll("@{", "${");
 
 const CASES: Case[] = [
 	{
 		id: "small/wrap-try-catch",
+		lane: "direct",
 		fixture: "small.ts",
 		symbol: "greet",
-		new_body: `function greet(name: string): string {
+		snippet: `function greet(name: string): string {
   try {
     return "hello " + name.toUpperCase();
   } catch (e) {
@@ -58,9 +59,10 @@ const CASES: Case[] = [
 	},
 	{
 		id: "medium/add-options-method",
+		lane: "direct",
 		fixture: "medium.ts",
 		symbol: "handleRequest",
-		new_body: `function handleRequest(req: Request): Response {
+		snippet: `function handleRequest(req: Request): Response {
   const url = new URL(req.url);
   const path = url.pathname;
   const method = req.method.toUpperCase();
@@ -92,9 +94,10 @@ const CASES: Case[] = [
 	},
 	{
 		id: "large/add-rate-limit",
+		lane: "direct",
 		fixture: "large.ts",
 		symbol: "processBatch",
-		new_body: `function processBatch(items: ReadonlyArray<{ id: string; payload: unknown }>): Map<string, BatchResult> {
+		snippet: `function processBatch(items: ReadonlyArray<{ id: string; payload: unknown }>): Map<string, BatchResult> {
   const results = new Map<string, BatchResult>();
   const startTime = performance.now();
   const rateLimit = items.length > 1000 ? 100 : items.length;
@@ -157,9 +160,10 @@ const CASES: Case[] = [
 	},
 	{
 		id: "marker/analyze-values",
+		lane: "marker",
 		fixture: "marker.ts",
 		symbol: "analyzeValues",
-		new_body: `function analyzeValues(values: ReadonlyArray<number>): string {
+		snippet: materializeTemplateText(`function analyzeValues(values: ReadonlyArray<number>): string {
   if (values.length === 0) {
     return "n/a";
   }
@@ -169,43 +173,145 @@ const CASES: Case[] = [
   const min = sorted[0]!;
   let outliers = 0;
   // ... existing code ...
-  const report = "report:${'${'}body} range=${'${'}min}..${'${'}max}";
+  const report = §report:@{body} range=@{min}..@{max}§;
   return report + " [bounded]";
-}`,
+}`),
+		expectedSymbolBody: materializeTemplateText(`function analyzeValues(values: ReadonlyArray<number>): string {
+  if (values.length === 0) {
+    return "n/a";
+  }
+
+  const sorted = [...values].filter(Number.isFinite);
+  const count = sorted.length + 0;
+  const min = sorted[0]!;
+  const max = sorted[sorted.length - 1]!;
+  let total = 0;
+  let squares = 0;
+  let outliers = 0;
+
+  for (const value of sorted) {
+    if (value < -1000 || value > 1000) {
+      outliers += 1;
+      continue;
+    }
+
+    total += value;
+    squares += value * value;
+  }
+
+  const average = total / Math.max(count, 1);
+  const variance = squares / Math.max(count, 1) - average * average;
+  const spread = max - min;
+  const midpoint = (min + max) / 2;
+  const stability = spread <= midpoint ? "tight" : "wide";
+  const score = Math.round((average + spread - Math.abs(variance)) * 100) / 100;
+  const quality = outliers > 0 ? §outlier:@{outliers}§ : §stable:@{stability}§;
+  const margin = spread - average;
+  const header = §count=@{count}§;
+  const details = §@{header} avg=@{average.toFixed(2)} spread=@{spread.toFixed(2)} score=@{score.toFixed(2)} quality=@{quality}§;
+  const body = §@{details} margin=@{margin.toFixed(2)}§;
+  const report = §report:@{body} range=@{min}..@{max}§;
+
+  return report + " [bounded]";
+}`),
 	},
 ];
 
 const estimateTokens = (text: string): number => Math.ceil(Buffer.byteLength(text, "utf8") / 4);
 
-const extractSymbolBody = (source: string, symbol: string): string => {
-	// crude regex scan good enough for the fixtures: function NAME until matching closing brace at top level
+const findFunctionBodyRange = (source: string, symbol: string): { start: number; end: number } => {
 	const startIdx = source.indexOf(`function ${symbol}`);
 	if (startIdx === -1) throw new Error(`symbol ${symbol} not found in fixture`);
-	let depth = 0;
-	let i = source.indexOf("{", startIdx);
-	if (i === -1) throw new Error(`open brace for ${symbol} not found`);
-	depth = 1;
-	i += 1;
-	while (i < source.length && depth > 0) {
+
+	let i = startIdx;
+	let seenParams = false;
+	let parenDepth = 0;
+	while (i < source.length) {
 		const ch = source[i]!;
-		if (ch === "{") depth += 1;
-		else if (ch === "}") depth -= 1;
+		if (ch === "(") {
+			seenParams = true;
+			parenDepth += 1;
+		} else if (ch === ")") {
+			parenDepth -= 1;
+			if (seenParams && parenDepth === 0) {
+				i += 1;
+				break;
+			}
+		}
 		i += 1;
 	}
-	return source.slice(startIdx, i);
+	if (!seenParams || parenDepth !== 0) throw new Error(`parameter list for ${symbol} not found`);
+
+	while (i < source.length && source[i] !== "{") i += 1;
+	if (i >= source.length) throw new Error(`open brace for ${symbol} not found`);
+
+	const bodyStart = i;
+	let depth = 1;
+	i += 1;
+	let state: "code" | "single" | "double" | "template" | "line-comment" | "block-comment" = "code";
+
+	while (i < source.length && depth > 0) {
+		const ch = source[i]!;
+		const next = source[i + 1] ?? "";
+
+		switch (state) {
+			case "code":
+				if (ch === "'" ) state = "single";
+				else if (ch === '"') state = "double";
+				else if (ch === "`") state = "template";
+				else if (ch === "/" && next === "/") {
+					state = "line-comment";
+					i += 1;
+				} else if (ch === "/" && next === "*") {
+					state = "block-comment";
+					i += 1;
+				} else if (ch === "{") depth += 1;
+				else if (ch === "}") depth -= 1;
+				break;
+			case "single":
+				if (ch === "\\") i += 1;
+				else if (ch === "'") state = "code";
+				break;
+			case "double":
+				if (ch === "\\") i += 1;
+				else if (ch === '"') state = "code";
+				break;
+			case "template":
+				if (ch === "\\") i += 1;
+				else if (ch === "`") state = "code";
+				break;
+			case "line-comment":
+				if (ch === "\n") state = "code";
+				break;
+			case "block-comment":
+				if (ch === "*" && next === "/") {
+					state = "code";
+					i += 1;
+				}
+				break;
+		}
+
+		i += 1;
+	}
+	if (depth !== 0) throw new Error(`closing brace for ${symbol} not found`);
+
+	return { start: startIdx, end: i };
 };
 
-const runBlitzReplace = async (file: string, symbol: string, body: string): Promise<number> => {
+const extractSymbolBody = (source: string, symbol: string): string => {
+	const range = findFunctionBodyRange(source, symbol);
+	return source.slice(range.start, range.end);
+};
+
+const replaceSymbolBody = (source: string, symbol: string, nextBody: string): string => {
+	const range = findFunctionBodyRange(source, symbol);
+	return `${source.slice(0, range.start)}${nextBody}${source.slice(range.end)}`;
+};
+
+const runBlitzReplace = async (file: string, symbol: string, snippet: string): Promise<number> => {
 	const start = performance.now();
 	await new Promise<void>((resolve, reject) => {
-		const proc = spawn(BLITZ_BINARY, [
-			"edit",
-			file,
-			"--snippet",
-			"-",
-			"--replace",
-			symbol,
-		]);
+		const proc = spawn(BLITZ_BINARY, ["edit", file, "--snippet", "-", "--replace", symbol]);
 		let stderr = "";
 		proc.stderr.on("data", (d) => {
 			stderr += d.toString();
@@ -215,7 +321,7 @@ const runBlitzReplace = async (file: string, symbol: string, body: string): Prom
 			if (code === 0) resolve();
 			else reject(new Error(`blitz exited ${code}: ${stderr}`));
 		});
-		proc.stdin.write(body);
+		proc.stdin.write(snippet);
 		proc.stdin.end();
 	});
 	return performance.now() - start;
@@ -229,12 +335,13 @@ const median = (xs: number[]): number => {
 };
 
 type Row = {
+	lane: Lane;
 	case_id: string;
 	core_oldtext_tokens: number;
 	core_newtext_tokens: number;
 	core_total_tokens: number;
 	blitz_snippet_tokens: number;
-	blitz_total_tokens: number; // snippet + symbol-name + small flag overhead
+	blitz_total_tokens: number;
 	tokens_saved: number;
 	pct_saved: number;
 	median_wall_ms: number;
@@ -258,70 +365,24 @@ const readThresholds = async (): Promise<RegressionThresholds> => {
 		return { maxWallMs, minSavingsPct };
 	} catch (err) {
 		const maybeNodeErr = err as NodeJS.ErrnoException;
-		if (maybeNodeErr.code === "ENOENT") {
-			return DEFAULT_THRESHOLDS;
-		}
+		if (maybeNodeErr.code === "ENOENT") return DEFAULT_THRESHOLDS;
 		console.error("WARN: cannot read regression thresholds, using defaults", String(err));
 		return DEFAULT_THRESHOLDS;
 	}
 };
 
-const main = async () => {
-	console.log(`# blitz vs core edit — direct-swap micro-benchmark\n`);
-	console.log(`Binary:    ${BLITZ_BINARY}`);
-	console.log(`Iterations per case: ${ITERATIONS}`);
-	console.log(`Generated: ${new Date().toISOString()}\n`);
+const aggregateForRows = (rows: Row[]) => {
+	const totalCoreTokens = rows.reduce((acc, r) => acc + r.core_total_tokens, 0);
+	const totalSaved = rows.reduce((acc, r) => acc + r.tokens_saved, 0);
+	return {
+		savingsPct: totalCoreTokens > 0 ? (totalSaved / totalCoreTokens) * 100 : 0,
+		medianWallMs: rows.length > 0 ? median(rows.map((r) => r.median_wall_ms)) : 0,
+	};
+};
 
-	const thresholds = await readThresholds();
-	console.log(
-		`Regression thresholds: max wall ${thresholds.maxWallMs}ms, min savings ${thresholds.minSavingsPct}%`,
-	);
-	console.log(`Using thresholds from ${join(REPO_ROOT, "bench", "regression-thresholds.json")} if present.\n`);
-
-	const rows: Row[] = [];
-
-	for (const c of CASES) {
-		const fixturePath = `${REPO_ROOT}/bench/fixtures/${c.fixture}`;
-		const original = await readFile(fixturePath, "utf8");
-		const oldText = extractSymbolBody(original, c.symbol);
-
-		const wallTimes: number[] = [];
-		const tmpDir = await mkdtemp(join(tmpdir(), "blitz-bench-"));
-		try {
-			const target = join(tmpDir, c.fixture);
-			for (let i = 0; i < ITERATIONS; i++) {
-				await writeFile(target, original, "utf8");
-				const ms = await runBlitzReplace(target, c.symbol, c.new_body);
-				wallTimes.push(ms);
-			}
-		} finally {
-			await rm(tmpDir, { recursive: true, force: true });
-		}
-
-		const coreOld = estimateTokens(oldText);
-		const coreNew = estimateTokens(c.new_body);
-		const coreTotal = coreOld + coreNew;
-		const blitzSnippet = estimateTokens(c.new_body);
-		// Symbol name + envelope overhead: roughly 8 tokens for tool wrapper
-		const blitzTotal = blitzSnippet + estimateTokens(c.symbol) + 8;
-		const saved = coreTotal - blitzTotal;
-		const pctSaved = (saved / coreTotal) * 100;
-		const medianWallMs = median(wallTimes);
-
-		rows.push({
-			case_id: c.id,
-			core_oldtext_tokens: coreOld,
-			core_newtext_tokens: coreNew,
-			core_total_tokens: coreTotal,
-			blitz_snippet_tokens: blitzSnippet,
-			blitz_total_tokens: blitzTotal,
-			tokens_saved: saved,
-			pct_saved: pctSaved,
-			median_wall_ms: medianWallMs,
-		});
-	}
-
+const printTable = (rows: Row[]) => {
 	const cols = [
+		{ key: "lane" as const, label: "Lane", format: (v: string) => v },
 		{ key: "case_id" as const, label: "Case", format: (v: string) => v },
 		{ key: "core_total_tokens" as const, label: "core (oldT+newT)", format: (v: number) => String(v) },
 		{ key: "blitz_total_tokens" as const, label: "blitz (snippet+sym)", format: (v: number) => String(v) },
@@ -343,27 +404,101 @@ const main = async () => {
 		const cells = cols.map((c, i) => c.format(r[c.key]).padEnd(widths[i]!));
 		console.log(`| ${cells.join(" | ")} |`);
 	}
+};
 
-	console.log("");
-	const totalCoreTokens = rows.reduce((acc, r) => acc + r.core_total_tokens, 0);
-	const totalSaved = rows.reduce((acc, r) => acc + r.tokens_saved, 0);
-	const aggregateSavingsPct = totalCoreTokens > 0 ? (totalSaved / totalCoreTokens) * 100 : 0;
-	const aggregateMedianWallMs = median(rows.map((r) => r.median_wall_ms));
+const main = async () => {
+	console.log(`# blitz vs core edit — correctness + micro-benchmark\n`);
+	console.log(`Binary:    ${BLITZ_BINARY}`);
+	console.log(`Iterations per case: ${ITERATIONS}`);
+	console.log(`Generated: ${new Date().toISOString()}\n`);
+
+	const thresholds = await readThresholds();
 	console.log(
-		`Aggregate: ~${aggregateSavingsPct.toFixed(1)}% output-token reduction, median wall-time ~${aggregateMedianWallMs.toFixed(1)}ms / case.`,
+		`Regression thresholds (direct lane): max wall ${thresholds.maxWallMs}ms, min savings ${thresholds.minSavingsPct}%`,
+	);
+	console.log(`Using thresholds from ${join(REPO_ROOT, "bench", "regression-thresholds.json")} if present.\n`);
+
+	const rows: Row[] = [];
+
+	for (const c of CASES) {
+		const fixturePath = `${REPO_ROOT}/bench/fixtures/${c.fixture}`;
+		const original = await readFile(fixturePath, "utf8");
+		const oldText = extractSymbolBody(original, c.symbol);
+		const finalBody = c.expectedSymbolBody ?? c.snippet;
+		const expectedOutput = c.expectedOutput ?? replaceSymbolBody(original, c.symbol, finalBody);
+
+		const wallTimes: number[] = [];
+		const tmpDir = await mkdtemp(join(tmpdir(), "blitz-bench-"));
+		try {
+			const target = join(tmpDir, c.fixture);
+			for (let i = 0; i < ITERATIONS; i++) {
+				await writeFile(target, original, "utf8");
+				const ms = await runBlitzReplace(target, c.symbol, c.snippet);
+				wallTimes.push(ms);
+				const actual = await readFile(target, "utf8");
+				if (actual !== expectedOutput) {
+					throw new Error(
+						`output mismatch for ${c.id} iteration ${i + 1}\n--- expected ---\n${expectedOutput}\n--- actual ---\n${actual}`,
+					);
+				}
+			}
+		} finally {
+			await rm(tmpDir, { recursive: true, force: true });
+		}
+
+		const coreOld = estimateTokens(oldText);
+		const coreNew = estimateTokens(finalBody);
+		const coreTotal = coreOld + coreNew;
+		const blitzSnippet = estimateTokens(c.snippet);
+		const blitzTotal = blitzSnippet + estimateTokens(c.symbol) + 8;
+		const saved = coreTotal - blitzTotal;
+		const pctSaved = (saved / coreTotal) * 100;
+		const medianWallMs = median(wallTimes);
+
+		rows.push({
+			lane: c.lane,
+			case_id: c.id,
+			core_oldtext_tokens: coreOld,
+			core_newtext_tokens: coreNew,
+			core_total_tokens: coreTotal,
+			blitz_snippet_tokens: blitzSnippet,
+			blitz_total_tokens: blitzTotal,
+			tokens_saved: saved,
+			pct_saved: pctSaved,
+			median_wall_ms: medianWallMs,
+		});
+	}
+
+	printTable(rows);
+	console.log("");
+
+	const directRows = rows.filter((row) => row.lane === "direct");
+	const markerRows = rows.filter((row) => row.lane === "marker");
+	const directAggregate = aggregateForRows(directRows);
+	const markerAggregate = aggregateForRows(markerRows);
+	const overallAggregate = aggregateForRows(rows);
+
+	console.log(
+		`Direct-swap aggregate: ~${directAggregate.savingsPct.toFixed(1)}% output-token reduction, median wall-time ~${directAggregate.medianWallMs.toFixed(1)}ms / case.`,
+	);
+	console.log(
+		`Marker aggregate: ~${markerAggregate.savingsPct.toFixed(1)}% output-token reduction, median wall-time ~${markerAggregate.medianWallMs.toFixed(1)}ms / case.`,
+	);
+	console.log(
+		`Overall aggregate: ~${overallAggregate.savingsPct.toFixed(1)}% output-token reduction, median wall-time ~${overallAggregate.medianWallMs.toFixed(1)}ms / case.`,
 	);
 
-	if (aggregateMedianWallMs > thresholds.maxWallMs) {
+	if (directAggregate.medianWallMs > thresholds.maxWallMs) {
 		console.log(
-			`FAIL: aggregate median wall-time ${aggregateMedianWallMs.toFixed(1)}ms exceeded threshold ${thresholds.maxWallMs}ms`,
+			`FAIL: direct-swap median wall-time ${directAggregate.medianWallMs.toFixed(1)}ms exceeded threshold ${thresholds.maxWallMs}ms`,
 		);
 		console.log("FAIL: benchmark regression threshold exceeded.");
 		process.exit(1);
 	}
 
-	if (aggregateSavingsPct < thresholds.minSavingsPct) {
+	if (directAggregate.savingsPct < thresholds.minSavingsPct) {
 		console.log(
-			`FAIL: aggregate savings ${aggregateSavingsPct.toFixed(1)}% below threshold ${thresholds.minSavingsPct}%`,
+			`FAIL: direct-swap savings ${directAggregate.savingsPct.toFixed(1)}% below threshold ${thresholds.minSavingsPct}%`,
 		);
 		console.log("FAIL: benchmark regression threshold exceeded.");
 		process.exit(1);
@@ -371,12 +506,10 @@ const main = async () => {
 
 	console.log("PASS: benchmark regression gate satisfied.");
 	console.log("");
-	console.log("Caveats:");
+	console.log("Notes:");
 	console.log("- Tokens are bytes/4 estimate, not real tokenizer output.");
-	console.log("- Direct-swap mode only: agent writes the full new symbol body.");
-	console.log("- Marker splice (`// ... existing code ...`) ships in d1o-cewc and");
-	console.log("  is where the larger savings live; expect those numbers later.");
-	console.log("- Wall-time excludes the LLM round-trip; it is binary spawn + parse + write.");
+	console.log("- Direct lane = full-body replace; marker lane = preserved-region splice.");
+	console.log("- Wall-time excludes LLM round-trip; it is binary spawn + parse + write.");
 };
 
 main().catch((err) => {

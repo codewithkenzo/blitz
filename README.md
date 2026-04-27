@@ -69,7 +69,7 @@ blitz doctor
 
 ## Performance
 
-Latest micro-benchmark (v0.1 direct-swap; Layer A markers ship in d1o-cewc): median ~8.6 ms wall-time, ~19% direct-swap savings. See [`bench/run.ts`](./bench/run.ts).
+Latest micro-benchmark covers both direct-swap and marker-splice lanes, with exact output assertions before perf gating. Run [`bench/run.ts`](./bench/run.ts) for current table.
 
 ## Pi integration
 
