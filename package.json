@@ -1,6 +1,6 @@
 {
   "name": "@codewithkenzo/blitz",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.7",
   "description": "Fast Zig edit CLI for coding agents. Tree-sitter powered, token-efficient, MCP-ready.",
   "type": "module",
   "license": "MIT",
@@ -21,11 +21,11 @@
     "docs/blitz.md"
   ],
   "optionalDependencies": {
-    "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.6",
-    "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.6",
-    "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.6",
-    "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.6",
-    "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.6"
+    "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.7",
+    "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.7",
+    "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.7",
+    "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.7",
+    "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.7"
   },
   "scripts": {
     "bench": "bun bench/run.ts",

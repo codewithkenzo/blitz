@@ -39,7 +39,7 @@ pub fn printHelp(w: *Writer) Writer.Error!void {
 pub fn runDoctor(w: *Writer) Writer.Error!void {
     try w.writeAll(
         \\blitz doctor
-        \\  version:     0.1.0-alpha.6
+        \\  version:     0.1.0-alpha.7
         \\  stage:       v0.1 alpha
         \\  tree-sitter: linked
         \\  commands:    read, edit, batch-edit, rename, undo, apply, doctor

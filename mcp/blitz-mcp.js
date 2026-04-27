@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 // mcp/blitz-mcp.ts
 import { existsSync as existsSync2, realpathSync } from "fs";
 import { dirname as dirname2, isAbsolute, relative, resolve } from "path";
@@ -54,7 +53,9 @@ var parseEnvInt = (name, fallback, min, max) => {
   return value;
 };
 var blitz = findBlitzBinary() ?? "blitz";
-var cwd = realpathSync.native(resolve(process.env.BLITZ_WORKSPACE ?? process.cwd()));
+if (!process.env.BLITZ_WORKSPACE)
+  throw new Error("BLITZ_WORKSPACE must be set to the project root");
+var cwd = realpathSync.native(resolve(process.env.BLITZ_WORKSPACE));
 var timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30000, 1, 600000);
 var maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
 var maxBufferedBytes = maxFrameBytes + 4096;
@@ -69,7 +70,21 @@ var tools = [
 ];
 var jsonText = (text, isError = false) => ({ content: [{ type: "text", text }], ...isError ? { isError: true } : {} });
 var run = (args, stdin) => {
-  const result = spawnSync(blitz, args, { cwd, input: stdin, encoding: "utf8", maxBuffer: 1024 * 1024 * 8, timeout: timeoutMs });
+  const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
+    cwd,
+    input: stdin,
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024 * 8,
+    timeout: timeoutMs,
+    env: {
+      HOME: process.env.HOME ?? "",
+      PATH: process.env.PATH ?? "",
+      XDG_CACHE_HOME: process.env.XDG_CACHE_HOME ?? "",
+      BLITZ_NO_UPDATE_CHECK: "1",
+      FASTEDIT_NO_UPDATE_CHECK: "1",
+      BLITZ_WORKSPACE: cwd
+    }
+  });
   const stdout = (result.stdout ?? "").trim();
   const stderr = (result.stderr ?? "").trim();
   const text = result.status === 0 ? stdout : [stdout, stderr ? `stderr:
@@ -153,7 +168,7 @@ var handle = (msg) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.6" } });
+      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.7" } });
       return;
     }
     if (msg.method === "notifications/initialized")
