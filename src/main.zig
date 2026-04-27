@@ -13,7 +13,7 @@ const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
 
-pub const version = "0.1.0-alpha.2";
+pub const version = "0.1.0-alpha.3";
 
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
