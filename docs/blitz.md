@@ -2,7 +2,7 @@
 
 Single source of truth. Supersedes and absorbs `blitz-design.md`, `blitz-gap-closure.md`, `blitz-perf-patterns.md`, `pi-edit-positioning.md`, `pi-edit-ecosystem-compare.md`, `pi-edit-local-overlap.md`, `zig-0.16-verification.md` (all archived).
 
-Status: **private release candidate.** Standalone `codewithkenzo/blitz` CLI exists, passed `gpt-5.5` xhigh review, and structured apply IR (`blitz apply`) is implemented. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API. Public prebuilt release waits on cross-platform binary matrix and CI green.
+Status: **`0.1.0-alpha.0`.** Standalone `codewithkenzo/blitz` CLI passed `gpt-5.5` xhigh review. 54/54 unit tests pass (x86_64-linux-musl). Structured apply IR (`blitz apply`) is implemented. MCP stdio server (`mcp/blitz-mcp.ts`) ships in this repo and is usable today. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API. npm prebuilt binaries are not yet published; install from source. `@codewithkenzo/pi-blitz` (Effect v4 Pi extension) is a separate repo; MCP server covers the same tool surface for local use until the extension ships.
 
 ## 1. North star
 
@@ -468,6 +468,8 @@ Rationale per `blitz-perf-patterns.md` research: Morph, Relace, Aider, Continue 
 
 Effect v4 patterns verbatim from `extensions/flow-system` (same repo). The wrapper is backend-agnostic; blitz is just the `spawnCollect` target. Effect stays internal; Pi tool `execute` is the Promise/`AgentToolResult` boundary.
 
+**Local install (before extension is published):** use the MCP stdio server instead — see §9.5.
+
 ### 9.1 Tool surface (v0.1 = 6 tools)
 
 | Pi tool | blitz command |
@@ -517,6 +519,55 @@ type PiBlitzConfig = {
   binary?: string; // user-only; absolute path or command name for blitz
 };
 ```
+
+### 9.5 MCP stdio server
+
+`mcp/blitz-mcp.ts` is a self-contained MCP server (JSON-RPC over stdio, protocol `2025-06-18`). It runs with Bun and calls the blitz binary as a subprocess. Use it when the Pi extension is not yet installed or when targeting any MCP-capable host (Claude Desktop, Claude Code, Cursor, etc.).
+
+**Tools:**
+
+| MCP tool | blitz command | Description |
+|---|---|---|
+| `blitz_doctor` | `blitz doctor` | Binary version, supported grammars, cache health. |
+| `blitz_read` | `blitz read <file>` | AST/source summary. |
+| `blitz_patch` | `blitz apply --edit -` (`patch` op) | Compact patch tuple array (`replace`, `insert_after`, `wrap`, `replace_return`, `try_catch`). |
+| `blitz_try_catch` | `blitz apply --edit -` (`patch/try_catch` op) | Wrap symbol body in try/catch. |
+| `blitz_replace_return` | `blitz apply --edit -` (`patch/replace_return` op) | Replace a return expression in a symbol body. |
+| `blitz_undo` | `blitz undo <file>` | Revert last mutation. |
+
+**Wire in `.mcp.json`:**
+
+```json
+{
+  "servers": {
+    "blitz": {
+      "command": "bun",
+      "args": ["/abs/path/to/blitz/mcp/blitz-mcp.ts"],
+      "env": {
+        "BLITZ_BIN": "/abs/path/to/blitz/zig-out/bin/blitz",
+        "BLITZ_WORKSPACE": "/abs/path/to/your/project"
+      }
+    }
+  }
+}
+```
+
+Build the binary first (`zig build -Doptimize=ReleaseFast`), then point `BLITZ_BIN` at `zig-out/bin/blitz`. The MCP server does not auto-build.
+
+### 9.6 Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `BLITZ_BIN` | `blitz` (PATH) | Binary used by the MCP server and `bin/blitz.js` npm wrapper. |
+| `BLITZ_WORKSPACE` | `process.cwd()` | Workspace root for MCP path resolution. All file arguments are resolved relative to this directory. |
+| `BLITZ_MCP_TIMEOUT_MS` | `30000` | Per-call timeout in ms for MCP subprocess invocations. |
+| `BLITZ_MCP_MAX_FRAME_BYTES` | `1048576` | Maximum JSON-RPC frame size in bytes. |
+
+### 9.7 Workspace safety
+
+The MCP server enforces a path escape guard: every file argument is resolved via `path.resolve(BLITZ_WORKSPACE, file)` and rejected with an error if the result is outside `BLITZ_WORKSPACE`. No reads or writes outside the workspace root are possible through the MCP tools.
+
+The Pi extension enforces the same guard via `src/paths.ts` (`canonicalRealpath` + symlink check against canonical cwd).
 
 ## 10. Numbers — benchmark evidence
 
@@ -621,21 +672,23 @@ Per case: `usage.output` (provider tokens), tool-call arg tokens, `wall_ms`, `su
 
 ## 12. Open questions
 
-1. **Name.** `blitz` (working title) vs alternatives (`fted`, `blaze`, `kenzo-edit`, `piedit`). Needs public-facing decision before repo init.
-2. **Backup cache location.** `~/.cache/blitz/` vs `.blitz/` per-repo. Recommend user-cache + per-repo override via env.
-3. **Ship Pi extension alpha before blitz prebuilt binaries.** Recommend: extension `0.0.1-alpha` builds blitz from source locally; public `0.1.0` gates on prebuilt matrix.
-4. **v0.2 output channel.** Keep text stdout (LLM-friendly, fastedit-style) or add `--output json` flag for structured pi-blitz integration? Recommend text-only for v0.1; add `--json` in v0.2 if telemetry demands it.
-5. **Layer D JSON shape** — freeze in v0.1 or keep exploratory for v0.2? Recommend freeze: any change breaks the host-LLM prompt template.
+1. **Backup cache location.** `~/.cache/blitz/` vs `.blitz/` per-repo. Recommend user-cache + per-repo override via env.
+2. **v0.2 output channel.** Keep text stdout (LLM-friendly, fastedit-style) or add `--output json` flag for structured pi-blitz integration? Text-only for v0.1; add `--json` in v0.2 if telemetry demands it.
+3. **Layer D JSON shape** — freeze in v0.1 or keep exploratory for v0.2? Recommend freeze: any change breaks the host-LLM prompt template.
+
+**Resolved:**
+- Name: `blitz`. Repo: `codewithkenzo/blitz`. npm: `@codewithkenzo/blitz`.
+- Extension alpha ships before prebuilts: MCP server (`mcp/blitz-mcp.ts`) covers the tool surface for local use until `@codewithkenzo/pi-blitz` is published and prebuilt binaries land.
 
 ## 13. Sequence
 
-| Sprint | Goal |
-|---|---|
-| Sprint 1 (done) | Zig skeleton, tree-sitter static link, `blitz read`, `blitz edit --replace`, `blitz edit --after`, initial CI/bench. |
-| Sprint 2 (done for v0.1 local) | Backup store, `blitz undo`, `blitz rename`, `blitz doctor`, and Layer A marker splice passed local 5.5 review. |
-| Sprint 3 (done) | `@codewithkenzo/pi-blitz` wired to local reviewed binary. Pi-stream benchmarks collected. npm prebuilts and remaining benchmark cases in progress. |
-| v0.2 (weeks 4-6) | Layer B (fuzzy recovery) + Layer C (structural tree-sitter queries) + `multi-edit` + `rename-all` + `query`. |
-| v1.1 (later) | LSP refactor bridge, benchmark-proven latency targets, public release. |
+| Sprint | Goal | Status |
+|---|---|---|
+| Sprint 1 | Zig skeleton, tree-sitter static link, `blitz read`, `blitz edit --replace`, `blitz edit --after`, initial CI/bench. | Done |
+| Sprint 2 | Backup store, `blitz undo`, `blitz rename`, `blitz doctor`, Layer A marker splice, local `gpt-5.5` review. | Done |
+| Sprint 3 | `@codewithkenzo/pi-blitz` wired to reviewed binary, MCP stdio server (`mcp/blitz-mcp.ts`), Pi-stream benchmarks, npm package (`0.1.0-alpha.0`). | Done |
+| v0.2 | Layer B (fuzzy recovery) + Layer C (structural tree-sitter queries) + `multi-edit` + `rename-all` + `query`. npm prebuilt matrix. | Planned |
+| v1.1 | LSP refactor bridge, full benchmark matrix, public stable release. | Planned |
 
 ## 14. References
 

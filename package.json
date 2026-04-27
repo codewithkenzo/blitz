@@ -23,6 +23,7 @@
     "bench:llm": "bun bench/llm-tokens.ts",
     "bench:large": "bun bench/deep-large-symbol.ts",
     "bench:small-target": "bun bench/deep-small-target.ts",
+    "smoke:mcp": "bun scripts/mcp-smoke.ts",
     "pack:check": "npm pack --dry-run --json"
   },
   "keywords": [

@@ -20,6 +20,7 @@ pub fn printHelp(w: *Writer) Writer.Error!void {
         \\    batch-edit <file> --edits -                 Multi-hunk edit from JSON stdin
         \\    rename <file> <old> <new> [--dry-run]       AST-verified rename in one file
         \\    undo <file>                                 Revert last backup
+        \\    apply --edit - [--json]                     Structured JSON edit IR
         \\    doctor                                      Report version + supported grammars
         \\    --version                                   Print version
         \\    --help                                      Print this help
@@ -30,8 +31,6 @@ pub fn printHelp(w: *Writer) Writer.Error!void {
         \\    blitz rename src/app.ts oldName newName
         \\    blitz undo src/app.ts
         \\
-        \\STATUS: scaffold. Commands return "not implemented" until tickets d1o-kjdk / d1o-cewc land.
-        \\
         \\See https://github.com/codewithkenzo/blitz for status.
         \\
     );
@@ -40,12 +39,10 @@ pub fn printHelp(w: *Writer) Writer.Error!void {
 pub fn runDoctor(w: *Writer) Writer.Error!void {
     try w.writeAll(
         \\blitz doctor
-        \\  version:     0.0.1-scaffold
-        \\  stage:       scaffold (pre-alpha)
-        \\  tree-sitter: NOT LINKED (ticket d1o-qphx)
-        \\  grammars:    NOT VENDORED (ticket d1o-qphx)
-        \\  commands:    help, version, doctor
-        \\  pending:     read, edit, batch-edit, rename, undo
+        \\  version:     0.1.0-alpha.0
+        \\  stage:       v0.1 alpha
+        \\  tree-sitter: linked
+        \\  commands:    read, edit, batch-edit, rename, undo, apply, doctor
         \\
     );
 }

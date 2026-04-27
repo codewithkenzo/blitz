@@ -1,6 +1,6 @@
 .{
     .name = .blitz,
-    .version = "0.0.1",
+    .version = "0.1.0-alpha.0",
     .fingerprint = 0xe8a54ff40bfcad73,
     .minimum_zig_version = "0.16.0",
     .paths = .{
@@ -10,16 +10,12 @@
         "grammars",
         "third_party",
         "tests",
+        "mcp",
+        "scripts",
+        "bin",
         "README.md",
         "LICENSE",
         "NOTICE.md",
     },
-    .dependencies = .{
-        // Populated by ticket d1o-qphx:
-        // .tree_sitter = .{ .url = "...", .hash = "..." },
-        // .tree_sitter_rust = .{ .url = "...", .hash = "..." },
-        // .tree_sitter_typescript = .{ .url = "...", .hash = "..." },
-        // .tree_sitter_python = .{ .url = "...", .hash = "..." },
-        // .tree_sitter_go = .{ .url = "...", .hash = "..." },
-    },
+    .dependencies = .{},
 }
