@@ -203,7 +203,6 @@ fn dispatchBatch(
     return try cmd_batch.run(gpa, io, file, edits_bytes, stdout, stderr);
 }
 
-
 fn dispatchApply(
     gpa: std.mem.Allocator,
     io: std.Io,

@@ -194,14 +194,14 @@ pub fn run(
     else
         edit_support.replacementRangeFor(lang, original, target_node);
 
-    const op_result = switch (operation) {
+    const op_result_result: anyerror!OpResult = switch (operation) {
         .replace_body_span => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
             const find = try requireString(edit_obj, "find");
             const replace = try requireString(edit_obj, "replace");
             const selector = parseMatchSelector(edit_obj.get("occurrence"));
-            const match = try selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match);
+            const match = selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const edit_start = body_range.start + match.start;
             const edit_end = body_range.start + match.end;
             break :blk OpResult{
@@ -219,7 +219,7 @@ pub fn run(
             const text = try requireString(edit_obj, "text");
             const raw_pos = try requireString(edit_obj, "position");
             const selector = parseMatchSelector(edit_obj.get("occurrence"));
-            const match = try selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match);
+            const match = selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
                 body_range.start + match.end
             else if (std.mem.eql(u8, raw_pos, "before"))
@@ -253,6 +253,7 @@ pub fn run(
 
             const body = original[body_range.start..body_range.end];
             const kept_body = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
+            defer allocator.free(kept_body);
             const wrapped = try concat3(allocator, before, kept_body, after);
             defer allocator.free(wrapped);
             break :blk OpResult{
@@ -275,6 +276,7 @@ pub fn run(
             };
         },
     };
+    const op_result = op_result_result catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
 
     defer allocator.free(op_result.contents);
 
@@ -524,7 +526,7 @@ fn indentBody(allocator: Allocator, body: []const u8, indent: usize) ![]u8 {
         at_line_start = body[si] == '\n' or (body[si] == '\r' and si + 1 < body.len and body[si + 1] == '\n');
     }
 
-    return out[0..di];
+    return try allocator.realloc(out, di);
 }
 
 fn concat3(allocator: Allocator, a: []const u8, b: []const u8, c: []const u8) ![]u8 {
@@ -558,4 +560,131 @@ fn languageName(lang: bindings.Language) []const u8 {
         .python => "python",
         .go => "go",
     };
+}
+
+fn runApplyTest(allocator: Allocator, io: Io, request_template: []const u8, file_path: []const u8) ![]u8 {
+    const request = try std.mem.replaceOwned(u8, allocator, request_template, "{FILE}", file_path);
+    defer allocator.free(request);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 0), status);
+    return allocator.dupe(u8, stdout_buf.written());
+}
+
+fn runApplyTestExpectFailure(allocator: Allocator, io: Io, request_template: []const u8, file_path: []const u8) ![]u8 {
+    const request = try std.mem.replaceOwned(u8, allocator, request_template, "{FILE}", file_path);
+    defer allocator.free(request);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    return allocator.dupe(u8, stdout_buf.written());
+}
+
+test "apply replace_body_span occurrence last" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function hugeCompute(seed: number): number {
+        \\  let total = seed;
+        \\  return total;
+        \\  return total;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"replace_body_span","target":{"symbol":"hugeCompute"},"edit":{"find":"return total;","replace":"return total + 1;","occurrence":"last"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqual(@as(usize, 1), std.mem.count(u8, post, "return total + 1;"));
+    try std.testing.expectEqual(@as(usize, 1), std.mem.count(u8, post, "return total;"));
+}
+
+test "apply replace_body_span ambiguous rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function repeated(): number {
+        \\  return 1;
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"replace_body_span","target":{"symbol":"repeated"},"edit":{"find":"return 1;","replace":"return 2;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply insert_body_span after anchor" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function greet(): string {
+        \\  const name = "kenzo";
+        \\  return name;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"insert_body_span","target":{"symbol":"greet"},"edit":{"anchor":"const name = \"kenzo\";","position":"after","text":"\n  const upper = name.toUpperCase();","occurrence":"only"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const upper = name.toUpperCase();") != null);
+}
+
+test "apply wrap_body preserves signature" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function wrapy(value: number): number {
+        \\  const doubled = value * 2;
+        \\  return doubled;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"wrap_body","target":{"symbol":"wrapy"},"edit":{"before":"\n  try {","keep":"body","after":"  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n","indentKeptBodyBy":2}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function wrapy(value: number): number {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "  try {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "    const doubled = value * 2;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "  } catch (error) {") != null);
 }
