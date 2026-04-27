@@ -108,7 +108,19 @@ Result: **passed** with exit code 0.
 
 `mcp/blitz-mcp.ts` is included in the CLI package and exposed as `blitz-mcp`.
 
-Manual framed JSON-RPC smoke passed in `reports/mcp-stdio-smoke-2026-04-27.md`.
+Automated framed JSON-RPC smoke is included as `scripts/mcp-smoke.ts` and `npm run smoke:mcp`.
+
+Temp-installed package smoke passed:
+
+```bash
+npm --prefix ./node_modules/@codewithkenzo/blitz run smoke:mcp --silent
+```
+
+Result:
+
+```json
+{"ok":true,"frames":4}
+```
 
 ## Remaining package release decisions
 
