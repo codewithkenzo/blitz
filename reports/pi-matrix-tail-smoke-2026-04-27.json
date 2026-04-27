@@ -1,0 +1,53 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 1,
+  "timeoutMs": 90000,
+  "generatedAt": "2026-04-27T12:47:16.256Z",
+  "rows": [
+    {
+      "fixture": "medium-10k/marker-tail",
+      "className": "medium_tail_replace",
+      "recommendedLane": "core",
+      "lane": "core",
+      "wallMsMedian": 3726.8413250000003,
+      "outputMedian": 63,
+      "argsTokensMedian": 47,
+      "correctRate": 1,
+      "costSum": 0.00618495
+    },
+    {
+      "fixture": "medium-10k/marker-tail",
+      "className": "medium_tail_replace",
+      "recommendedLane": "core",
+      "lane": "blitz",
+      "wallMsMedian": 3506.612126,
+      "outputMedian": 66,
+      "argsTokensMedian": 45,
+      "correctRate": 1,
+      "costSum": 0.0050811
+    },
+    {
+      "fixture": "huge-100k/marker-tail",
+      "className": "huge_tail_replace",
+      "recommendedLane": "core",
+      "lane": "core",
+      "wallMsMedian": 4713.538670999999,
+      "outputMedian": 63,
+      "argsTokensMedian": 47,
+      "correctRate": 1,
+      "costSum": 0.040727250000000007
+    },
+    {
+      "fixture": "huge-100k/marker-tail",
+      "className": "huge_tail_replace",
+      "recommendedLane": "core",
+      "lane": "blitz",
+      "wallMsMedian": 4449.212800999998,
+      "outputMedian": 67,
+      "argsTokensMedian": 46,
+      "correctRate": 1,
+      "costSum": 0.039630149999999996
+    }
+  ]
+}
