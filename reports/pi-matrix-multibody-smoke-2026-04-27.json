@@ -1,0 +1,20 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "iters": 1,
+  "timeoutMs": 90000,
+  "generatedAt": "2026-04-27T13:19:09.430Z",
+  "rows": [
+    {
+      "fixture": "multi/three-body-ops",
+      "className": "multi_body_three_ops",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "wallMsMedian": 5613.409592,
+      "outputMedian": 348,
+      "argsTokensMedian": 312,
+      "correctRate": 1,
+      "costSum": 0.0052264500000000005
+    }
+  ]
+}

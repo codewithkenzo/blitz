@@ -99,6 +99,17 @@ Preserve every original arithmetic statement exactly. Do not rewrite unchanged l
 Original file contents:
 ${src}`;
 
+const buildMultiBodyIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
+
+Goal: make three edits in the same file:
+1) in adjust, replace the final return statement with \`return base + 1;\`,
+2) in emit, insert \`const markerUpper = value.toUpperCase();\` immediately after \`const marker = value;\`,
+3) in risky, wrap the function body in try/catch and rethrow error.
+
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
@@ -136,6 +147,14 @@ const FIXTURES: Fixture[] = [
 		className: "compose_preserve_islands",
 	},
 	{
+		id: "multi/three-body-ops",
+		relPath: "multi.ts",
+		intent: (p: string) => buildMultiBodyIntent(p, multiSrc),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "multi_body_three_ops",
+	},
+	{
 		id: "huge-100k/marker-tail",
 		relPath: "huge.ts",
 		intent: (p: string) => buildHugeIntent(p, hugeSrc),
@@ -171,6 +190,14 @@ const mediumBody = mediumSrc.slice(
 	mediumSrc.lastIndexOf("\n}"),
 );
 const mediumWrapExpected = `function mediumCompute(seed: number): number {\n  try {\n${mediumBody.replace(/^/gm, "  ")}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}\n`;
+const multiSrc = await readFile(join(fixtureDir, "multi.ts"), "utf8");
+const multiExpected = multiSrc
+	.replace("  return base;", "  return base + 1;")
+	.replace("  const marker = value;\n", "  const marker = value;\n  const markerUpper = value.toUpperCase();\n\n")
+	.replace(
+		`export function risky(value: number): number {\n  return value;\n}`,
+		`export function risky(value: number): number {\n  try {\n    return value;\n  } catch (error) {\n    throw error;\n  }\n}`,
+	);
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
 
@@ -178,7 +205,8 @@ FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
 FIXTURES[3]!.expectedFile = mediumComposeExpected;
-FIXTURES[4]!.expectedFile = hugeExpected;
+FIXTURES[4]!.expectedFile = multiExpected;
+FIXTURES[5]!.expectedFile = hugeExpected;
 
 const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
 
@@ -215,7 +243,7 @@ const piArgs = (
 		"--skill",
 		PI_BLITZ_SKILL,
 		"--tools",
-		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body",
+		"pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body",
 		prompt,
 	];
 };
@@ -347,6 +375,8 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 				" For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: \"only\" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\\"seed must be finite\\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: \"last\" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: \"last\" } } ].";
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+		} else if (fx.id.includes("multi/three-body-ops")) {
+			guidance += " For this edit, call `pi_blitz_multi_body` with edits [{symbol:`adjust`,op:`replace_body_span`,find:`return base;`,replace:`return base + 1;`,occurrence:`only`}, {symbol:`emit`,op:`insert_body_span`,anchor:`const marker = value;`,position:`after`,text:`\n  const markerUpper = value.toUpperCase();\n`,occurrence:`only`}, {symbol:`risky`,op:`wrap_body`,before:`\n  try {`,keep:`body`,after:`  } catch (error) {\n    throw error;\n  }\n`,indentKeptBodyBy:2}].";
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
 			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("small")) {
