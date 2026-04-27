@@ -1,0 +1,14 @@
+{
+  "name": "@codewithkenzo/blitz-bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "bun bench/run.ts",
+    "bench:llm": "bun bench/llm-tokens.ts",
+    "bench:large": "bun bench/deep-large-symbol.ts",
+    "bench:small-target": "bun bench/deep-small-target.ts"
+  },
+  "devDependencies": {
+    "tiktoken": "^1.0.22"
+  }
+}

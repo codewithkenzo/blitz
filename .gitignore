@@ -3,6 +3,7 @@ zig-out/
 zig-pkg/
 /blitz
 *.bak
+node_modules/
 
 # OS
 .DS_Store

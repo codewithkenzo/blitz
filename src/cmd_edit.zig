@@ -124,6 +124,7 @@ fn runEdit(
     const latency_ms = start.durationTo(end).toMilliseconds();
     if (json_output) {
         const anchor = metrics.computeMinimalAnchor(original_contents, apply_result.contents);
+        const realistic = metrics.computeRealisticAnchor(original_contents, apply_result.contents, metrics.REALISTIC_CONTEXT_LINES);
         const payload = metrics.computePayloadEstimate(
             apply_result.target_bytes_before,
             apply_result.target_bytes_after,
@@ -131,6 +132,8 @@ fn runEdit(
             symbol.len,
             anchor.old_bytes,
             anchor.new_bytes,
+            realistic.old_bytes,
+            realistic.new_bytes,
         );
         try (metrics.EditMetrics{
             .mode = if (mode == .after) "after" else "replace",
@@ -145,12 +148,17 @@ fn runEdit(
             .snippet_bytes = apply_result.snippet_bytes,
             .blitz_payload_bytes = payload.blitz_payload_bytes,
             .core_full_symbol_payload_bytes = payload.core_full_symbol_payload_bytes,
+            .core_realistic_anchor_payload_bytes = payload.core_realistic_anchor_payload_bytes,
             .core_minimal_anchor_payload_bytes = payload.core_minimal_anchor_payload_bytes,
             .estimated_payload_saved_bytes_vs_full_symbol = payload.saved_bytes_vs_full_symbol,
             .estimated_payload_saved_pct_vs_full_symbol = payload.saved_pct_vs_full_symbol,
+            .estimated_payload_saved_bytes_vs_realistic_anchor = payload.saved_bytes_vs_realistic_anchor,
+            .estimated_payload_saved_pct_vs_realistic_anchor = payload.saved_pct_vs_realistic_anchor,
+            .estimated_tokens_saved_bytes_div4_vs_realistic_anchor = payload.tokens_saved_div4_vs_realistic_anchor,
             .estimated_payload_saved_bytes_vs_minimal_anchor = payload.saved_bytes_vs_minimal_anchor,
             .estimated_payload_saved_pct_vs_minimal_anchor = payload.saved_pct_vs_minimal_anchor,
             .estimated_tokens_saved_bytes_div4_vs_minimal_anchor = payload.tokens_saved_div4_vs_minimal_anchor,
+            .realistic_context_lines = realistic.context_lines,
             .used_markers = apply_result.used_markers,
             .wall_ms = @intCast(latency_ms),
         }).writeJson(stdout);
