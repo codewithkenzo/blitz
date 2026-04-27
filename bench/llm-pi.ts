@@ -50,6 +50,8 @@ const provider = argFlag("--provider", "anthropic");
 const model = argFlag("--model", "claude-haiku-4-5");
 const iters = parseInt(argFlag("--iters", "1"), 10);
 const verbose = argv.includes("--verbose");
+const timeoutMs = parseInt(argFlag("--timeout-ms", "60000"), 10);
+const caseFilter = argFlag("--case", "");
 
 const fixtureDir = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -143,9 +145,9 @@ const runPi = (lane: Lane, prompt: string, cwd: string) => {
 	const sessionDir = join(cwd, `sessions-${lane}`);
 	const args = piArgs(lane, prompt, sessionDir, cwd);
 	const t0 = performance.now();
-	const r = spawnSync("pi", args, { cwd, encoding: "utf8", maxBuffer: 200 * 1024 * 1024 });
+	const r = spawnSync("pi", args, { cwd, encoding: "utf8", maxBuffer: 200 * 1024 * 1024, timeout: timeoutMs, killSignal: "SIGTERM" });
 	const ms = performance.now() - t0;
-	return { ms, status: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "", sessionDir };
+	return { ms, status: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "", sessionDir, timedOut: r.error?.name === "Error" && /ETIMEDOUT/.test(String(r.error)) };
 };
 
 const findSessionFile = async (sessionDir: string): Promise<string> => {
@@ -259,7 +261,7 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 	const prompt = fx.intent(targetPath);
 	const r = runPi(lane, prompt, targetDir);
 	if (r.status !== 0) {
-		if (verbose) console.error(`[${lane}] pi exit ${r.status}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
+		if (verbose) console.error(`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
 	}
 
 	const sessionFile = await findSessionFile(r.sessionDir).catch(() => "");
@@ -291,6 +293,8 @@ const main = async () => {
 	console.log(`# Pi-driven authentic LLM token bench`);
 	console.log(`Provider: ${provider} / Model: ${model}`);
 	console.log(`Iterations: ${iters}`);
+	console.log(`Timeout per Pi run: ${timeoutMs}ms`);
+	if (caseFilter) console.log(`Case filter: ${caseFilter}`);
 	console.log(`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`);
 	console.log("");
 
@@ -305,7 +309,12 @@ const main = async () => {
 	};
 	const rows: Row[] = [];
 
-	for (const fx of FIXTURES) {
+	const selectedFixtures = caseFilter
+		? FIXTURES.filter((fx) => fx.id.includes(caseFilter))
+		: FIXTURES;
+	if (selectedFixtures.length === 0) throw new Error(`no fixtures match --case ${caseFilter}`);
+
+	for (const fx of selectedFixtures) {
 		for (const lane of ["core", "blitz"] as Lane[]) {
 			const runs: LaneResult[] = [];
 			for (let i = 0; i < iters; i++) {
@@ -332,7 +341,7 @@ const main = async () => {
 	}
 
 	console.log("");
-	for (const fx of FIXTURES) {
+	for (const fx of selectedFixtures) {
 		const core = rows.find((r) => r.fixture === fx.id && r.lane === "core")!;
 		const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz")!;
 		const savedOutput = core.outputMedian

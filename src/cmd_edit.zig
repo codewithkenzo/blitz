@@ -402,6 +402,100 @@ test "runReplace with marker preserves untouched body" {
     try std.testing.expectEqualSlices(u8, expected, contents);
 }
 
+test "runReplace accepts body-only replacement" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\function greet(name: string): string {
+        \\  return "hi " + name;
+        \\}
+    ;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "greet",
+        \\  return "hello " + name.toUpperCase();
+    ,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    const expected =
+        \\function greet(name: string): string {
+        \\  return "hello " + name.toUpperCase();
+        \\}
+    ;
+    try std.testing.expectEqualSlices(u8, expected, contents);
+}
+
+test "runReplace body-only marker preserves signature" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\function hugeCompute(seed: number): number {
+        \\  let total = seed;
+        \\  total += 1;
+        \\  return total;
+        \\}
+    ;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "hugeCompute",
+        \\  let total = seed;
+        \\  // ... existing code ...
+        \\  return total + 1;
+    ,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    const expected =
+        \\function hugeCompute(seed: number): number {
+        \\  let total = seed;
+        \\  total += 1;
+        \\  return total + 1;
+        \\}
+    ;
+    try std.testing.expectEqualSlices(u8, expected, contents);
+}
+
 test "runReplace shorthand marker is accepted" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();

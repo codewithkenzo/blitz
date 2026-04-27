@@ -42,19 +42,26 @@ pub fn applyToSource(
 
     const target_start: usize = @intCast(target.startByte());
     const target_end: usize = @intCast(target.endByte());
+    const body_range = replacementRangeFor(lang, source, target);
 
     var replacement: []const u8 = snippet;
     var used_markers = false;
     var owned_replacement: ?[]u8 = null;
+    var owned_normalized_snippet: ?[]u8 = null;
     defer if (owned_replacement) |owned| allocator.free(owned);
+    defer if (owned_normalized_snippet) |owned| allocator.free(owned);
 
     switch (mode) {
         .replace => {
-            const original_body = source[target_start..target_end];
+            const original_body = source[body_range.start..body_range.end];
+            const normalized = try normalizeReplaceSnippet(allocator, lang, original_body, snippet);
+            replacement = normalized;
+            owned_normalized_snippet = normalized;
+
             const maybe_merged = splice.maybeSplice(
                 allocator,
                 original_body,
-                snippet,
+                replacement,
                 commentStylesFor(lang),
             ) catch |err| switch (err) {
                 error.AnchorNotFound => return error.AnchorNotFound,
@@ -76,8 +83,8 @@ pub fn applyToSource(
         },
     }
 
-    const replace_start = if (mode == .after) target_end else target_start;
-    const replace_end = target_end;
+    const replace_start = if (mode == .after) target_end else body_range.start;
+    const replace_end = if (mode == .after) target_end else body_range.end;
     const new_len = source.len - (replace_end - replace_start) + replacement.len;
     const next_contents = try allocator.alloc(u8, new_len);
     errdefer allocator.free(next_contents);
@@ -136,6 +143,120 @@ fn parseStrict(parser: *bindings.Parser, source: []const u8) !bindings.Tree {
         return error.ParseFailed;
     }
     return tree;
+}
+
+const ByteRange = struct {
+    start: usize,
+    end: usize,
+};
+
+fn replacementRangeFor(lang: bindings.Language, source: []const u8, target: bindings.Node) ByteRange {
+    const fallback: ByteRange = .{ .start = @intCast(target.startByte()), .end = @intCast(target.endByte()) };
+    const body = findBodyNode(target) orelse return fallback;
+    const body_start: usize = @intCast(body.startByte());
+    const body_end: usize = @intCast(body.endByte());
+    if (body_end <= body_start or body_end > source.len) return fallback;
+
+    return switch (lang) {
+        .typescript, .tsx, .rust, .go => braceInteriorRange(source, body_start, body_end) orelse fallback,
+        .python => .{ .start = body_start, .end = body_end },
+    };
+}
+
+fn findBodyNode(target: bindings.Node) ?bindings.Node {
+    var i: u32 = 0;
+    while (i < target.childCount()) : (i += 1) {
+        if (target.fieldNameForChild(i)) |field_name| {
+            if (std.mem.eql(u8, field_name, "body")) return target.child(i);
+        }
+    }
+
+    i = 0;
+    while (i < target.namedChildCount()) : (i += 1) {
+        const child = target.namedChild(i) orelse continue;
+        const kind = child.kind();
+        if (std.mem.eql(u8, kind, "statement_block") or
+            std.mem.eql(u8, kind, "block") or
+            std.mem.eql(u8, kind, "class_body") or
+            std.mem.eql(u8, kind, "declaration_list")) return child;
+    }
+    return null;
+}
+
+fn braceInteriorRange(source: []const u8, start: usize, end: usize) ?ByteRange {
+    if (end <= start + 1 or end > source.len) return null;
+    var left = start;
+    while (left < end and std.ascii.isWhitespace(source[left])) : (left += 1) {}
+    var right = end;
+    while (right > left and std.ascii.isWhitespace(source[right - 1])) : (right -= 1) {}
+    if (right <= left + 1 or source[left] != '{' or source[right - 1] != '}') return null;
+    return .{ .start = left + 1, .end = right - 1 };
+}
+
+fn normalizeReplaceSnippet(allocator: std.mem.Allocator, lang: bindings.Language, original_body: []const u8, snippet: []const u8) ![]u8 {
+    return switch (lang) {
+        .typescript, .tsx, .rust, .go => normalizeBraceBodySnippet(allocator, original_body, snippet),
+        .python => normalizePythonBodySnippet(allocator, snippet),
+    };
+}
+
+fn outerBraceInterior(snippet: []const u8) ?ByteRange {
+    const first = std.mem.indexOfScalar(u8, snippet, '{') orelse return null;
+    var depth: usize = 0;
+    var last: ?usize = null;
+    var i = first;
+    while (i < snippet.len) : (i += 1) {
+        switch (snippet[i]) {
+            '{' => depth += 1,
+            '}' => {
+                if (depth == 0) return null;
+                depth -= 1;
+                if (depth == 0) last = i;
+            },
+            else => {},
+        }
+    }
+    const close = last orelse return null;
+    const trailing = std.mem.trim(u8, snippet[close + 1 ..], " \t\r\n\x0b\x0c");
+    if (trailing.len != 0) return null;
+    return .{ .start = first + 1, .end = close };
+}
+
+fn normalizeBraceBodySnippet(allocator: std.mem.Allocator, original_body: []const u8, snippet: []const u8) ![]u8 {
+    if (outerBraceInterior(snippet)) |range| {
+        return allocator.dupe(u8, snippet[range.start..range.end]);
+    }
+
+    const trimmed = std.mem.trim(u8, snippet, "\r\n");
+    if (trimmed.len == 0) return allocator.dupe(u8, "");
+
+    const original_has_newline = std.mem.indexOfScalar(u8, original_body, '\n') != null;
+    const leading_byte: ?u8 = if (original_has_newline and trimmed[0] != '\n') '\n' else if (original_body.len > 0 and isBoundaryWhitespace(original_body[0]) and !isBoundaryWhitespace(trimmed[0])) original_body[0] else null;
+    const trailing_byte: ?u8 = if (original_has_newline and trimmed[trimmed.len - 1] != '\n') '\n' else if (original_body.len > 0 and isBoundaryWhitespace(original_body[original_body.len - 1]) and !isBoundaryWhitespace(trimmed[trimmed.len - 1])) original_body[original_body.len - 1] else null;
+
+    const out_len = trimmed.len + @intFromBool(leading_byte != null) + @intFromBool(trailing_byte != null);
+    const out = try allocator.alloc(u8, out_len);
+    var at: usize = 0;
+    if (leading_byte) |byte| {
+        out[at] = byte;
+        at += 1;
+    }
+    @memcpy(out[at .. at + trimmed.len], trimmed);
+    at += trimmed.len;
+    if (trailing_byte) |byte| out[at] = byte;
+    return out;
+}
+
+fn isBoundaryWhitespace(byte: u8) bool {
+    return byte == ' ' or byte == '\t' or byte == '\n' or byte == '\r';
+}
+
+fn normalizePythonBodySnippet(allocator: std.mem.Allocator, snippet: []const u8) ![]u8 {
+    const trimmed = std.mem.trimEnd(u8, snippet, " \t\r\n\x0b\x0c");
+    const out = try allocator.alloc(u8, trimmed.len + 1);
+    @memcpy(out[0..trimmed.len], trimmed);
+    out[trimmed.len] = '\n';
+    return out;
 }
 
 fn normalizeAfterSnippet(allocator: std.mem.Allocator, snippet: []const u8) ![]u8 {
