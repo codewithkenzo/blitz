@@ -44,27 +44,18 @@ No Python. No local model. No model routing layer. Just a native Zig CLI.
 
 ## Install
 
-### Build from source
-
-```bash
-git clone https://github.com/codewithkenzo/blitz
-cd blitz
-zig build -Doptimize=ReleaseFast
-./zig-out/bin/blitz doctor
-```
-
-### npm
-
 ```bash
 npm install -g @codewithkenzo/blitz
 blitz doctor
 ```
 
-The npm package installs a small wrapper plus the matching native platform package when available. `BLITZ_BIN` is still supported if you want to point at a custom local build:
+Or install the Pi extension:
 
 ```bash
-BLITZ_BIN=/abs/path/to/blitz/zig-out/bin/blitz blitz doctor
+pi install npm:@codewithkenzo/pi-blitz
 ```
+
+The npm package installs a small wrapper plus the matching native platform package when available.
 
 ## Basic CLI usage
 
@@ -125,12 +116,7 @@ Use [`@codewithkenzo/pi-blitz`](https://github.com/codewithkenzo/pi-blitz) for P
 pi install npm:@codewithkenzo/pi-blitz
 ```
 
-Configure the binary:
-
-```json
-// ~/.pi/pi-blitz.json
-{ "binary": "/abs/path/to/blitz/zig-out/bin/blitz" }
-```
+Then check `/help` for `pi_blitz_*` tools or run `pi_blitz_doctor`.
 
 ### MCP server
 
@@ -148,7 +134,7 @@ bunx -p @codewithkenzo/blitz blitz-mcp
 
 Set `BLITZ_WORKSPACE` to the project root you want Blitz to edit. The server rejects paths that escape this workspace, including symlink escapes.
 
-Copy/paste MCP config:
+Claude Code / Claude Desktop (`.mcp.json`):
 
 ```json
 {
@@ -164,6 +150,32 @@ Copy/paste MCP config:
 }
 ```
 
+Cursor / VS Code (`mcp.json`):
+
+```json
+{
+  "servers": {
+    "blitz": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"],
+      "env": {
+        "BLITZ_WORKSPACE": "${workspaceFolder}"
+      }
+    }
+  }
+}
+```
+
+Codex (`~/.codex/config.toml` or `.codex/config.toml`):
+
+```toml
+[mcp_servers.blitz]
+command = "npx"
+args = ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp"]
+env = { BLITZ_WORKSPACE = "/absolute/path/to/your/project" }
+```
+
 Bun version:
 
 ```json
@@ -176,17 +188,6 @@ Bun version:
         "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
       }
     }
-  }
-}
-```
-
-Optional override for custom/source builds:
-
-```json
-{
-  "env": {
-    "BLITZ_BIN": "/absolute/path/to/blitz",
-    "BLITZ_WORKSPACE": "/absolute/path/to/your/project"
   }
 }
 ```
@@ -212,6 +213,23 @@ Use Blitz when the model would otherwise need to repeat a lot of unchanged code.
 - Go
 
 Unsupported files fall back to the host agent/editor.
+
+## Custom binary / source builds
+
+Normal npm installs do not need this. Use `BLITZ_BIN` only when you want to point the wrapper at a custom local build:
+
+```bash
+BLITZ_BIN=/abs/path/to/blitz/zig-out/bin/blitz blitz doctor
+```
+
+Build from source:
+
+```bash
+git clone https://github.com/codewithkenzo/blitz
+cd blitz
+zig build -Doptimize=ReleaseFast
+./zig-out/bin/blitz doctor
+```
 
 ## Development
 
