@@ -5,14 +5,14 @@ import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 
 const root = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
-const server = join(root, "mcp/blitz-mcp.ts");
+const server = join(root, "mcp/blitz-mcp.js");
 const blitz = resolve(process.env.BLITZ_BIN ?? join(root, "zig-out/bin/blitz"));
 const tmp = await mkdtemp(join(tmpdir(), "blitz-mcp-smoke-"));
 const file = join(tmp, "a.ts");
 await writeFile(file, `function handle(value: number): number {\n  const doubled = value * 2;\n  return doubled;\n}\n`);
 await symlink("/etc", join(tmp, "leak"));
 
-const child = spawn("bun", [server], {
+const child = spawn("node", [server], {
   env: { ...process.env, BLITZ_BIN: blitz, BLITZ_WORKSPACE: tmp },
   stdio: ["pipe", "pipe", "pipe"],
 });

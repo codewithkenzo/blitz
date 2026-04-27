@@ -90,7 +90,7 @@ pub fn run(
 ) !u8 {
     try stdout.writeAll(
         \\blitz doctor
-        \\  version:     0.1.0-alpha.5
+        \\  version:     0.1.0-alpha.6
         \\  stage:       v0.1
         \\
     );

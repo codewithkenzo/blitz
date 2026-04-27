@@ -134,7 +134,7 @@ Configure the binary:
 
 ### MCP server
 
-Blitz ships a stdio MCP server. You do not need to clone this repo or point at a local binary for normal use.
+Blitz ships a stdio MCP server. You do not need to clone this repo or point at a local binary for normal use. The published MCP entrypoint runs on Node; `bunx` works too.
 
 Use one of these commands in your agent's MCP config:
 
