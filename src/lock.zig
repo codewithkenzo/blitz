@@ -86,3 +86,39 @@ test "lock name is stable" {
     defer allocator.free(b);
     try std.testing.expectEqualStrings(a, b);
 }
+
+test "acquire removes stale lock dir before retry" {
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const cache_dir = backup.defaultCacheDir(allocator) catch return;
+    defer allocator.free(cache_dir);
+
+    const root = try lockRootPath(allocator, cache_dir);
+    defer allocator.free(root);
+    try Dir.cwd().createDirPath(io, root);
+
+    const now = Io.Timestamp.now(io, Io.Clock.awake);
+    const real_path = try std.fmt.allocPrint(allocator, "/tmp/blitz-stale-lock-test-{d}", .{now.nanoseconds});
+    defer allocator.free(real_path);
+    const name = try lockName(allocator, real_path);
+    defer allocator.free(name);
+
+    const lock_path = try std.fs.path.join(allocator, &.{ root, name });
+    defer allocator.free(lock_path);
+
+    try Dir.cwd().createDir(io, lock_path, .default_dir);
+
+    const stale_clock = Io.Timestamp.now(io, Io.Clock.awake);
+    const stale = std.Io.Timestamp.fromNanoseconds(stale_clock.nanoseconds - (STALE_LOCK_NS * 3));
+    try Dir.cwd().setTimestamps(io, lock_path, .{
+        .modify_timestamp = .{ .new = stale },
+    });
+    const before = try Dir.cwd().statFile(io, lock_path, .{});
+
+    var guard = try acquire(allocator, io, real_path);
+    defer guard.release();
+
+    const after = try Dir.cwd().statFile(io, lock_path, .{});
+    try std.testing.expect(after.mtime.nanoseconds > before.mtime.nanoseconds);
+}

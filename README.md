@@ -55,7 +55,7 @@ Or install the Pi extension:
 pi install npm:@codewithkenzo/pi-blitz
 ```
 
-The npm package installs a small wrapper plus the matching native platform package when available.
+The npm package installs a small wrapper plus the matching native platform package when available. Linux x64 has been smoke-tested locally; macOS and Windows packages are published but still need runtime smoke verification.
 
 ## Basic CLI usage
 
@@ -124,17 +124,27 @@ Blitz ships a stdio MCP server. You do not need to clone this repo or point at a
 
 MCP clients run Blitz as a stdio subprocess. If launched from a project root, Blitz auto-detects the workspace. Otherwise pass `--workspace` in the config. The workspace is the folder Blitz is allowed to edit; paths outside it, including symlink escapes, are rejected.
 
-Use one of these commands in your agent's MCP config:
+Use one of these commands in your agent's MCP config. MCP clients launch Blitz as a local subprocess and speak JSON-RPC over stdin/stdout.
+
+Claude Code CLI:
+
+```bash
+claude mcp add --transport stdio blitz -- npx --yes --package=@codewithkenzo/blitz -- blitz-mcp --workspace "$PWD"
+```
+
+Generic npx command:
 
 ```bash
 npx --yes --package=@codewithkenzo/blitz -- blitz-mcp --workspace /absolute/path/to/your/project
 ```
 
+Generic bunx command:
+
 ```bash
 bunx -p @codewithkenzo/blitz blitz-mcp --workspace /absolute/path/to/your/project
 ```
 
-Claude Code / Claude Desktop (`.mcp.json`):
+Claude Code JSON (`.mcp.json`):
 
 ```json
 {
@@ -147,7 +157,7 @@ Claude Code / Claude Desktop (`.mcp.json`):
 }
 ```
 
-Cursor / VS Code (`mcp.json`):
+VS Code (`mcp.json`):
 
 ```json
 {
@@ -169,7 +179,9 @@ command = "npx"
 args = ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
 ```
 
-Bun version:
+Claude Desktop and Cursor both support MCP, but their preferred setup surfaces change often. Prefer their built-in MCP UI/import flow when available; use the JSON shapes above only when your client asks for manual config.
+
+Bun JSON variant:
 
 ```json
 {

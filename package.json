@@ -33,6 +33,7 @@
     "bench:large": "bun bench/deep-large-symbol.ts",
     "bench:small-target": "bun bench/deep-small-target.ts",
     "smoke:mcp": "bun scripts/mcp-smoke.ts",
+    "release:check": "node scripts/check-release.mjs",
     "pack:check": "npm pack --dry-run --json",
     "pack:linux-x64-musl": "npm pack ./packages/blitz-linux-x64-musl --json"
   },

@@ -232,3 +232,27 @@ test "unknown extension prints unsupported language line" {
     try std.testing.expectEqualStrings("", err.written());
     try std.testing.expectEqualStrings("sample.txt (unsupported language)\n", out.written());
 }
+
+test "cmd_read rejects file over 32 MiB" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const over_limit = 32 * 1024 * 1024 + 1;
+
+    const data = try allocator.alloc(u8, over_limit);
+    defer allocator.free(data);
+    @memset(data, 'x');
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "big.ts", .data = data });
+    const file_path = try tmp.dir.realPathFileAlloc(io, "big.ts", allocator);
+    defer allocator.free(file_path);
+
+    var out: Writer.Allocating = .init(allocator);
+    defer out.deinit();
+    var err: Writer.Allocating = .init(allocator);
+    defer err.deinit();
+
+    try std.testing.expectError(error.FileTooBig, run(allocator, io, file_path, &out.writer, &err.writer));
+}

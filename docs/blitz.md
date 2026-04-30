@@ -2,7 +2,7 @@
 
 Single source of truth. Supersedes and absorbs `blitz-design.md`, `blitz-gap-closure.md`, `blitz-perf-patterns.md`, `pi-edit-positioning.md`, `pi-edit-ecosystem-compare.md`, `pi-edit-local-overlap.md`, `zig-0.16-verification.md` (all archived).
 
-Status: **`0.1.0-alpha.9`.** Standalone `codewithkenzo/blitz` CLI, npm platform packages, MCP stdio server, and `@codewithkenzo/pi-blitz` are published. Structured apply IR (`blitz apply`) is implemented. MCP stdio server ships as `blitz-mcp` with a Node entrypoint and workspace guard. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API.
+Status: **`0.1.0-alpha.10`.** Standalone `codewithkenzo/blitz` CLI, npm platform packages, MCP stdio server, and `@codewithkenzo/pi-blitz` are published. Structured apply IR (`blitz apply`) is implemented. MCP stdio server ships as `blitz-mcp` with a Node entrypoint and workspace guard. Linux x64 has been smoke-tested locally; macOS and Windows packages are published but still need runtime smoke verification. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API.
 
 ## 1. North star
 
@@ -468,22 +468,30 @@ Rationale per `blitz-perf-patterns.md` research: Morph, Relace, Aider, Continue 
 
 Effect v4 patterns verbatim from `extensions/flow-system` (same repo). The wrapper is backend-agnostic; blitz is just the `spawnCollect` target. Effect stays internal; Pi tool `execute` is the Promise/`AgentToolResult` boundary.
 
-**Local install (before extension is published):** use the MCP stdio server instead — see §9.5.
 
-### 9.1 Tool surface (v0.1 = 6 tools)
+### 9.1 Tool surface (v0.2 stream UX)
 
-| Pi tool | blitz command |
-|---|---|
-| `pi_blitz_read` | `blitz read <file>` |
-| `pi_blitz_edit` | `blitz edit <file> --snippet - --after\|--replace <symbol>` |
-| `pi_blitz_batch` | `blitz batch-edit <file> --edits -` |
-| `pi_blitz_rename` | `blitz rename <file> <old> <new>` |
-| `pi_blitz_undo` | `blitz undo <file>` |
-| `pi_blitz_doctor` | `blitz doctor` |
+| Pi tool | blitz command | Notes |
+|---|---|---|
+| `pi_blitz_read` | `blitz read <file>` | AST/source summary; read-only; no progress updates. |
+| `pi_blitz_edit` | `blitz edit <file> --snippet - --after\|--replace <symbol>` | Legacy symbol edit surface. |
+| `pi_blitz_batch` | `blitz batch-edit <file> --edits -` | Legacy batch edit surface. |
+| `pi_blitz_apply` | `blitz apply --edit - --json` | Canonical structured JSON IR. |
+| `pi_blitz_replace_body_span` | `blitz apply --edit - --json` | Narrow wrapper for exact body-span replacement. |
+| `pi_blitz_insert_body_span` | `blitz apply --edit - --json` | Narrow wrapper for body-span insertion. |
+| `pi_blitz_wrap_body` | `blitz apply --edit - --json` | Narrow wrapper for whole-body wrapping. |
+| `pi_blitz_compose_body` | `blitz apply --edit - --json` | Narrow wrapper for preserve-island body composition. |
+| `pi_blitz_multi_body` | `blitz apply --edit - --json` | Multiple body-scoped edits in one file. |
+| `pi_blitz_patch` | `blitz apply --edit - --json` | Compact tuple patch ops. |
+| `pi_blitz_try_catch` | `blitz apply --edit - --json` | Patch tuple helper for try/catch wrapping. |
+| `pi_blitz_replace_return` | `blitz apply --edit - --json` | Patch tuple helper for return replacement. |
+| `pi_blitz_rename` | `blitz rename <file> <old> <new>` | Single-file AST rename. |
+| `pi_blitz_undo` | `blitz undo <file>` | Last-edit rollback; requires explicit confirm. |
+| `pi_blitz_doctor` | `blitz doctor` | Binary/version/cache diagnostics. |
 
-v0.2 adds `pi_blitz_multi`, `pi_blitz_rename_all`, `pi_blitz_query`.
+Diff output is opt-in. The canonical wire field is `options.diffContext`; Pi also accepts top-level `diff_context` as an LLM-friendly alias. Both are honored only when `include_diff` / `options.includeDiff` is true; otherwise no `--diff` flag or `options.diffContext` is sent.
 
-Register each with `pi.registerTool({ name, parameters, execute(toolCallId, params, signal, onUpdate, ctx) })`; `execute` returns `Promise<AgentToolResult<BlitzDetails>>` for friendly results or throws for hard tool failure.
+Register each with `pi.registerTool({ name, parameters, renderCall, renderResult, execute(toolCallId, params, signal, onUpdate, ctx) })`; `execute` returns `Promise<AgentToolResult<BlitzDetails>>` for friendly results or throws for hard tool failure.
 
 ### 9.2 Effect v4 shape
 
@@ -535,24 +543,50 @@ type PiBlitzConfig = {
 | `blitz_replace_return` | `blitz apply --edit -` (`patch/replace_return` op) | Replace a return expression in a symbol body. |
 | `blitz_undo` | `blitz undo <file>` | Revert last mutation. |
 
-**Wire in `.mcp.json`:**
+**Primary MCP setup examples:**
+
+Claude Code CLI:
+
+```bash
+claude mcp add --transport stdio blitz -- npx --yes --package=@codewithkenzo/blitz -- blitz-mcp --workspace "$PWD"
+```
+
+Claude Code JSON (`.mcp.json`):
 
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "blitz": {
-      "command": "bun",
-      "args": ["/abs/path/to/blitz/mcp/blitz-mcp.ts"],
-      "env": {
-        "BLITZ_BIN": "/abs/path/to/blitz/zig-out/bin/blitz",
-        "BLITZ_WORKSPACE": "/abs/path/to/your/project"
-      }
+      "command": "npx",
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
     }
   }
 }
 ```
 
-Build the binary first (`zig build -Doptimize=ReleaseFast`), then point `BLITZ_BIN` at `zig-out/bin/blitz`. The MCP server does not auto-build.
+VS Code (`mcp.json`):
+
+```json
+{
+  "servers": {
+    "blitz": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "${workspaceFolder}"]
+    }
+  }
+}
+```
+
+Codex (`~/.codex/config.toml` or `.codex/config.toml`):
+
+```toml
+[mcp_servers.blitz]
+command = "npx"
+args = ["--yes", "--package=@codewithkenzo/blitz", "--", "blitz-mcp", "--workspace", "/absolute/path/to/your/project"]
+```
+
+MCP clients launch Blitz as a local subprocess and speak JSON-RPC over stdin/stdout. `--workspace` is the project root Blitz may read/write. Use `BLITZ_BIN` only for custom/source builds.
 
 ### 9.6 Environment variables
 

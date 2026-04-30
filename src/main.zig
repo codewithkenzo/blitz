@@ -337,3 +337,33 @@ fn readAllStdin(gpa: std.mem.Allocator, io: std.Io) ![]u8 {
 test "version string is non-empty" {
     try std.testing.expect(version.len > 0);
 }
+
+test "readAllStdin rejects payload over 4 MiB" {
+    const os = @import("builtin");
+    if (os.os.tag == .windows) return;
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const payload_size = 4 * 1024 * 1024 + 1;
+    const payload = try allocator.alloc(u8, payload_size);
+    defer allocator.free(payload);
+    @memset(payload, 'x');
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "payload", .data = payload });
+    const payload_path = try tmp.dir.realPathFileAlloc(io, "payload", allocator);
+    defer allocator.free(payload_path);
+
+    const file_fd = try std.posix.openat(std.posix.AT.FDCWD, payload_path, .{ .ACCMODE = std.posix.ACCMODE.RDONLY }, 0);
+    defer _ = std.posix.system.close(file_fd);
+
+    const old_stdin = std.posix.system.dup(std.posix.STDIN_FILENO);
+    defer _ = std.posix.system.close(old_stdin);
+    _ = std.posix.system.dup2(file_fd, std.posix.STDIN_FILENO);
+    defer _ = std.posix.system.dup2(old_stdin, std.posix.STDIN_FILENO);
+
+    try std.testing.expectError(error.StreamTooLong, readAllStdin(allocator, io));
+}

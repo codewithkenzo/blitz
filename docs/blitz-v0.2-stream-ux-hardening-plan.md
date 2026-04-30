@@ -405,10 +405,11 @@ Plan:
 
 Potential split:
 
-- `apply_payload.zig`
-- `apply_ops.zig`
-- `apply_response.zig`
-- `apply_metrics.zig`
+- `apply_payload.zig` — slice E1 done; owns apply JSON payload/result types, error set, shared source cap.
+- `apply_response.zig` — slice E2/E3 done; owns apply success/failure output emission and error reason mapping.
+- `apply_ops.zig` — slice E4 done; owns operation/range parsing, JSON field helpers, and match selector/span selection.
+- `apply_metrics.zig` — slice E5 done; owns status labels, language labels, diff summary construction, and success result metrics assembly.
+- `cmd_apply_response_tests.zig` — slice E6 done; owns apply command semantic/golden tests moved out of production module.
 
 Acceptance criteria:
 
@@ -435,6 +436,7 @@ Plan:
   - `blitz --version` matches package version
   - `mcp/blitz-mcp.js` generated from `mcp/blitz-mcp.ts`
   - `npm pack --dry-run --json` passes
+- Current local check: `npm run release:check` (`scripts/check-release.mjs`). It verifies wrapper/platform package versions, local binary `--version` when present, generated MCP JS freshness, and pack contents.
 - Later: publish with provenance from CI.
 
 Acceptance criteria:
