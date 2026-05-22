@@ -30,6 +30,16 @@ d1o-ptf1 links += blitz/reports/blitz-v02-ergonomics-plan.md#phase-3-previewdiff
 d1o-5hm9 links += blitz/reports/blitz-v02-ergonomics-plan.md#phase-4-batchmulti-after-single-op-reliability
 ```
 
+
+## 2026-05-22 alignment note
+
+Latest research: `research/blitz-v0.2-and-2.0-implementation-research-20260522.md`. This plan remains a v0.2 ergonomics/token-savings plan, not a 2.0 plan. Keep these operation/result/error names aligned with `specs/blitz-v0.2-hardening-and-parity.md`:
+
+- Canonical structured ops: `replace_body_span`, `insert_body_span`, `wrap_body`, `compose_body`, `insert_after_symbol`, `set_body`, `multi_body`, `patch`; high-ROI narrow aliases may include `try_catch` and `replace_return` through `patch` or wrapper tools.
+- Exact matching and `requireSingleMatch` remain defaults. Fuzzy/marker tolerance belongs to the legacy marker path or explicit future options, never silent default behavior.
+- `apply --json` should move toward stable `status` + `code` fields so Pi/MCP wrappers stop classifying by stderr regex.
+- Benchmark claims must be correctness-gated and separate provider output tokens, tool-call argument tokens, wall time, cost, model/date/commit/N, malformed/retry rate, and task class.
+
 ## Goal
 
 Redesign blitz v0.2 around model-reliable, structured edit operations that create drastic output-token savings without relying on vague marker discipline or misleading benchmark claims.

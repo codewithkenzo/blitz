@@ -2,7 +2,19 @@
 
 Single source of truth. Supersedes and absorbs `blitz-design.md`, `blitz-gap-closure.md`, `blitz-perf-patterns.md`, `pi-edit-positioning.md`, `pi-edit-ecosystem-compare.md`, `pi-edit-local-overlap.md`, `zig-0.16-verification.md` (all archived).
 
-Status: **`0.1.0-alpha.9`.** Standalone `codewithkenzo/blitz` CLI, npm platform packages, MCP stdio server, and `@codewithkenzo/pi-blitz` are published. Structured apply IR (`blitz apply`) is implemented. MCP stdio server ships as `blitz-mcp` with a Node entrypoint and workspace guard. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API.
+Status: **`0.1.0-alpha.10`.** Standalone `codewithkenzo/blitz` CLI, npm platform packages, MCP stdio server, and `@codewithkenzo/pi-blitz` are published. Structured apply IR (`blitz apply`) is implemented. MCP stdio server ships as `blitz-mcp` with a Node entrypoint and workspace guard. Authentic Pi/model benchmarks show meaningful reductions in provider output tokens, tool-call argument tokens, wall time, and cost on handled symbol edits (see §10). Freeform `snippet` ergonomics are less reliable than structured operations for large bodies; structured apply tools are the preferred Pi-facing API.
+
+Active v0.2 hardening docs:
+
+- `specs/blitz-v0.2-hardening-and-parity.md` — active source of truth for current v0.2 implementation.
+- `reports/blitz-v02-ergonomics-plan.md` — structured edit/token ergonomics plan.
+- `research/blitz-v0.2-external-best-practices.md` — first external evidence and proven patterns report.
+- `research/blitz-v0.2-and-2.0-implementation-research-20260522.md` — latest implementation-oriented research for active v0.2 plus complementary 2.0 checks.
+
+Complementary future/check docs (not active v0.2 scope):
+
+- `docs/specs/SPEC-2.0.md` — future deterministic structured edit engine check.
+- `docs/plans/PLAN-2.0.md` — future/check execution lanes.
 
 ## 1. North star
 
@@ -354,6 +366,8 @@ Each vendored at a specific tagged release into `grammars/`; upgrades explicit. 
 | `blitz doctor` | — | Version, supported grammars, tree-sitter lib version, backup cache health. |
 
 ### 6.2 v0.2 additions (gap closure)
+
+> Scope note: the table below is historical/roadmap context. Current implementation authority for v0.2 is `specs/blitz-v0.2-hardening-and-parity.md`; complementary 2.0 files are non-authoritative checks.
 
 | Command | Description |
 |---|---|

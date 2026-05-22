@@ -2,8 +2,106 @@
 
 Status: **DRAFT**
 Scope: `codewithkenzo/blitz` (Zig CLI) + `codewithkenzo/pi-blitz` (TS extension)
-Baseline: `0.1.0-alpha.9` at commit HEAD
+Baseline: `0.1.0-alpha.10` at commit HEAD
 Target: `0.2.0` release
+Research addendum: `research/blitz-v0.2-external-best-practices.md`
+
+## Research-backed specificity update (2026-05-22)
+
+This spec should stay scoped to **v0.2**, not 2.0. External research supports the existing hardening/parity direction, with these concrete rules:
+
+1. **Deterministic typed ops over freeform snippets**
+   - Keep `blitz apply` centered on typed JSON operations.
+   - Any new operation must define exact payload fields, ambiguity behavior, idempotence behavior, parse policy, and no-mutation failure path.
+   - Do not add broad `instruction: string` mutation APIs.
+
+2. **Do-no-harm validation**
+   - Missing, ambiguous, stale, or parse-invalid targets reject before write.
+   - Structured errors must expose stable `code` fields; pi-blitz should classify by code, not stderr regex.
+   - Dry-run/apply must share the same engine.
+
+3. **AST range ownership**
+   - Resolve symbol/target to explicit byte range + node kind before edit.
+   - Search/replace anchors are scoped to target body/node, never whole file by default.
+   - Grammar-specific declaration kinds, body extraction, comments, and strings belong in `grammar_config.zig`.
+
+4. **Patch/precondition safety**
+   - Add `fileHash`/target-span preconditions before cross-file or multi-edit writes.
+   - Multi-edit applies only after all ranges resolve and overlap checks pass.
+   - Ordered multi-file changes should follow LSP `WorkspaceEdit` semantics; writable cross-file remains gated until single-file reliability passes.
+
+5. **Agent tool API discipline**
+   - Prefer narrow Pi/MCP tools for high-value ops (`wrap_body`, `replace_return`, `try_catch`, `multi_body`) plus generic `apply` escape hatch.
+   - Default output remains compact: status/code/ranges/metrics/diff summary; full diff is opt-in.
+   - Tool schemas must reject invalid enum/field combos before invoking binary where possible.
+
+6. **Benchmark claim policy**
+   - Correctness first: failed or malformed outputs are not token-savings wins.
+   - Report provider output tokens, tool-call arg tokens, wall time, cost, model, date, commit, N.
+   - Keep current evidence-specific claims; do not generalize from wrap-body wins to all edits.
+
+These rules refine Phase 1/2/3 below; they do not add a separate 2.0 scope.
+
+## Implementation-readiness addendum (2026-05-22)
+
+Research report: `research/blitz-v0.2-and-2.0-implementation-research-20260522.md`. This addendum turns the v0.2 scope into builder-ready file-level work. It does not promote the complementary 2.0 documents to active release scope.
+
+### Current-state source map
+
+| Area | Current files | v0.2 target | Notes |
+|---|---|---|---|
+| Structured apply engine | `src/cmd_apply.zig` | `src/apply/mod.zig`, `ir.zig`, `errors.zig`, `target.zig`, `operations.zig`, `patch.zig`, `diff.zig`, `validate.zig` | Start with golden CLI snapshots; extraction should be behavior-preserving. |
+| AST/symbol/body APIs | `src/ast.zig`, `src/symbols.zig`, `src/edit_support.zig`, inline apply logic | `src/ast.zig` owns parse, `ResolvedSymbol`, body ranges, declaration walk, ambiguity counts | `symbols.zig` should become a temporary re-export or disappear. |
+| Grammar knowledge | `build.zig`, `src/symbols.zig`, `src/edit_support.zig` | `src/grammar_config.zig` registry | Add declaration kinds, body kinds, comment styles, extensions, name fields, brace/Python behavior. |
+| Legacy marker fallback | `src/splice.zig`, `src/fallback.zig`, `src/cmd_edit.zig` | marker failures return `needs_host_merge` JSON where legacy host merge is expected | Structured `apply` should reject with stable codes unless explicitly supporting fallback. |
+| Error/result contract | `src/cmd_apply.zig`, wrappers | stable `code` taxonomy + compact JSON result | Pi/MCP wrappers classify by `code`/`status`, not stderr regex. |
+| Pi/MCP tool surface | `mcp/blitz-mcp.ts`, companion `../pi-blitz/src/tools.ts` | shared operation names, descriptor/factory pattern, narrow schemas | Keep common narrow tools plus generic `apply`. |
+| Cross-file operations | planned/spec text | preview-first `rename-all`; move/delete gated | Writable multi-file edits require hashes, all-range planning, parse validation, and backup plan. |
+
+### Phase dependencies and build slices
+
+1. **Snapshot before extraction** — add deterministic `blitz apply --json` fixtures for `replace_body_span`, `insert_body_span`, `wrap_body`, `set_body`, `multi_body`, `patch`, and representative rejection cases. Expected behavior is byte-identical except timing fields.
+2. **Apply split** — move types/parsing/errors/ops/diff/validation into `src/apply/*`. No behavior changes.
+3. **Grammar config** — add `src/grammar_config.zig`, then migrate comment styles, declaration kinds, body kinds, and extension mapping. This unblocks language expansion and AST centralization.
+4. **AST API** — move symbol resolution/body range logic behind `src/ast.zig`; keep operation modules byte-range based.
+5. **Fallback/error contract** — wire legacy marker fallback and add stable JSON error codes for `apply --json`.
+6. **Wrapper schema alignment** — refactor Pi/MCP tool definitions to share operation names and validation; do not rely on regex stderr classification once JSON codes exist.
+7. **Robustness work** — marker tolerance, LCS memory guard, fixture expansion, and benchmark gates.
+8. **Cross-file preview** — only after stable hashes/ranges/errors exist; writes require explicit follow-up approval.
+
+### Stable v0.2 error code target
+
+`apply --json` should converge on these codes: `INVALID_JSON`, `UNSUPPORTED_SCHEMA_VERSION`, `UNSUPPORTED_OPERATION`, `INVALID_FIELD`, `MISSING_FIELD`, `FILE_NOT_FOUND`, `OUTSIDE_WORKSPACE`, `UNSUPPORTED_LANGUAGE`, `PARSE_ERROR_BEFORE`, `PARSE_ERROR_AFTER`, `SYMBOL_NOT_FOUND`, `SYMBOL_AMBIGUOUS`, `BODY_NOT_FOUND`, `NO_MATCH`, `AMBIGUOUS_MATCH`, `OVERLAPPING_EDITS`, `HASH_MISMATCH`, `VALIDATION_FAILED`, `BACKUP_FAILED`, `IO_ERROR`, `NEEDS_HOST_MERGE`.
+
+### Verification commands
+
+Run from `codewithkenzo/blitz` unless stated otherwise:
+
+```bash
+zig build test
+zig build
+zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseFast
+zig-out/bin/blitz doctor
+# representative apply snapshot/golden runs, exact commands to be added with fixtures
+```
+
+When wrapper work is in scope, run in the companion Pi extension repo if available:
+
+```bash
+bun run typecheck
+bun test
+bun run build
+```
+
+Limitations for this research pass: `tk` was attempted but unavailable in this shell (`tk: command not found`), so recommended tickets are listed in the research report instead of being created.
+
+### Open implementation decisions
+
+- Whether `rename-all` writable mode ships in v0.2 or remains preview-only until file/target hash preconditions land.
+- Whether `move-to-file` is deferred entirely or introduced as TS/JS dry-run preview only.
+- Whether `blitz schema --json` is pulled into v0.2 wrapper work or kept as a 2.0 future/check item.
+- Exact marker-splice body-size threshold before returning fallback instead of allocating an O(n*m) diff table.
+
 
 ## Context
 
