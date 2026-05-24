@@ -1,10 +1,14 @@
 const std = @import("std");
 
+const apply_errors = @import("apply/errors.zig");
+const apply_ir = @import("apply/ir.zig");
+const apply_ops = @import("apply/operations.zig");
+const ast = @import("ast.zig");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
 const file_lock = @import("lock.zig");
-const symbols = @import("symbols.zig");
+const grammar_config = @import("grammar_config.zig");
 const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
@@ -13,127 +17,31 @@ const Writer = std.Io.Writer;
 const Dir = Io.Dir;
 const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
-const ApplyOperation = enum {
-    replace_body_span,
-    insert_body_span,
-    wrap_body,
-    multi_body,
-    compose_body,
-    insert_after_symbol,
-    set_body,
-    patch,
-};
+const ApplyOperation = apply_ops.ApplyOperation;
+const TargetRange = apply_ops.TargetRange;
+const requireArray = apply_ir.requireArray;
+const requireOptionalString = apply_ir.requireOptionalString;
+const requireOptionalBool = apply_ir.requireOptionalBool;
+const requireTupleString = apply_ops.requireTupleString;
+const tupleOptionalValue = apply_ops.tupleOptionalValue;
+const tupleOptionalIndent = apply_ops.tupleOptionalIndent;
+const MatchKind = apply_ops.MatchKind;
+const MatchSelector = apply_ops.MatchSelector;
+const ApplyTarget = apply_ir.ApplyTarget;
+const ApplyOptions = apply_ir.ApplyOptions;
+const ApplyRequest = apply_ir.ApplyRequest;
+const ValidationResult = apply_ir.ValidationResult;
+const RangesResult = apply_ir.RangesResult;
+const MetricsResult = apply_ir.MetricsResult;
+const ApplyResult = apply_ir.ApplyResult;
+const ApplyFailureResult = apply_ir.ApplyFailureResult;
 
-const TargetRange = enum { body, node };
-
-const MatchKind = enum { default_single, first, last, only, index };
-
-const MatchSelector = struct {
-    kind: MatchKind,
-    index: usize = 0,
-};
-
-const ApplyTarget = struct {
-    /// Kept for single-target structured edits.
-    symbol: []const u8,
-    kind: ?[]const u8 = null,
-    range: ?[]const u8 = null,
-};
-
-const ApplyOptions = struct {
-    dryRun: ?bool = null,
-    requireParseClean: ?bool = null,
-    requireSingleMatch: ?bool = null,
-    diffContext: ?usize = null,
-};
-
-const ApplyRequest = struct {
-    version: u8,
-    file: []const u8,
-    operation: []const u8,
-    target: ?ApplyTarget = null,
-    edit: std.json.Value,
-    options: ?ApplyOptions = null,
-};
-
-const ValidationResult = struct {
-    parseBeforeClean: bool,
-    parseAfterClean: bool,
-    singleMatch: bool,
-    rejectedReason: ?[]const u8 = null,
-};
-
-const RangesResult = struct {
-    targetStart: usize,
-    targetEnd: usize,
-    bodyStart: ?usize = null,
-    bodyEnd: ?usize = null,
-    editStart: usize,
-    editEnd: usize,
-};
-
-const MetricsResult = struct {
-    fileBytesBefore: usize,
-    fileBytesAfter: usize,
-    requestBytes: usize,
-    changedBytesBefore: usize,
-    changedBytesAfter: usize,
-    wallMs: u64,
-};
-
-const ApplyResult = struct {
-    status: []const u8,
-    command: []const u8 = "apply",
-    operation: []const u8,
-    file: []const u8,
-    symbol: []const u8,
-    language: []const u8,
-    dryRun: bool,
-    changed: bool,
-    validation: ValidationResult,
-    ranges: RangesResult,
-    metrics: MetricsResult,
-    diffSummary: []const u8,
-    diff: ?[]const u8 = null,
-};
-
-const MatchSpan = struct {
-    start: usize,
-    end: usize,
-    single_match: bool,
-    total: usize,
-};
-
-const OpResult = struct {
-    contents: []u8,
-    range: RangesResult,
-    single_match: bool,
-    changed_before: usize,
-    changed_after: usize,
-};
-
-const MultiEdit = struct {
-    start: usize,
-    end: usize,
-    replacement: []const u8,
-    replacement_owned: bool,
-    range: RangesResult,
-    single_match: bool,
-    changed_before: usize,
-    changed_after: usize,
-};
-
-const ComposeResult = struct {
-    contents: []u8,
-    single_match: bool,
-};
-
-const KeepSliceResult = struct {
-    span: EditSpan,
-    single_match: bool,
-};
-const EditSpan = struct { start: usize, end: usize };
-
+const MatchSpan = apply_ops.MatchSpan;
+const OpResult = apply_ops.OpResult;
+const MultiEdit = apply_ops.MultiEdit;
+const ComposeResult = apply_ops.ComposeResult;
+const KeepSliceResult = apply_ops.KeepSliceResult;
+const EditSpan = apply_ops.EditSpan;
 const ApplyError = error{
     InvalidJson,
     UnsupportedVersion,
@@ -148,12 +56,18 @@ const ApplyError = error{
     InvalidPosition,
     PatternEmpty,
     SymbolNotFound,
+    SymbolAmbiguous,
+    BodyNotFound,
     NoMatches,
     AmbiguousMatches,
     OverlappingEdits,
     UnsupportedMultiEditOperation,
     ParseFailedBefore,
     ParseFailedAfter,
+    ValidationFailed,
+    BackupFailed,
+    IoError,
+    NeedsHostMerge,
 };
 
 pub fn run(
@@ -168,17 +82,18 @@ pub fn run(
 ) !u8 {
     const start = Io.Clock.awake.now(io);
 
-    const parsed = std.json.parseFromSlice(ApplyRequest, allocator, request_bytes, .{}) catch |err| {
-        return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    const parsed = std.json.parseFromSlice(std.json.Value, allocator, request_bytes, .{}) catch |err| {
+        return emitFailure(if (err == error.OutOfMemory) ApplyError.IoError else ApplyError.InvalidJson, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     defer parsed.deinit();
 
-    const req = parsed.value;
+    const req = apply_ir.parseRequest(parsed.value) catch |err| {
+        return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
 
-    if (req.version != 1) return emitFailure(ApplyError.UnsupportedVersion, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     if (req.file.len == 0) return emitFailure(ApplyError.MissingFile, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
-    const operation = parseOperation(req.operation) catch |err| {
+    const operation = apply_ops.parseOperation(req.operation) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
 
@@ -187,14 +102,14 @@ pub fn run(
         if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     }
 
-    const target_range = if (operation == .multi_body or operation == .patch) TargetRange.body else parseTargetRange(req.target.?.range) catch |err| {
+    const target_range = if (operation == .multi_body or operation == .patch) TargetRange.body else apply_ops.parseTargetRange(req.target.?.range) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     const require_single_match = if (req.options) |opts| opts.requireSingleMatch orelse true else true;
     const dry_run = if (cli_dry_run) true else if (req.options) |opts| opts.dryRun orelse false else false;
 
     const ext = std.fs.path.extension(req.file);
-    const lang = bindings.Language.fromExtension(ext) orelse {
+    const lang = grammar_config.languageForExtension(ext) orelse {
         return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
 
@@ -221,10 +136,10 @@ pub fn run(
     const root = source_tree.rootNode();
     if (root.isNull() or root.hasError()) return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
-    const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch) null else symbols.findEditableSymbolNode(original, root, req.target.?.symbol);
-    if (operation != .multi_body and operation != .patch and target_node == null) {
-        return emitFailure(ApplyError.SymbolNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    }
+    const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
+        null
+    else
+        ast.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
@@ -233,7 +148,7 @@ pub fn run(
     else if (operation == .patch)
         edit_support.ByteRange{ .start = 0, .end = 0 }
     else
-        edit_support.replacementRangeFor(lang, original, target_node.?);
+        ast.bodyRangeFor(lang, original, target_node.?) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const op_result_result: anyerror!OpResult = switch (operation) {
         .replace_body_span => blk: {
@@ -241,7 +156,7 @@ pub fn run(
             const edit_obj = try expectObject(req.edit);
             const find = try requireString(edit_obj, "find");
             const replace = try requireString(edit_obj, "replace");
-            const selector = parseMatchSelector(edit_obj.get("occurrence"));
+            const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
             const match = selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const edit_start = body_range.start + match.start;
             const edit_end = body_range.start + match.end;
@@ -259,7 +174,7 @@ pub fn run(
             const anchor = try requireString(edit_obj, "anchor");
             const text = try requireString(edit_obj, "text");
             const raw_pos = try requireString(edit_obj, "position");
-            const selector = parseMatchSelector(edit_obj.get("occurrence"));
+            const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
             const match = selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
                 body_range.start + match.end
@@ -451,28 +366,9 @@ fn emitFailure(
     parse_after: bool,
     request_bytes_len: usize,
 ) !u8 {
-    const reason = switch (err) {
-        ApplyError.InvalidJson => "invalid JSON request",
-        ApplyError.UnsupportedVersion => "unsupported request version",
-        ApplyError.UnsupportedOperation => "unsupported operation",
-        ApplyError.UnsupportedLanguage => "unsupported language",
-        ApplyError.UnsupportedTargetRange => "unsupported target range",
-        ApplyError.MissingSymbol => "missing target symbol",
-        ApplyError.MissingFile => "missing file",
-        ApplyError.MissingField => "missing required edit field",
-        ApplyError.FieldTypeMismatch => "invalid edit field type",
-        ApplyError.InvalidOccurrence => "invalid occurrence value",
-        ApplyError.InvalidPosition => "invalid position value",
-        ApplyError.PatternEmpty => "pattern is empty",
-        ApplyError.SymbolNotFound => "symbol not found",
-        ApplyError.NoMatches => "no matching pattern",
-        ApplyError.AmbiguousMatches => "ambiguous pattern match",
-        ApplyError.OverlappingEdits => "overlapping edits",
-        ApplyError.UnsupportedMultiEditOperation => "unsupported multi-body operation (compose_body TODO)",
-        ApplyError.ParseFailedBefore => "source did not parse before edit",
-        ApplyError.ParseFailedAfter => "edited source did not parse",
-        else => "apply failed",
-    };
+    const reason = apply_errors.reason(err);
+    const code = apply_errors.code(err);
+    const status = apply_errors.status(err);
 
     if (!json_output) {
         try stderr.print("blitz apply: {s}\n", .{reason});
@@ -482,8 +378,9 @@ fn emitFailure(
     const operation = if (request) |r| r.operation else "";
     const file = if (request) |r| r.file else "";
     const symbol = if (request) |r| if (r.target) |target| target.symbol else "" else "";
-    const probe = ApplyResult{
-        .status = "rejected",
+    const probe = ApplyFailureResult{
+        .status = status,
+        .code = code,
         .operation = operation,
         .file = file,
         .symbol = symbol,
@@ -497,50 +394,6 @@ fn emitFailure(
     };
     try stdout.print("{f}\n", .{std.json.fmt(probe, .{})});
     return 1;
-}
-
-fn parseOperation(raw: []const u8) !ApplyOperation {
-    if (std.mem.eql(u8, raw, "replace_body_span")) return .replace_body_span;
-    if (std.mem.eql(u8, raw, "insert_body_span")) return .insert_body_span;
-    if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
-    if (std.mem.eql(u8, raw, "multi_body")) return .multi_body;
-    if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
-    if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
-    if (std.mem.eql(u8, raw, "set_body")) return .set_body;
-    if (std.mem.eql(u8, raw, "patch") or std.mem.eql(u8, raw, "compact_patch")) return .patch;
-    return ApplyError.UnsupportedOperation;
-}
-
-fn parseTargetRange(raw: ?[]const u8) !TargetRange {
-    if (raw == null) return .body;
-    const value = raw.?;
-    if (std.mem.eql(u8, value, "body")) return .body;
-    if (std.mem.eql(u8, value, "node")) return .node;
-    return ApplyError.UnsupportedTargetRange;
-}
-
-fn requireArray(object: std.json.ObjectMap, field: []const u8) !std.json.Array {
-    const value = object.get(field) orelse return ApplyError.MissingField;
-    switch (value) {
-        .array => |arr| return arr,
-        else => return ApplyError.FieldTypeMismatch,
-    }
-}
-
-fn requireOptionalString(object: std.json.ObjectMap, field: []const u8) !?[]const u8 {
-    const value = object.get(field) orelse return null;
-    switch (value) {
-        .string => |str| return str,
-        else => return ApplyError.FieldTypeMismatch,
-    }
-}
-
-fn requireOptionalBool(object: std.json.ObjectMap, field: []const u8) !?bool {
-    const value = object.get(field) orelse return null;
-    switch (value) {
-        .bool => |value_bool| return value_bool,
-        else => return ApplyError.FieldTypeMismatch,
-    }
 }
 
 fn composeBody(
@@ -629,7 +482,7 @@ fn parseKeepSpan(
 
     const include_before = if (try requireOptionalBool(keep_obj, "includeBefore")) |value| value else false;
     const include_after = if (try requireOptionalBool(keep_obj, "includeAfter")) |value| value else false;
-    const selector = parseMatchSelector(keep_obj.get("occurrence"));
+    const selector = apply_ops.parseMatchSelector(keep_obj.get("occurrence"));
     const require_single = if (selector.kind == .default_single) require_single_match else false;
 
     const before_match = if (before_keep) |needle| try selectMatch(body, needle, selector, require_single) else null;
@@ -643,24 +496,6 @@ fn parseKeepSpan(
     return KeepSliceResult{
         .span = .{ .start = start, .end = end },
         .single_match = (before_match == null or before_match.?.single_match) and (after_match == null or after_match.?.single_match),
-    };
-}
-
-fn parseMatchSelector(raw: ?std.json.Value) MatchSelector {
-    const candidate = raw orelse return .{ .kind = .default_single };
-    return switch (candidate) {
-        .string => |value| {
-            if (std.mem.eql(u8, value, "first")) return .{ .kind = .first };
-            if (std.mem.eql(u8, value, "last")) return .{ .kind = .last };
-            if (std.mem.eql(u8, value, "only")) return .{ .kind = .only };
-            return .{ .kind = .default_single };
-        },
-        .integer => |value| if (value > 0) .{ .kind = .index, .index = @intCast(value) } else .{ .kind = .default_single },
-        .float => |value| blk: {
-            if (value <= 0.0 or @round(value) != value) return .{ .kind = .default_single };
-            break :blk .{ .kind = .index, .index = @intFromFloat(value) };
-        },
-        else => .{ .kind = .default_single },
     };
 }
 
@@ -768,7 +603,7 @@ fn resolveCompactPatchEdits(
 
         const op_name = try requireTupleString(op_arr, 0);
         const symbol = try requireTupleString(op_arr, 1);
-        const target_node = symbols.findEditableSymbolNode(source, root, symbol) orelse return ApplyError.SymbolNotFound;
+        const target_node = try ast.resolveEditableSymbol(source, root, symbol);
         const target_start: usize = @intCast(target_node.startByte());
         const target_end: usize = @intCast(target_node.endByte());
         const body_range = edit_support.replacementRangeFor(lang, source, target_node);
@@ -778,7 +613,7 @@ fn resolveCompactPatchEdits(
             if (op_arr.items.len < 4) return ApplyError.MissingField;
             const find = try requireTupleString(op_arr, 2);
             const replace = try requireTupleString(op_arr, 3);
-            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 4));
+            const selector = apply_ops.parseMatchSelector(tupleOptionalValue(op_arr, 4));
             const match = try selectMatch(body, find, selector, require_single_match);
             const edit_start = body_range.start + match.start;
             const edit_end = body_range.start + match.end;
@@ -799,7 +634,7 @@ fn resolveCompactPatchEdits(
             if (op_arr.items.len < 4) return ApplyError.MissingField;
             const anchor = try requireTupleString(op_arr, 2);
             const text = try requireTupleString(op_arr, 3);
-            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 4));
+            const selector = apply_ops.parseMatchSelector(tupleOptionalValue(op_arr, 4));
             const match = try selectMatch(body, anchor, selector, require_single_match);
             const insert_at = body_range.start + match.end;
             try resolved.append(allocator, .{
@@ -839,7 +674,7 @@ fn resolveCompactPatchEdits(
         if (std.mem.eql(u8, op_name, "replace_return")) {
             if (op_arr.items.len < 3) return ApplyError.MissingField;
             const expr = try requireTupleString(op_arr, 2);
-            const selector = parseMatchSelector(tupleOptionalValue(op_arr, 3));
+            const selector = apply_ops.parseMatchSelector(tupleOptionalValue(op_arr, 3));
             const body_node = edit_support.findBodyNode(target_node) orelse return ApplyError.UnsupportedMultiEditOperation;
             const returns = try collectReturnStatements(allocator, source, body_node);
             defer allocator.free(returns);
@@ -945,31 +780,6 @@ fn normalizeMultilineTrim(allocator: Allocator, value: []const u8) ![]u8 {
     return out.toOwnedSlice(allocator);
 }
 
-fn requireTupleString(items: std.json.Array, index: usize) ![]const u8 {
-    if (index >= items.items.len) return ApplyError.MissingField;
-    return switch (items.items[index]) {
-        .string => |value| value,
-        else => ApplyError.FieldTypeMismatch,
-    };
-}
-
-fn tupleOptionalValue(items: std.json.Array, index: usize) ?std.json.Value {
-    if (index >= items.items.len) return null;
-    return items.items[index];
-}
-
-fn tupleOptionalIndent(items: std.json.Array, index: usize, default_value: usize) !usize {
-    const value = tupleOptionalValue(items, index) orelse return default_value;
-    return switch (value) {
-        .integer => |v| if (v < 0) return ApplyError.InvalidOccurrence else @as(usize, @intCast(v)),
-        .float => |v| blk: {
-            const rounded = @round(v);
-            if (v < 0 or rounded != v) return ApplyError.InvalidOccurrence;
-            break :blk @as(usize, @intFromFloat(rounded));
-        },
-        else => ApplyError.FieldTypeMismatch,
-    };
-}
 
 fn concat4(allocator: Allocator, a: []const u8, b: []const u8, c: []const u8, d: []const u8) ![]u8 {
     const out = try allocator.alloc(u8, a.len + b.len + c.len + d.len);
@@ -1087,11 +897,9 @@ fn resolveMultiBodyEdits(
 
         const symbol = try requireString(edit_obj, "symbol");
         const op_raw = try requireString(edit_obj, "op");
-        const op = try parseOperation(op_raw);
+        const op = try apply_ops.parseOperation(op_raw);
 
-        const target_node = symbols.findEditableSymbolNode(source, root, symbol) orelse {
-            return ApplyError.SymbolNotFound;
-        };
+        const target_node = try ast.resolveEditableSymbol(source, root, symbol);
 
         const target_start: usize = @intCast(target_node.startByte());
         const target_end: usize = @intCast(target_node.endByte());
@@ -1102,7 +910,7 @@ fn resolveMultiBodyEdits(
             .replace_body_span => {
                 const find = try requireString(edit_obj, "find");
                 const replace = try requireString(edit_obj, "replace");
-                const selector = parseMatchSelector(edit_obj.get("occurrence"));
+                const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
                 const match = try selectMatch(source[body_range.start..body_range.end], find, selector, require_single_match);
                 const edit_start = body_range.start + match.start;
                 const edit_end = body_range.start + match.end;
@@ -1129,7 +937,7 @@ fn resolveMultiBodyEdits(
                 const anchor = try requireString(edit_obj, "anchor");
                 const text = try requireString(edit_obj, "text");
                 const raw_pos = try requireString(edit_obj, "position");
-                const selector = parseMatchSelector(edit_obj.get("occurrence"));
+                const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
                 const match = try selectMatch(source[body_range.start..body_range.end], anchor, selector, require_single_match);
                 const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
                     body_range.start + match.end
@@ -1426,13 +1234,7 @@ fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
 }
 
 fn languageName(lang: bindings.Language) []const u8 {
-    return switch (lang) {
-        .rust => "rust",
-        .typescript => "typescript",
-        .tsx => "tsx",
-        .python => "python",
-        .go => "go",
-    };
+    return grammar_config.languageName(lang);
 }
 
 fn runApplyTest(allocator: Allocator, io: Io, request_template: []const u8, file_path: []const u8) ![]u8 {
@@ -1897,4 +1699,207 @@ test "apply multi_body ambiguous anchor rejects without mutation" {
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply invalid json returns stable code" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const status = try run(allocator, io, "{", false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"INVALID_JSON\"") != null);
+}
+
+test "apply unsupported version returns stable code" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const request =
+        \\{"version":2,"file":"x.ts","operation":"set_body","target":{"symbol":"x"},"edit":{"body":"x"}}
+    ;
+    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"UNSUPPORTED_SCHEMA_VERSION\"") != null);
+}
+
+test "apply missing field returns stable code" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const status = try run(allocator, io, "{\"version\":1,\"file\":\"x.ts\"}", false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"MISSING_FIELD\"") != null);
+}
+
+test "apply unsupported language returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.zig", .data = "const x = 1;" });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.zig", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"body\":\"const y = 1;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"UNSUPPORTED_LANGUAGE\"") != null);
+}
+
+test "apply file not found returns stable code" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = "{\"version\":1,\"file\":\"/definitely/not/present.ts\",\"operation\":\"set_body\",\"target\":{\"symbol\":\"x\"},\"edit\":{\"body\":\"x\"}}";
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"FILE_NOT_FOUND\"") != null);
+}
+
+test "apply invalid field returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = "function x() { return 1; }" });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"body\":\"x\",\"extra\":true}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"INVALID_FIELD\"") != null);
+}
+
+test "apply body not found returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = "const x = 1;" });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"body\":\"return 2;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"BODY_NOT_FOUND\"") != null);
+}
+
+test "apply ambiguous symbol returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function dup() { return 1; }
+        \\function dup() { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"dup\"}},\"edit\":{{\"body\":\"return 3;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"SYMBOL_AMBIGUOUS\"") != null);
+}
+
+test "apply no match returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function onlyOne() {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"replace_body_span\",\"target\":{{\"symbol\":\"onlyOne\"}},\"edit\":{{\"find\":\"missing\",\"replace\":\"present\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"NO_MATCH\"") != null);
+}
+
+test "apply overlapping edits returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function overlap() {
+        \\  const x = 1;
+        \\  return x;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"multi_body\",\"edit\":{{\"edits\":[{{\"symbol\":\"overlap\",\"op\":\"replace_body_span\",\"find\":\"const x = 1;\",\"replace\":\"const x = 2;\"}},{{\"symbol\":\"overlap\",\"op\":\"insert_body_span\",\"anchor\":\"const x = 1;\",\"position\":\"after\",\"text\":\"\\n  const y = 3;\"}}]}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"OVERLAPPING_EDITS\"") != null);
+}
+
+test "apply outside workspace returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const root = try tmp.dir.realPathAlloc(io, ".", allocator);
+    defer allocator.free(root);
+    workspace.setRoot(root);
+    defer workspace.setRoot(null);
+    const outside = try std.fs.cwd().realPathAlloc(allocator, ".");
+    defer allocator.free(outside);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}/README.md\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"body\":\"x\"}}}}", .{outside});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"OUTSIDE_WORKSPACE\"") != null);
 }

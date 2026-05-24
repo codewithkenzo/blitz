@@ -8,13 +8,13 @@ const cli = @import("cli.zig");
 const cmd_read = @import("cmd_read.zig");
 const cmd_edit = @import("cmd_edit.zig");
 const cmd_batch = @import("cmd_batch.zig");
-const cmd_apply = @import("cmd_apply.zig");
+const cmd_apply = @import("apply/mod.zig");
 const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
 
-pub const version = "0.1.0-alpha.10";
+pub const version = "0.2.0-alpha.0";
 const MAX_STDIN_BYTES = 4 * 1024 * 1024;
 
 pub fn main(init: std.process.Init) !void {

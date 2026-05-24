@@ -1,8 +1,10 @@
 const std = @import("std");
 
+const ast = @import("ast.zig");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
+const fallback = @import("fallback.zig");
 const file_lock = @import("lock.zig");
 const metrics = @import("metrics.zig");
 const workspace = @import("workspace.zig");
@@ -98,17 +100,39 @@ fn runEdit(
             try stderr.print("symbol '{s}' not found in {s}\n", .{ symbol, file_path });
             return 1;
         },
-        error.AnchorNotFound => {
-            try stderr.writeAll("marker splice failed: anchor not found\n");
-            return 1;
-        },
-        error.MarkerGrammarInvalid => {
-            try stderr.writeAll("marker splice failed: invalid marker grammar\n");
-            return 1;
-        },
-        error.AmbiguousAnchor => {
-            try stderr.writeAll("marker splice failed: ambiguous anchors\n");
-            return 1;
+        error.AnchorNotFound, error.MarkerGrammarInvalid, error.AmbiguousAnchor => {
+            var parser = bindings.Parser.init();
+            defer parser.deinit();
+            const byte_start: usize = blk: {
+                if (!parser.setLanguage(lang)) break :blk 0;
+                if (parser.parseString(original_contents)) |parsed_tree| {
+                    var tree = parsed_tree;
+                    defer tree.deinit();
+                    const root = tree.rootNode();
+                    if (!root.isNull()) {
+                        if (ast.resolveEditableSymbol(original_contents, root, symbol)) |node| {
+                            break :blk @intCast(node.startByte());
+                        } else |_| {}
+                    }
+                }
+                break :blk 0;
+            };
+            const byte_end: usize = blk: {
+                if (!parser.setLanguage(lang)) break :blk 0;
+                if (parser.parseString(original_contents)) |parsed_tree| {
+                    var tree = parsed_tree;
+                    defer tree.deinit();
+                    const root = tree.rootNode();
+                    if (!root.isNull()) {
+                        if (ast.resolveEditableSymbol(original_contents, root, symbol)) |node| {
+                            break :blk @intCast(node.endByte());
+                        } else |_| {}
+                    }
+                }
+                break :blk 0;
+            };
+            try fallback.emitNeedsHostMerge(stdout, file_path, symbol, "function", byte_start, byte_end, original_contents);
+            return 0;
         },
         error.ParseFailed => {
             try stderr.print("edited file does not parse for {s}\n", .{file_path});
@@ -634,8 +658,8 @@ test "runReplace marker with missing anchor fails without mutation" {
         &stdout_buf.writer,
         &stderr_buf.writer,
     );
-    try std.testing.expectEqual(@as(u8, 1), status);
-    try std.testing.expect(std.mem.indexOf(u8, stderr_buf.written(), "marker splice failed") != null);
+    try std.testing.expectEqual(@as(u8, 0), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"status\":\"needs_host_merge\"") != null);
 
     const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
     defer allocator.free(contents);

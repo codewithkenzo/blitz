@@ -1,9 +1,10 @@
 const std = @import("std");
 
+const ast = @import("ast.zig");
 const bindings = @import("tree_sitter/bindings.zig");
+const grammar_config = @import("grammar_config.zig");
 const incremental = @import("incremental.zig");
 const splice = @import("splice.zig");
-const symbols = @import("symbols.zig");
 
 pub const EditMode = enum {
     replace,
@@ -20,9 +21,6 @@ pub const ApplyResult = struct {
     used_markers: bool,
 };
 
-const typescript_comment_styles = [_][]const u8{ "//", "/*" };
-const python_comment_styles = [_][]const u8{"#"};
-
 pub fn applyToSource(
     allocator: std.mem.Allocator,
     lang: bindings.Language,
@@ -35,10 +33,10 @@ pub fn applyToSource(
     defer parser.deinit();
 
     if (!parser.setLanguage(lang)) return error.UnsupportedLanguage;
-    var tree = try parseStrict(&parser, source);
+    var tree = try ast.parseStrict(&parser, source);
     defer tree.deinit();
 
-    const target = symbols.findEditableSymbolNode(source, tree.rootNode(), symbol) orelse return error.SymbolNotFound;
+    const target = ast.findEditableSymbolNode(source, tree.rootNode(), symbol) orelse return error.SymbolNotFound;
 
     const target_start: usize = @intCast(target.startByte());
     const target_end: usize = @intCast(target.endByte());
@@ -94,7 +92,7 @@ pub fn applyToSource(
     @memcpy(next_contents[replace_start + replacement.len ..], source[replace_end..]);
 
     validateEditedSourceIncremental(&parser, &tree, source, next_contents) catch {
-        var full_tree = try parseStrict(&parser, next_contents);
+        var full_tree = try ast.parseStrict(&parser, next_contents);
         full_tree.deinit();
     };
     return .{
@@ -113,7 +111,7 @@ pub fn validateSource(lang: bindings.Language, source: []const u8) !void {
     defer parser.deinit();
 
     if (!parser.setLanguage(lang)) return error.UnsupportedLanguage;
-    var tree = try parseStrict(&parser, source);
+    var tree = try ast.parseStrict(&parser, source);
     defer tree.deinit();
 }
 
@@ -132,75 +130,21 @@ pub fn validateEditedSourceIncremental(
 }
 
 pub fn commentStylesFor(language: bindings.Language) []const []const u8 {
-    return switch (language) {
-        .typescript, .tsx => &typescript_comment_styles,
-        .rust, .go => &typescript_comment_styles,
-        .python => &python_comment_styles,
-    };
+    return grammar_config.commentStylesFor(language);
 }
 
-fn parseStrict(parser: *bindings.Parser, source: []const u8) !bindings.Tree {
-    var tree = parser.parseString(source) orelse return error.ParseFailed;
-    if (tree.rootNode().isNull() or tree.rootNode().hasError()) {
-        tree.deinit();
-        return error.ParseFailed;
-    }
-    return tree;
-}
-
-pub const ByteRange = struct {
-    start: usize,
-    end: usize,
-};
+pub const ByteRange = ast.ByteRange;
 
 pub fn replacementRangeFor(lang: bindings.Language, source: []const u8, target: bindings.Node) ByteRange {
-    const fallback: ByteRange = .{ .start = @intCast(target.startByte()), .end = @intCast(target.endByte()) };
-    const body = findBodyNode(target) orelse return fallback;
-    const body_start: usize = @intCast(body.startByte());
-    const body_end: usize = @intCast(body.endByte());
-    if (body_end <= body_start or body_end > source.len) return fallback;
-
-    return switch (lang) {
-        .typescript, .tsx, .rust, .go => braceInteriorRange(source, body_start, body_end) orelse fallback,
-        .python => .{ .start = body_start, .end = body_end },
-    };
+    return ast.replacementRangeFor(lang, source, target);
 }
 
 pub fn findBodyNode(target: bindings.Node) ?bindings.Node {
-    var i: u32 = 0;
-    while (i < target.childCount()) : (i += 1) {
-        if (target.fieldNameForChild(i)) |field_name| {
-            if (std.mem.eql(u8, field_name, "body")) return target.child(i);
-        }
-    }
-
-    i = 0;
-    while (i < target.namedChildCount()) : (i += 1) {
-        const child = target.namedChild(i) orelse continue;
-        const kind = child.kind();
-        if (std.mem.eql(u8, kind, "statement_block") or
-            std.mem.eql(u8, kind, "block") or
-            std.mem.eql(u8, kind, "class_body") or
-            std.mem.eql(u8, kind, "declaration_list")) return child;
-    }
-
-    i = 0;
-    while (i < target.namedChildCount()) : (i += 1) {
-        const child = target.namedChild(i) orelse continue;
-        if (findBodyNode(child)) |body| return body;
-    }
-
-    return null;
+    return ast.findBodyNode(target);
 }
 
 pub fn braceInteriorRange(source: []const u8, start: usize, end: usize) ?ByteRange {
-    if (end <= start + 1 or end > source.len) return null;
-    var left = start;
-    while (left < end and std.ascii.isWhitespace(source[left])) : (left += 1) {}
-    var right = end;
-    while (right > left and std.ascii.isWhitespace(source[right - 1])) : (right -= 1) {}
-    if (right <= left + 1 or source[left] != '{' or source[right - 1] != '}') return null;
-    return .{ .start = left + 1, .end = right - 1 };
+    return ast.braceInteriorRange(source, start, end);
 }
 
 fn normalizeReplaceSnippet(allocator: std.mem.Allocator, lang: bindings.Language, original_body: []const u8, snippet: []const u8) ![]u8 {
