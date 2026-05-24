@@ -171,9 +171,9 @@ pub fn run(
     const op_result_result: anyerror!OpResult = switch (operation) {
         .replace_body_span => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-            const edit_obj = try expectObject(req.edit);
-            const find = try requireString(edit_obj, "find");
-            const replace = try requireString(edit_obj, "replace");
+            const edit_obj = try apply_ir.expectObject(req.edit);
+            const find = try apply_ir.requireString(edit_obj, "find");
+            const replace = try apply_ir.requireString(edit_obj, "replace");
             const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
             const match = apply_target.selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const edit_start = body_range.start + match.start;
@@ -189,9 +189,9 @@ pub fn run(
         .insert_body_span => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const anchor = try requireString(edit_obj, "anchor");
-            const text = try requireString(edit_obj, "text");
-            const raw_pos = try requireString(edit_obj, "position");
+            const anchor = try apply_ir.requireString(edit_obj, "anchor");
+            const text = try apply_ir.requireString(edit_obj, "text");
+            const raw_pos = try apply_ir.requireString(edit_obj, "position");
             const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
             const match = apply_target.selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
@@ -211,9 +211,9 @@ pub fn run(
         .wrap_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const before = try requireString(edit_obj, "before");
-            const keep = try requireString(edit_obj, "keep");
-            const after = try requireString(edit_obj, "after");
+            const before = try apply_ir.requireString(edit_obj, "before");
+            const keep = try apply_ir.requireString(edit_obj, "keep");
+            const after = try apply_ir.requireString(edit_obj, "after");
             if (!std.mem.eql(u8, keep, "body")) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const indent = if (edit_obj.get("indentKeptBodyBy")) |indent_raw| switch (indent_raw) {
                 .integer => |v| if (v < 0) return emitFailure(ApplyError.InvalidOccurrence, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len) else @as(usize, @intCast(v)),
@@ -263,7 +263,7 @@ pub fn run(
         },
         .insert_after_symbol => blk: {
             const edit_obj = try expectObject(req.edit);
-            const code = try requireString(edit_obj, "code");
+            const code = try apply_ir.requireString(edit_obj, "code");
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, target_end, target_end, code),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end },
@@ -275,7 +275,7 @@ pub fn run(
         .set_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const body = try requireString(edit_obj, "body");
+            const body = try apply_ir.requireString(edit_obj, "body");
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, body),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
@@ -967,6 +967,58 @@ test "apply async replace_return in TSX succeeds" {
     defer allocator.free(post);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value * 3;") != null);
+}
+
+test "apply class method wrap_body preserves method body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Counter {
+        \\  bump(value: number): number {
+        \\    return value + 1;
+        \\  }
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"wrap_body","target":{"symbol":"bump"},"edit":{"before":"\\n    try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }","indentKeptBodyBy":2}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "class Counter {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "try {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+}
+
+test "apply arrow replace_return rewrites return expression" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const formatCount = (value: number): string => {
+        \\  return value.toString();
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","formatCount","value.toFixed(0)"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value.toFixed(0);") != null);
 }
 
 test "apply invalid json returns stable code" {
