@@ -13,6 +13,7 @@ const bindings = @import("tree_sitter/bindings.zig");
 const edit_support = @import("edit_support.zig");
 const file_lock = @import("lock.zig");
 const grammar_config = @import("grammar_config.zig");
+const test_support = @import("apply/test_support.zig");
 const workspace = @import("workspace.zig");
 
 const Allocator = std.mem.Allocator;
@@ -480,27 +481,11 @@ fn languageName(lang: bindings.Language) []const u8 {
 }
 
 fn runApplyTest(allocator: Allocator, io: Io, request_template: []const u8, file_path: []const u8) ![]u8 {
-    const request = try std.mem.replaceOwned(u8, allocator, request_template, "{FILE}", file_path);
-    defer allocator.free(request);
-    var stdout_buf: Writer.Allocating = .init(allocator);
-    defer stdout_buf.deinit();
-    var stderr_buf: Writer.Allocating = .init(allocator);
-    defer stderr_buf.deinit();
-    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
-    try std.testing.expectEqual(@as(u8, 0), status);
-    return allocator.dupe(u8, stdout_buf.written());
+    return test_support.runApplyTest(allocator, io, request_template, file_path, run);
 }
 
 fn runApplyTestExpectFailure(allocator: Allocator, io: Io, request_template: []const u8, file_path: []const u8) ![]u8 {
-    const request = try std.mem.replaceOwned(u8, allocator, request_template, "{FILE}", file_path);
-    defer allocator.free(request);
-    var stdout_buf: Writer.Allocating = .init(allocator);
-    defer stdout_buf.deinit();
-    var stderr_buf: Writer.Allocating = .init(allocator);
-    defer stderr_buf.deinit();
-    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
-    try std.testing.expectEqual(@as(u8, 1), status);
-    return allocator.dupe(u8, stdout_buf.written());
+    return test_support.runApplyTestExpectFailure(allocator, io, request_template, file_path, run);
 }
 
 test "apply replace_body_span occurrence last" {
@@ -1019,6 +1004,198 @@ test "apply arrow replace_return rewrites return expression" {
     defer allocator.free(post);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value.toFixed(0);") != null);
+}
+
+test "apply snapshot set_body emits stable json" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function greet() {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"greet"},"edit":{"body":"return 2;"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"wall_ms\":") != null);
+}
+
+test "apply snapshot wrap_body emits stable json" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\class Counter {
+        \\  bump(value: number): number {
+        \\    return value + 1;
+        \\  }
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"wrap_body","target":{"symbol":"bump"},"edit":{"before":"\\n    try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }","indentKeptBodyBy":2}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"wrap_body\"") != null);
+}
+
+test "apply snapshot insert_body_span emits stable json" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function greet() {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"insert_body_span","target":{"symbol":"greet"},"edit":{"anchor":"return 1;","position":"before","text":"\n  const before = true;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"insert_body_span\"") != null);
+}
+
+test "apply snapshot patch emits stable json" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function add(value: number): number {
+        \\  return value + 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","add","value + 2"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"patch\"") != null);
+}
+
+test "apply snapshot multi_body emits stable json" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function first() {
+        \\  return 1;
+        \\}
+        \\function second() {
+        \\  return 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"multi_body","edit":{"edits":[{"symbol":"first","op":"set_body","body":"return 10;"},{"symbol":"second","op":"set_body","body":"return 20;"}]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"multi_body\"") != null);
+}
+
+test "apply snapshot invalid operation emits stable rejection" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const request =
+        \\\{"version":1,"file":"x.ts","operation":"nope","target":{"symbol":"x"},"edit":{"body":"x"}}
+    ;
+    const status = try run(allocator, io, request, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"UNSUPPORTED_OPERATION\"") != null);
+}
+
+test "apply snapshot symbol not found emits stable rejection" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function greet() {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"missing"},"edit":{"body":"return 2;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"SYMBOL_NOT_FOUND\"") != null);
+}
+
+test "apply snapshot body not found emits stable rejection" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\const value = 1;
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"value"},"edit":{"body":"return 2;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"BODY_NOT_FOUND\"") != null);
+}
+
+test "apply snapshot parse failure before edit emits stable rejection" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const original =
+        \\function broken() {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"broken"},"edit":{"body":"return ;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"PARSE_ERROR_AFTER\"") != null or std.mem.indexOf(u8, out, "\"code\":\"VALIDATION_FAILED\"") != null);
 }
 
 test "apply invalid json returns stable code" {
