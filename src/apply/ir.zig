@@ -225,12 +225,12 @@ pub fn requireArray(object: std.json.ObjectMap, field: []const u8) !std.json.Arr
     };
 }
 
-fn expectObject(value: std.json.Value) !std.json.ObjectMap {
+pub fn expectObject(value: std.json.Value) !std.json.ObjectMap {
     return switch (value) {
         .object => |obj| obj,
         else => return ApplyError.FieldTypeMismatch,
     };
 }
-fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
+pub fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
     return (object.get(field) orelse return ApplyError.MissingField).string;
 }
