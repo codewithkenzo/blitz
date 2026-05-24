@@ -94,6 +94,14 @@ pub fn usesBraceBodies(language: bindings.Language) bool {
     return configForLanguage(language).brace_body;
 }
 
+pub fn supportsTryCatch(language: bindings.Language) bool {
+    return language == .typescript or language == .tsx;
+}
+
+pub fn returnStatementSuffix(language: bindings.Language) []const u8 {
+    return if (language == .python) "" else ";";
+}
+
 pub fn usesPythonBodies(language: bindings.Language) bool {
     return language == .python;
 }

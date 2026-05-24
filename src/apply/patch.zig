@@ -5,6 +5,7 @@ const apply_ops = @import("operations.zig");
 const diff = @import("diff.zig");
 const target = @import("target.zig");
 const bindings = @import("../tree_sitter/bindings.zig");
+const grammar_config = @import("../grammar_config.zig");
 
 fn expectObject(value: std.json.Value) !std.json.ObjectMap {
     return switch (value) {
@@ -211,7 +212,7 @@ fn resolveCompactPatchEdits(
 
         if (std.mem.eql(u8, op_name, "try_catch")) {
             if (op_arr.items.len < 3) return error.MissingField;
-            if (lang != .typescript and lang != .tsx) return error.UnsupportedMultiEditOperation;
+            if (!grammar_config.supportsTryCatch(lang)) return error.UnsupportedMultiEditOperation;
             const catch_body = try normalizeMultilineTrim(allocator, try apply_ops.requireTupleString(op_arr, 2));
             defer allocator.free(catch_body);
             const indent = try apply_ops.tupleOptionalIndent(op_arr, 3, 2);
@@ -410,10 +411,7 @@ fn isReturnNodeKind(kind: []const u8) bool {
 
 fn buildReturnReplacement(allocator: std.mem.Allocator, lang: bindings.Language, expr: []const u8) ![]u8 {
     const cleaned = trimReturnExpr(expr);
-    const suffix = switch (lang) {
-        .python => "",
-        else => ";",
-    };
+    const suffix = grammar_config.returnStatementSuffix(lang);
     return concat3(allocator, "return ", cleaned, suffix);
 }
 

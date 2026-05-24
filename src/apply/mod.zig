@@ -1001,6 +1001,143 @@ test "apply arrow replace_return rewrites return expression" {
     try std.testing.expect(std.mem.indexOf(u8, post, "return value.toFixed(0);") != null);
 }
 
+test "apply class method wrap_body applies to method body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Counter {
+        \\  bump(value: number): number {
+        \\    return value + 1;
+        \\  }
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"wrap_body","target":{"symbol":"bump"},"edit":{"before":"\n    if (value < 0) {\n      return 0;\n    }\n","keep":"body","after":"","indentKeptBodyBy":0}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "class Counter {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "if (value < 0)") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+}
+
+test "apply TSX component replace_return rewrites JSX" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export function Card() {
+        \\  return <div>old</div>;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "card.tsx", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "card.tsx", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","Card","<section>new</section>"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "card.tsx", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return <section>new</section>;") != null);
+}
+
+test "apply error taxonomy maps specified future and fallback codes" {
+    try std.testing.expectEqualStrings("HASH_MISMATCH", apply_errors.code(error.HashMismatch));
+    try std.testing.expectEqualStrings("VALIDATION_FAILED", apply_errors.code(error.ValidationFailed));
+    try std.testing.expectEqualStrings("NEEDS_HOST_MERGE", apply_errors.code(error.NeedsHostMerge));
+    try std.testing.expectEqualStrings("OUTSIDE_WORKSPACE", apply_errors.code(error.PathEscapesWorkspace));
+}
+
+test "apply duplicate symbol returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function dup() {
+        \\  return 1;
+        \\}
+        \\function dup() {
+        \\  return 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "dup.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"dup\"}},\"edit\":{{\"body\":\"return 3;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"SYMBOL_AMBIGUOUS\"") != null);
+}
+
+test "apply class method wrap_body succeeds" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Greeter {
+        \\  greet(value: number): number {
+        \\    return value * 2;
+        \\  }
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["try_catch","greet","  console.error(error);\n  throw error;"] ]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "try {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "catch (error)") != null);
+}
+
+test "apply TSX component return replacement succeeds" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export function Component(): any {
+        \\  return <div>hello</div>;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.tsx", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.tsx", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","Component","<span>world</span>"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.tsx", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return <span>world</span>;") != null);
+}
+
 test "apply invalid json returns stable code" {
     const allocator = std.testing.allocator;
     const io = std.testing.io;
@@ -1193,4 +1330,3 @@ test "apply parse failure before edit returns stable code" {
     defer allocator.free(post);
     try std.testing.expectEqualStrings("function broken( {", post);
 }
-
