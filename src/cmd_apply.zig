@@ -3,6 +3,7 @@ const std = @import("std");
 const apply_errors = @import("apply/errors.zig");
 const apply_ir = @import("apply/ir.zig");
 const apply_ops = @import("apply/operations.zig");
+const apply_validate = @import("apply/validate.zig");
 const ast = @import("ast.zig");
 const backup = @import("backup.zig");
 const bindings = @import("tree_sitter/bindings.zig");
@@ -288,18 +289,13 @@ pub fn run(
 
     defer allocator.free(op_result.contents);
 
-    var parse_after: bool = undefined;
-    if (operation == .multi_body or operation == .patch) {
-        var final_tree = parser.parseString(op_result.contents) orelse return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
-        defer final_tree.deinit();
-        parse_after = !final_tree.rootNode().isNull() and !final_tree.rootNode().hasError();
-    } else {
-        if (edit_support.validateEditedSourceIncremental(&parser, &source_tree, original, op_result.contents)) {
-            parse_after = true;
-        } else |_| {
-            parse_after = false;
-        }
-    }
+    const parse_after = try apply_validate.parseAfterEdit(
+        &parser,
+        &source_tree,
+        original,
+        op_result.contents,
+        operation == .multi_body or operation == .patch,
+    );
 
     if (!parse_after) {
         return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
@@ -779,7 +775,6 @@ fn normalizeMultilineTrim(allocator: Allocator, value: []const u8) ![]u8 {
     }
     return out.toOwnedSlice(allocator);
 }
-
 
 fn concat4(allocator: Allocator, a: []const u8, b: []const u8, c: []const u8, d: []const u8) ![]u8 {
     const out = try allocator.alloc(u8, a.len + b.len + c.len + d.len);
@@ -1446,6 +1441,8 @@ test "apply set_body replaces complete body" {
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"language\":\"typescript\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
@@ -1740,6 +1737,63 @@ test "apply missing field returns stable code" {
     try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"MISSING_FIELD\"") != null);
 }
 
+test "apply unsupported operation returns stable code" {
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = "{\"version\":1,\"file\":\"x.ts\",\"operation\":\"nope\",\"target\":{\"symbol\":\"x\"},\"edit\":{\"body\":\"x\"}}";
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"UNSUPPORTED_OPERATION\"") != null);
+}
+
+test "apply symbol not found returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = "function x() { return 1; }" });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"missing\"}},\"edit\":{{\"body\":\"x\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"SYMBOL_NOT_FOUND\"") != null);
+}
+
+test "apply ambiguous match returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function x() {
+        \\  return 1;
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"replace_body_span\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"find\":\"return 1;\",\"replace\":\"return 2;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"AMBIGUOUS_MATCH\"") != null);
+}
+
 test "apply unsupported language returns stable code" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
@@ -1902,4 +1956,53 @@ test "apply outside workspace returns stable code" {
     const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
     try std.testing.expectEqual(@as(u8, 1), status);
     try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"OUTSIDE_WORKSPACE\"") != null);
+}
+
+test "apply parse failure before edit returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "broken.ts", .data = "function broken( {" });
+    const path = try tmp.dir.realPathFileAlloc(io, "broken.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"broken\"}},\"edit\":{{\"body\":\"const y = 1;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "broken.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings("function broken( {", post);
+}
+
+test "apply parse failure after edit returns stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    const original =
+        \\function valid(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "valid.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "valid.ts", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"valid\"}},\"edit\":{{\"body\":\"\n  const x = ;\n\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"PARSE_ERROR_AFTER\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "valid.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
 }
