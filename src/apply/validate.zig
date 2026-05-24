@@ -25,10 +25,21 @@ test "parseAfterEdit reports parse failures" {
     defer parser.deinit();
     try std.testing.expect(parser.setLanguage(.typescript));
 
-    var tree = parser.parseString("function ok() { return 1; }") orelse return error.TestExpectedFail;
-    defer tree.deinit();
+    {
+        var tree = parser.parseString("function ok() { return 1; }") orelse return error.TestExpectedFail;
+        defer tree.deinit();
+        try std.testing.expect(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok() { return 2; }", false));
+    }
 
-    try std.testing.expect(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok() { return 2; }", false));
-    try std.testing.expect(!(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok( { return 2; }", false)));
-    try std.testing.expect(!(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok() { return ; }", true)));
+    {
+        var tree = parser.parseString("function ok() { return 1; }") orelse return error.TestExpectedFail;
+        defer tree.deinit();
+        try std.testing.expect(!(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok( { return 2; }", false)));
+    }
+
+    {
+        var tree = parser.parseString("function ok() { return 1; }") orelse return error.TestExpectedFail;
+        defer tree.deinit();
+        try std.testing.expect(!(try parseAfterEdit(&parser, &tree, "function ok() { return 1; }", "function ok( { return 2; }", true)));
+    }
 }

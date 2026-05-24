@@ -2,7 +2,7 @@ const std = @import("std");
 
 pub const Error = error{PathEscapesWorkspace};
 
-var root: ?[]const u8 = null;
+threadlocal var root: ?[]const u8 = null;
 
 pub fn setRoot(workspace_root: ?[]const u8) void {
     root = workspace_root;
