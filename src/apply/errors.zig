@@ -20,6 +20,7 @@ pub fn code(err: anyerror) []const u8 {
     if (std.mem.eql(u8, name, "InvalidPosition")) return "INVALID_FIELD";
     if (std.mem.eql(u8, name, "PatternEmpty")) return "INVALID_FIELD";
     if (std.mem.eql(u8, name, "SymbolNotFound")) return "SYMBOL_NOT_FOUND";
+    if (std.mem.eql(u8, name, "AmbiguousSymbol")) return "SYMBOL_AMBIGUOUS";
     if (std.mem.eql(u8, name, "SymbolAmbiguous")) return "SYMBOL_AMBIGUOUS";
     if (std.mem.eql(u8, name, "NoMatches")) return "NO_MATCH";
     if (std.mem.eql(u8, name, "AmbiguousMatches")) return "AMBIGUOUS_MATCH";
