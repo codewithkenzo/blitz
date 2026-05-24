@@ -5,12 +5,6 @@ pub const SpliceResult = struct {
     used_markers: bool,
 };
 
-pub const SpliceError = error{
-    AnchorNotFound,
-    MarkerGrammarInvalid,
-    AmbiguousAnchor,
-};
-
 const MarkerMode = enum {
     existing,
     keep,
@@ -37,12 +31,23 @@ const DiffOp = union(enum) {
     insert: usize,
 };
 
+const MAX_LCS_TABLE_BYTES = 8 * 1024 * 1024;
+const MAX_LCS_TABLE_CELLS = MAX_LCS_TABLE_BYTES / @sizeOf(usize);
+
+pub const SpliceError = error{
+    OutOfMemory,
+    AnchorNotFound,
+    MarkerGrammarInvalid,
+    AmbiguousAnchor,
+    MarkerSpliceTooLarge,
+};
+
 pub fn maybeSplice(
     allocator: std.mem.Allocator,
     original_body: []const u8,
     snippet: []const u8,
     comment_styles: []const []const u8,
-) error{ OutOfMemory, AnchorNotFound, MarkerGrammarInvalid, AmbiguousAnchor }!?SpliceResult {
+) SpliceError!?SpliceResult {
     const ends_with_nl = endsWithNewline(original_body);
 
     var original_lines = try splitLines(allocator, original_body);
@@ -78,6 +83,7 @@ pub fn maybeSplice(
     }
 
     const marker_split = countContentBeforeMarker(entries.items);
+    try ensureDiffBudget(original_lines.items.len, entries.items.len - 1);
     const snippet_content = try collectContentLines(allocator, entries.items);
     defer allocator.free(snippet_content);
 
@@ -312,6 +318,13 @@ fn countContentBeforeMarker(entries: []const SnippetEntry) usize {
         }
     }
     return count;
+}
+
+fn ensureDiffBudget(original_line_count: usize, snippet_line_count: usize) !void {
+    const rows = std.math.add(usize, original_line_count, 1) catch return error.MarkerSpliceTooLarge;
+    const cols = std.math.add(usize, snippet_line_count, 1) catch return error.MarkerSpliceTooLarge;
+    const cells = std.math.mul(usize, rows, cols) catch return error.MarkerSpliceTooLarge;
+    if (cells > MAX_LCS_TABLE_CELLS) return error.MarkerSpliceTooLarge;
 }
 
 fn endsWithNewline(text: []const u8) bool {
@@ -672,6 +685,41 @@ test "mixed marker styles are rejected" {
     const styles = [_][]const u8{ "//", "#" };
 
     try std.testing.expectError(error.MarkerGrammarInvalid, maybeSplice(allocator, original, snippet, &styles));
+}
+
+test "multiple markers with same style are rejected" {
+    const allocator = std.testing.allocator;
+    const original = "function foo() {\n  const a = 1;\n}\n";
+    const snippet = "function foo() {\n  // ... existing code ...\n  const b = 2;\n  // ... existing code ...\n}\n";
+    const styles = [_][]const u8{"//"};
+
+    try std.testing.expectError(error.MarkerGrammarInvalid, maybeSplice(allocator, original, snippet, &styles));
+}
+
+test "large marker splice exceeds budget" {
+    const allocator = std.testing.allocator;
+    var original: std.ArrayList(u8) = .empty;
+    defer original.deinit(allocator);
+    var snippet: std.ArrayList(u8) = .empty;
+    defer snippet.deinit(allocator);
+
+    var buf: [64]u8 = undefined;
+
+    var i: usize = 0;
+    while (i < 1025) : (i += 1) {
+        const line = try std.fmt.bufPrint(&buf, "  const value{d} = {d};\n", .{ i, i });
+        try original.appendSlice(allocator, line);
+    }
+
+    i = 0;
+    while (i < 1024) : (i += 1) {
+        if (i == 512) try snippet.appendSlice(allocator, "  // ... existing code ...\n");
+        const line = try std.fmt.bufPrint(&buf, "  const value{d} = {d};\n", .{ i, i });
+        try snippet.appendSlice(allocator, line);
+    }
+
+    const styles = [_][]const u8{"//"};
+    try std.testing.expectError(error.MarkerSpliceTooLarge, maybeSplice(allocator, original.items, snippet.items, &styles));
 }
 
 test "marker with ambiguous anchors returns AmbiguousAnchor" {

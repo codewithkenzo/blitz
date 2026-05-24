@@ -14,6 +14,13 @@ const Io = std.Io;
 const Writer = std.Io.Writer;
 const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
+const MarkerFallbackScope = struct {
+    kind: []const u8,
+    byte_start: usize,
+    byte_end: usize,
+    excerpt: []const u8,
+};
+
 pub fn runReplace(
     allocator: std.mem.Allocator,
     io: std.Io,
@@ -100,38 +107,9 @@ fn runEdit(
             try stderr.print("symbol '{s}' not found in {s}\n", .{ symbol, file_path });
             return 1;
         },
-        error.AnchorNotFound, error.MarkerGrammarInvalid, error.AmbiguousAnchor => {
-            var parser = bindings.Parser.init();
-            defer parser.deinit();
-            const byte_start: usize = blk: {
-                if (!parser.setLanguage(lang)) break :blk 0;
-                if (parser.parseString(original_contents)) |parsed_tree| {
-                    var tree = parsed_tree;
-                    defer tree.deinit();
-                    const root = tree.rootNode();
-                    if (!root.isNull()) {
-                        if (ast.resolveEditableSymbol(original_contents, root, symbol)) |node| {
-                            break :blk @intCast(node.startByte());
-                        } else |_| {}
-                    }
-                }
-                break :blk 0;
-            };
-            const byte_end: usize = blk: {
-                if (!parser.setLanguage(lang)) break :blk 0;
-                if (parser.parseString(original_contents)) |parsed_tree| {
-                    var tree = parsed_tree;
-                    defer tree.deinit();
-                    const root = tree.rootNode();
-                    if (!root.isNull()) {
-                        if (ast.resolveEditableSymbol(original_contents, root, symbol)) |node| {
-                            break :blk @intCast(node.endByte());
-                        } else |_| {}
-                    }
-                }
-                break :blk 0;
-            };
-            try fallback.emitNeedsHostMerge(stdout, file_path, symbol, "function", byte_start, byte_end, original_contents);
+        error.AnchorNotFound, error.MarkerGrammarInvalid, error.AmbiguousAnchor, error.MarkerSpliceTooLarge => {
+            const scope = markerFallbackScope(lang, original_contents, symbol);
+            try fallback.emitNeedsHostMerge(stdout, file_path, symbol, scope.kind, scope.byte_start, scope.byte_end, scope.excerpt);
             return 0;
         },
         error.ParseFailed => {
@@ -206,6 +184,40 @@ fn languageName(lang: bindings.Language) []const u8 {
         .tsx => "tsx",
         .python => "python",
         .go => "go",
+    };
+}
+
+fn markerFallbackScope(lang: bindings.Language, original_contents: []const u8, symbol: []const u8) MarkerFallbackScope {
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+
+    if (parser.setLanguage(lang)) {
+        if (parser.parseString(original_contents)) |parsed_tree| {
+            var tree = parsed_tree;
+            defer tree.deinit();
+
+            const root = tree.rootNode();
+            if (!root.isNull()) {
+                if (ast.findEditableSymbolNode(original_contents, root, symbol)) |node| {
+                    const range = edit_support.replacementRangeFor(lang, original_contents, node);
+                    if (range.start <= range.end and range.end <= original_contents.len) {
+                        return .{
+                            .kind = node.kind(),
+                            .byte_start = range.start,
+                            .byte_end = range.end,
+                            .excerpt = original_contents[range.start..range.end],
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    return .{
+        .kind = "unknown",
+        .byte_start = 0,
+        .byte_end = original_contents.len,
+        .excerpt = original_contents,
     };
 }
 
@@ -659,7 +671,168 @@ test "runReplace marker with missing anchor fails without mutation" {
         &stderr_buf.writer,
     );
     try std.testing.expectEqual(@as(u8, 0), status);
-    try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"status\":\"needs_host_merge\"") != null);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, stdout_buf.written(), .{});
+    defer parsed.deinit();
+
+    const payload = switch (parsed.value) {
+        .object => |obj| obj,
+        else => unreachable,
+    };
+
+    try std.testing.expectEqualStrings("needs_host_merge", switch (payload.get("status") orelse unreachable) {
+        .string => |value| value,
+        else => unreachable,
+    });
+    try std.testing.expectEqualStrings("function_declaration", switch (payload.get("kind") orelse unreachable) {
+        .string => |value| value,
+        else => unreachable,
+    });
+
+    const byte_start: usize = switch (payload.get("byteStart") orelse unreachable) {
+        .integer => |value| @as(usize, @intCast(value)),
+        else => unreachable,
+    };
+    const byte_end: usize = switch (payload.get("byteEnd") orelse unreachable) {
+        .integer => |value| @as(usize, @intCast(value)),
+        else => unreachable,
+    };
+    const excerpt = switch (payload.get("excerpt") orelse unreachable) {
+        .string => |value| value,
+        else => unreachable,
+    };
+
+    try std.testing.expect(byte_start > 0);
+    try std.testing.expect(byte_end < original.len);
+    try std.testing.expectEqualSlices(u8, original[byte_start..byte_end], excerpt);
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    try std.testing.expectEqualSlices(u8, original, contents);
+}
+
+test "runReplace multiple markers falls back without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    const original =
+        \\function greet(name: string): string {
+        \\  const prefix = "hi ";
+        \\  const suffix = "!";
+        \\  return prefix + name + suffix;
+        \\}
+    ;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "greet",
+        \\function greet(name: string): string {
+        \\  // ... existing code ...
+        \\  const renamed = prefix + name;
+        \\  // ... existing code ...
+        \\  return prefix + name + suffix;
+        \\}
+    ,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, stdout_buf.written(), .{});
+    defer parsed.deinit();
+    const payload = switch (parsed.value) {
+        .object => |obj| obj,
+        else => unreachable,
+    };
+    try std.testing.expectEqualStrings("needs_host_merge", switch (payload.get("status") orelse unreachable) {
+        .string => |value| value,
+        else => unreachable,
+    });
+
+    const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
+    defer allocator.free(contents);
+    try std.testing.expectEqualSlices(u8, original, contents);
+}
+
+test "runReplace large marker splice falls back without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+
+    var original_buf: std.ArrayList(u8) = .empty;
+    defer original_buf.deinit(allocator);
+    try original_buf.appendSlice(allocator, "function big() {\n");
+
+    var snippet_buf: std.ArrayList(u8) = .empty;
+    defer snippet_buf.deinit(allocator);
+    try snippet_buf.appendSlice(allocator, "function big() {\n");
+
+    var line_buf: [64]u8 = undefined;
+    var i: usize = 0;
+    while (i < 1025) : (i += 1) {
+        const line = try std.fmt.bufPrint(&line_buf, "  const value{d} = {d};\n", .{ i, i });
+        try original_buf.appendSlice(allocator, line);
+    }
+
+    i = 0;
+    while (i < 1024) : (i += 1) {
+        if (i == 512) try snippet_buf.appendSlice(allocator, "  // ... existing code ...\n");
+        const line = try std.fmt.bufPrint(&line_buf, "  const value{d} = {d};\n", .{ i, i });
+        try snippet_buf.appendSlice(allocator, line);
+    }
+
+    try original_buf.appendSlice(allocator, "}\n");
+    try snippet_buf.appendSlice(allocator, "}\n");
+
+    const original = original_buf.items;
+    const snippet = snippet_buf.items;
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "fixture.ts", .data = original });
+    const abs_path = try tmp.dir.realPathFileAlloc(io, "fixture.ts", allocator);
+    defer allocator.free(abs_path);
+
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+
+    const status = try runReplace(
+        allocator,
+        io,
+        abs_path,
+        "big",
+        snippet,
+        &stdout_buf.writer,
+        &stderr_buf.writer,
+    );
+    try std.testing.expectEqual(@as(u8, 0), status);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, allocator, stdout_buf.written(), .{});
+    defer parsed.deinit();
+    const payload = switch (parsed.value) {
+        .object => |obj| obj,
+        else => unreachable,
+    };
+    try std.testing.expectEqualStrings("needs_host_merge", switch (payload.get("status") orelse unreachable) {
+        .string => |value| value,
+        else => unreachable,
+    });
 
     const contents = try tmp.dir.readFileAlloc(io, "fixture.ts", allocator, .unlimited);
     defer allocator.free(contents);

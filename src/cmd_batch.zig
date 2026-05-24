@@ -98,6 +98,9 @@ pub fn run(
                 error.AmbiguousAnchor => {
                     try stderr.print("edit[{d}]: marker splice failed: ambiguous anchors\n", .{edit_index});
                 },
+                error.MarkerSpliceTooLarge => {
+                    try stderr.print("edit[{d}]: marker splice failed: input too large\n", .{edit_index});
+                },
                 else => {
                     try stderr.print("edit[{d}]: {s}\n", .{ edit_index, @errorName(err) });
                 },
