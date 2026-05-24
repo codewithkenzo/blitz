@@ -3,6 +3,9 @@ const std = @import("std");
 const apply_errors = @import("apply/errors.zig");
 const apply_ir = @import("apply/ir.zig");
 const apply_ops = @import("apply/operations.zig");
+const apply_diff = @import("apply/diff.zig");
+const apply_patch = @import("apply/patch.zig");
+const apply_target = @import("apply/target.zig");
 const apply_validate = @import("apply/validate.zig");
 const ast = @import("ast.zig");
 const backup = @import("backup.zig");
@@ -19,7 +22,7 @@ const Dir = Io.Dir;
 const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 const ApplyOperation = apply_ops.ApplyOperation;
-const TargetRange = apply_ops.TargetRange;
+const TargetRange = apply_target.TargetRange;
 const requireArray = apply_ir.requireArray;
 const requireOptionalString = apply_ir.requireOptionalString;
 const requireOptionalBool = apply_ir.requireOptionalBool;
@@ -28,7 +31,6 @@ const tupleOptionalValue = apply_ops.tupleOptionalValue;
 const tupleOptionalIndent = apply_ops.tupleOptionalIndent;
 const MatchKind = apply_ops.MatchKind;
 const MatchSelector = apply_ops.MatchSelector;
-const ApplyTarget = apply_ir.ApplyTarget;
 const ApplyOptions = apply_ir.ApplyOptions;
 const ApplyRequest = apply_ir.ApplyRequest;
 const ValidationResult = apply_ir.ValidationResult;
@@ -103,7 +105,7 @@ pub fn run(
         if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     }
 
-    const target_range = if (operation == .multi_body or operation == .patch) TargetRange.body else apply_ops.parseTargetRange(req.target.?.range) catch |err| {
+    const target_range = if (operation == .multi_body or operation == .patch) TargetRange.body else apply_target.parseTargetRange(req.target.?.range) catch |err| {
         return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     const require_single_match = if (req.options) |opts| opts.requireSingleMatch orelse true else true;
@@ -140,7 +142,7 @@ pub fn run(
     const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
         null
     else
-        ast.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
@@ -149,7 +151,7 @@ pub fn run(
     else if (operation == .patch)
         edit_support.ByteRange{ .start = 0, .end = 0 }
     else
-        ast.bodyRangeFor(lang, original, target_node.?) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        apply_target.bodyRangeFor(lang, original, target_node.?) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const op_result_result: anyerror!OpResult = switch (operation) {
         .replace_body_span => blk: {
@@ -157,12 +159,12 @@ pub fn run(
             const edit_obj = try expectObject(req.edit);
             const find = try requireString(edit_obj, "find");
             const replace = try requireString(edit_obj, "replace");
-            const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
-            const match = selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
+            const match = apply_target.selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const edit_start = body_range.start + match.start;
             const edit_end = body_range.start + match.end;
             break :blk OpResult{
-                .contents = try spliceText(allocator, original, edit_start, edit_end, replace),
+                .contents = try apply_diff.spliceText(allocator, original, edit_start, edit_end, replace),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = edit_start, .editEnd = edit_end },
                 .single_match = match.single_match,
                 .changed_before = match.end - match.start,
@@ -175,8 +177,8 @@ pub fn run(
             const anchor = try requireString(edit_obj, "anchor");
             const text = try requireString(edit_obj, "text");
             const raw_pos = try requireString(edit_obj, "position");
-            const selector = apply_ops.parseMatchSelector(edit_obj.get("occurrence"));
-            const match = selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
+            const match = apply_target.selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
                 body_range.start + match.end
             else if (std.mem.eql(u8, raw_pos, "before"))
@@ -184,7 +186,7 @@ pub fn run(
             else
                 return emitFailure(ApplyError.InvalidPosition, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             break :blk OpResult{
-                .contents = try spliceText(allocator, original, insert_at, insert_at, text),
+                .contents = try apply_diff.spliceText(allocator, original, insert_at, insert_at, text),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = insert_at, .editEnd = insert_at },
                 .single_match = match.single_match,
                 .changed_before = 0,
@@ -209,12 +211,12 @@ pub fn run(
             } else 0;
 
             const body = original[body_range.start..body_range.end];
-            const kept_body = if (indent == 0) try allocator.dupe(u8, body) else try indentBody(allocator, body, indent);
+            const kept_body = if (indent == 0) try allocator.dupe(u8, body) else try apply_patch.indentBody(allocator, body, indent);
             defer allocator.free(kept_body);
-            const wrapped = try concat3(allocator, before, kept_body, after);
+            const wrapped = try apply_patch.concat3(allocator, before, kept_body, after);
             defer allocator.free(wrapped);
             break :blk OpResult{
-                .contents = try spliceText(allocator, original, body_range.start, body_range.end, wrapped),
+                .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, wrapped),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
                 .single_match = true,
                 .changed_before = body.len,
@@ -233,7 +235,7 @@ pub fn run(
                 require_single_match,
             ) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
 
-            const new_contents = try spliceText(allocator, original, body_range.start, body_range.end, compose.contents);
+            const new_contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, compose.contents);
             defer allocator.free(compose.contents);
 
             break :blk OpResult{
@@ -248,7 +250,7 @@ pub fn run(
             const edit_obj = try expectObject(req.edit);
             const code = try requireString(edit_obj, "code");
             break :blk OpResult{
-                .contents = try spliceText(allocator, original, target_end, target_end, code),
+                .contents = try apply_diff.spliceText(allocator, original, target_end, target_end, code),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end },
                 .single_match = true,
                 .changed_before = 0,
@@ -260,14 +262,14 @@ pub fn run(
             const edit_obj = try expectObject(req.edit);
             const body = try requireString(edit_obj, "body");
             break :blk OpResult{
-                .contents = try spliceText(allocator, original, body_range.start, body_range.end, body),
+                .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, body),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
                 .single_match = true,
                 .changed_before = body_range.end - body_range.start,
                 .changed_after = body.len,
             };
         },
-        .patch => makeCompactPatchOp(
+        .patch => apply_patch.makeCompactPatchOp(
             allocator,
             lang,
             root,
@@ -275,7 +277,7 @@ pub fn run(
             req.edit,
             require_single_match,
         ),
-        .multi_body => makeMultiBodyOp(
+        .multi_body => apply_patch.makeMultiBodyOp(
             allocator,
             lang,
             root,
@@ -441,9 +443,9 @@ fn composeBody(
         const keep_slice = switch (keep) {
             .string => |keep_text| blk: {
                 if (!std.mem.eql(u8, keep_text, "body")) return ApplyError.FieldTypeMismatch;
-                break :blk KeepSliceResult{ .span = .{ .start = 0, .end = body.len }, .single_match = true };
+                break :blk apply_target.KeepSliceResult{ .span = .{ .start = 0, .end = body.len }, .single_match = true };
             },
-            .object => |keep_obj| try parseKeepSpan(body, keep_obj, require_single_match),
+            .object => |keep_obj| try apply_target.parseKeepSpan(body, keep_obj, require_single_match),
             else => return ApplyError.FieldTypeMismatch,
         };
 
