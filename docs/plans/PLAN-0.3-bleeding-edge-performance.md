@@ -311,17 +311,17 @@ Options:
 
 Tasks:
 
-- [ ] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool.
-- [ ] Keep parser/query caches in worker memory.
-- [ ] Add workspace root, file hash, and lock policy to worker requests.
-- [ ] Add idle timeout and cache invalidation.
-- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads.
+- [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
+- [ ] Keep parser/query caches in worker memory. [DEFERRED: requires warm worker implementation]
+- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; implementation/security tests still open]
+- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; implementation/benchmarks still open]
+- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [OPEN: checklist defined; tests/review not complete]
 
 Acceptance:
 
-- [ ] Warm path p50/p95 wall time beats cold CLI on repeated operations.
-- [ ] Worker never mutates outside workspace.
-- [ ] Crash/timeout falls back to stateless CLI safely.
+- [ ] Warm path p50/p95 wall time beats cold CLI on repeated operations. [OPEN: no daemon implemented]
+- [ ] Worker never mutates outside workspace. [OPEN: policy documented; implementation/security proof pending]
+- [ ] Crash/timeout falls back to stateless CLI safely. [OPEN: fallback policy documented; host implementation pending]
 
 ### Lane F — Build and release benchmarking
 
