@@ -18,6 +18,7 @@ Cross-agent shared context for this repository.
 
 - `kenzo-zig` — Zig 0.16 patterns (std.Io, allocators, error handling)
 - `kenzo-zig-build` — build.zig, build.zig.zon, cross-compile, C interop
+- `.pi/skills/blitz-benchmarking` — repo-local Pi/tmux/Tokscale benchmark method; load before benchmark reports, token-savings claims, or `bench/pi-matrix.ts` changes
 
 ## Zig 0.16 rules (verified against stable release)
 
@@ -36,6 +37,18 @@ For non-trivial work:
 2. check current sprint in the companion `pi-rig` tickets (`d1o-*` ids)
 3. implement the smallest safe diff
 4. `zig build && zig build test` before claiming done
+
+## Benchmark workflow
+
+Load `.pi/skills/blitz-benchmarking` before any Blitz/pi-blitz benchmark or token claim.
+
+Rules:
+- benchmark claims require real Pi session artifacts, correctness status, wall time, and token accounting;
+- locked runs require Tokscale validation with `--tokscale`; `tokscale token match` means input/output/cache/message totals match, not cost parity;
+- tmux runner is preferred for method-locking and interactive/piloted rows: `bun bench/pi-matrix.ts --runner tmux ...`;
+- keep existing baseline reports unless user explicitly asks to regenerate or replace them;
+- do not push benchmark work until method is locked and user approves;
+- if model variance causes newline drift, retries, or timeouts, preserve tmux run dirs and report failed attempts separately from accepted rows.
 
 ## Commands
 

@@ -8,6 +8,9 @@ node_modules/
 # OS
 .DS_Store
 # Local notes
-.pi/
+.pi/*
+!.pi/skills/
+!.pi/skills/**
+reports/pi-tmux-runs/
 .tokensave/
 bin/blitz
