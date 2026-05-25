@@ -270,7 +270,7 @@ Core universal ops:
 - [x] `insert_after_anchor` / `insert_before_anchor` — insert exact text before/after exactly unique anchor on arbitrary files via `direct_text`; duplicate/missing anchors reject without mutation and bypass AST parse validation. [DONE:14]
 - [x] `replace_between` — bounded by unique start/end anchors; replaces only inner content and keeps anchors. [DONE:15]
 - [x] `append_section` — Markdown/text section-aware append before next same-or-higher heading, using exact unique heading match via `direct_text`; missing/duplicate/invalid heading and empty text reject without mutation. [DONE:18]
-- [x] `set_key` — JSON-only, top-level object keys via `format_text`; validates strict JSON object before/after, rejects duplicate top-level keys, unsupported extensions (including `.jsonc`), nested/path syntax, and unsafe insertion layouts; preserves surrounding formatting by local value/key span splice. YAML/TOML/JSONC remain deferred. [DONE:20]
+- [x] `set_key` — top-level JSON/YAML/TOML keys via `format_text`; JSON validates strict object before/after; YAML/TOML use tree-sitter parse-clean before/after plus local line byte splices for simple scalars only; rejects duplicate top-level keys, unsupported extensions (including `.jsonc`), nested/path syntax, dotted/table-scoped TOML edits, and unsafe values/layouts; preserves unrelated comments/formatting. JSONC remains deferred. [DONE:20, DONE:21]
 - [x] `ensure_line` — idempotent line insertion for config/prose. [DONE:16]
 - [x] `delete_range` — explicit preconditioned range only. [DONE:17]
 
@@ -281,8 +281,8 @@ Format support plan:
 | Markdown | parser support added; section/block insert/replace deferred | tree-sitter-markdown block grammar vendored; raw text edits |
 | JSON | parser support and top-level `set_key` complete; delete key/array insert deferred | tree-sitter-json vendored for parser support; `set_key` remains strict scanner + std.json validation |
 | JSONC | parser/doctor/read support only; comment-preserving edits deferred | tree-sitter-jsonc vendored from `sunilunnithan/tree-sitter-jsonc` commit `02b01653c8a1c198ae7287d566efa86a135b30d5`, ABI 13; no `set_key` semantics |
-| YAML | parser support added; simple key/section edits deferred | tree-sitter-yaml vendored; no broad serializer rewrite |
-| TOML | parser support added; table/key edits deferred | tree-sitter-toml vendored; no broad serializer rewrite |
+| YAML | simple top-level `set_key` complete for scalar update/insert; nested paths, arrays, multiline scalars, and serializer round-trips deferred | tree-sitter-yaml parse-clean before/after; local same-line value span or EOF insert splice |
+| TOML | simple top-level pre-table `set_key` complete for scalar update/insert; dotted keys, arrays, array-of-tables, table-scoped edits, and serializer round-trips deferred | tree-sitter-toml parse-clean before/after; local same-line value span or pre-first-table insert splice |
 | HTML | parser support added; element/block anchor edits deferred | tree-sitter-html vendored; range edits |
 | CSS | parser support added; rule/property edits deferred | tree-sitter-css vendored; range edits |
 | arbitrary text | anchors/hashes | deterministic byte edits only |
@@ -293,8 +293,8 @@ Acceptance:
 
 - [x] README/Markdown benchmark has a Blitz route when it is beneficial; otherwise router chooses core. [DONE:19]
   - Evidence: `reports/pi-readme-core-glm-fixed-20260525-122406.md/json` — `readme/core-smoke`, runner `tmux`, provider/model `zai/glm-4.5-air`, Tokscale required, token match yes, correctness 100%, selected route `core_edit` as a core-only Markdown cost/control smoke.
-- [ ] JSON/YAML/TOML edits preserve comments/formatting for targeted edits.
-  - Partial: JSON-only top-level `set_key` preserves key/colon/comma/surrounding whitespace by local span splice; YAML/TOML/JSONC remain deferred.
+- [x] JSON/YAML/TOML edits preserve comments/formatting for targeted edits. [DONE:21]
+  - Evidence: top-level `set_key` uses local byte splices. JSON preserves object formatting with std.json validation; YAML/TOML preserve unrelated lines and trailing comments for simple scalar line edits, validate parse-clean before/after, reject duplicates/nested paths/table scope/dotted keys/unsupported values. JSONC remains parser/read only and unsupported for `set_key`.
 - [x] Unsupported formats still get safe `direct_text` routes when anchors are unique. [DONE:13-18]
   - Evidence: parent CLI smokes for `replace_unique`, anchor insert, `replace_between`, `ensure_line`, `delete_range`, and `append_section` on `.txt`, `.md`, and unsupported extensions; all bypass AST parse truthfully and reject ambiguous/missing preconditions without mutation.
 

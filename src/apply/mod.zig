@@ -181,9 +181,16 @@ pub fn run(
     if (operation == .set_key) {
         if (shouldExplain(route_option, dry_run, route_requested)) {
             const ext = std.fs.path.extension(req.file);
-            if (!std.mem.eql(u8, ext, ".json")) return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-            const decision = if (std.mem.eql(u8, route_option, "force-core")) estimateRouteDecision(operation, route_option) else formatTextRouteDecision("format_text_json_set_key");
-            return emitExplainResult(allocator, io, start, req, request_bytes, json_output, stdout, stderr, real_path, original.len, read_ms, "json", decision, if (std.mem.eql(u8, decision.route, "core_edit")) "needs_host_merge" else "preview");
+            const language, const reason_code = if (std.mem.eql(u8, ext, ".json"))
+                .{ "json", "format_text_json_set_key" }
+            else if (std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml"))
+                .{ "yaml", "format_text_yaml_set_key" }
+            else if (std.mem.eql(u8, ext, ".toml"))
+                .{ "toml", "format_text_toml_set_key" }
+            else
+                return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const decision = if (std.mem.eql(u8, route_option, "force-core")) estimateRouteDecision(operation, route_option) else formatTextRouteDecision(reason_code);
+            return emitExplainResult(allocator, io, start, req, request_bytes, json_output, stdout, stderr, real_path, original.len, read_ms, language, decision, if (std.mem.eql(u8, decision.route, "core_edit")) "needs_host_merge" else "preview");
         }
         return runSetKey(allocator, io, start, req, request_bytes, json_output, stdout, stderr, real_path, original, read_ms, dry_run, diff_requested);
     }
@@ -1254,6 +1261,196 @@ fn jsonObjectValid(allocator: Allocator, source: []const u8) bool {
     return parsed.value == .object;
 }
 
+const ScalarFormat = enum { yaml, toml };
+
+const FormatKeyMatch = struct {
+    found: bool = false,
+    value_start: usize = 0,
+    value_end: usize = 0,
+    insert_at: usize = 0,
+};
+
+const FormatSetKeyPlan = struct {
+    contents: []u8,
+    edit_start: usize,
+    edit_end: usize,
+    language: []const u8,
+    reason_code: []const u8,
+    single_match: bool,
+};
+
+fn parseTreeClean(lang: bindings.Language, source: []const u8) bool {
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    if (!parser.setLanguage(lang)) return false;
+    var tree = parser.parseString(source) orelse return false;
+    defer tree.deinit();
+    const root = tree.rootNode();
+    return !root.isNull() and !root.hasError();
+}
+
+fn canonicalSimpleScalar(allocator: Allocator, value: std.json.Value, format: ScalarFormat) ![]u8 {
+    return switch (value) {
+        .string => |s| blk: {
+            if (std.mem.indexOfAny(u8, s, "\r\n") != null) return ApplyError.UnsupportedLanguage;
+            break :blk canonicalJsonValue(allocator, value);
+        },
+        .integer, .float, .bool => canonicalJsonValue(allocator, value),
+        .null => if (format == .yaml) canonicalJsonValue(allocator, value) else ApplyError.UnsupportedLanguage,
+        else => ApplyError.UnsupportedLanguage,
+    };
+}
+
+fn trimAscii(slice: []const u8) []const u8 {
+    return std.mem.trim(u8, slice, " \t\r");
+}
+
+fn findLineCommentStart(line: []const u8) usize {
+    var quote: u8 = 0;
+    var escaped = false;
+    for (line, 0..) |c, i| {
+        if (quote == 0) {
+            if (c == '\'' or c == '"') quote = c else if (c == '#') return i;
+        } else if (quote == '"') {
+            if (escaped) {
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == quote) {
+                quote = 0;
+            }
+        } else if (c == quote) {
+            quote = 0;
+        }
+    }
+    return line.len;
+}
+
+fn trimRightSpaceEnd(source: []const u8, start: usize, end: usize) usize {
+    var i = end;
+    while (i > start and (source[i - 1] == ' ' or source[i - 1] == '\t')) i -= 1;
+    return i;
+}
+
+fn rememberTopLevelKey(seen: *std.StringHashMap(void), key: []const u8) !void {
+    if (seen.contains(key)) return ApplyError.AmbiguousMatches;
+    try seen.put(key, {});
+}
+
+fn findYamlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
+    var seen = std.StringHashMap(void).init(allocator);
+    defer seen.deinit();
+    var result = FormatKeyMatch{ .insert_at = source.len };
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#' and line.len != 0 and line[0] != ' ' and line[0] != '\t') {
+            const comment_at = findLineCommentStart(line);
+            const body = line[0..comment_at];
+            if (std.mem.indexOfScalar(u8, body, ':')) |colon| {
+                const key = trimAscii(body[0..colon]);
+                if (key.len == 0) return ApplyError.ParseFailedBefore;
+                try rememberTopLevelKey(&seen, key);
+                if (std.mem.eql(u8, key, wanted)) {
+                    result.found = true;
+                    result.value_start = line_start + colon + 1;
+                    while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                    result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    return result;
+}
+
+fn findTomlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
+    var seen = std.StringHashMap(void).init(allocator);
+    defer seen.deinit();
+    var result = FormatKeyMatch{ .insert_at = source.len };
+    var in_table = false;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#') {
+            if (trimmed[0] == '[') {
+                if (trimmed.len > 1 and trimmed[1] == '[') return ApplyError.UnsupportedLanguage;
+                if (!in_table) result.insert_at = line_start;
+                in_table = true;
+            } else {
+                const comment_at = findLineCommentStart(line);
+                const body = line[0..comment_at];
+                if (std.mem.indexOfScalar(u8, body, '=')) |eq| {
+                    const key = trimAscii(body[0..eq]);
+                    if (key.len == 0 or std.mem.indexOfScalar(u8, key, '.') != null or std.mem.indexOfScalar(u8, key, '[') != null or std.mem.indexOfScalar(u8, key, ']') != null) return ApplyError.UnsupportedLanguage;
+                    if (!in_table) {
+                        try rememberTopLevelKey(&seen, key);
+                        if (std.mem.eql(u8, key, wanted)) {
+                            result.found = true;
+                            result.value_start = line_start + eq + 1;
+                            while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                            result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                        }
+                    } else if (!result.found and std.mem.eql(u8, key, wanted)) {
+                        return ApplyError.UnsupportedLanguage;
+                    }
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    return result;
+}
+
+fn buildInsertedFlatKey(allocator: Allocator, source: []const u8, insert_at: usize, key: []const u8, sep: []const u8, encoded_value: []const u8) !JsonBuildResult {
+    const has_final_newline = source.len > 0 and source[source.len - 1] == '\n';
+    const needs_leading_newline = insert_at > 0 and source[insert_at - 1] != '\n';
+    const needs_trailing_newline = insert_at < source.len or has_final_newline;
+    const replacement = try std.fmt.allocPrint(allocator, "{s}{s}{s}{s}{s}", .{ if (needs_leading_newline) "\n" else "", key, sep, encoded_value, if (needs_trailing_newline) "\n" else "" });
+    defer allocator.free(replacement);
+    return .{ .contents = try apply_diff.spliceText(allocator, source, insert_at, insert_at, replacement), .edit_start = insert_at, .edit_end = insert_at };
+}
+
+fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8, key: []const u8, value: std.json.Value) !FormatSetKeyPlan {
+    if (std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml")) {
+        if (!parseTreeClean(.yaml, original)) return ApplyError.ParseFailedBefore;
+        const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
+        defer allocator.free(encoded);
+        const match = try findYamlTopLevelKey(allocator, original, key);
+        const built = if (match.found)
+            JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else
+            try buildInsertedFlatKey(allocator, original, match.insert_at, key, ": ", encoded);
+        if (!parseTreeClean(.yaml, built.contents)) {
+            allocator.free(built.contents);
+            return ApplyError.ParseFailedAfter;
+        }
+        return .{ .contents = built.contents, .edit_start = built.edit_start, .edit_end = built.edit_end, .language = "yaml", .reason_code = "format_text_yaml_set_key", .single_match = match.found };
+    }
+    if (std.mem.eql(u8, ext, ".toml")) {
+        if (!parseTreeClean(.toml, original)) return ApplyError.ParseFailedBefore;
+        const encoded = try canonicalSimpleScalar(allocator, value, .toml);
+        defer allocator.free(encoded);
+        const match = try findTomlTopLevelKey(allocator, original, key);
+        const built = if (match.found)
+            JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else
+            try buildInsertedFlatKey(allocator, original, match.insert_at, key, " = ", encoded);
+        if (!parseTreeClean(.toml, built.contents)) {
+            allocator.free(built.contents);
+            return ApplyError.ParseFailedAfter;
+        }
+        return .{ .contents = built.contents, .edit_start = built.edit_start, .edit_end = built.edit_end, .language = "toml", .reason_code = "format_text_toml_set_key", .single_match = match.found };
+    }
+    return ApplyError.UnsupportedLanguage;
+}
+
 fn runSetKey(
     allocator: Allocator,
     io: Io,
@@ -1270,25 +1467,31 @@ fn runSetKey(
     diff_requested: bool,
 ) !u8 {
     const ext = std.fs.path.extension(req.file);
-    if (!std.mem.eql(u8, ext, ".json")) return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const plan_start = Io.Clock.awake.now(io);
     const edit_obj = apply_ir.expectObject(req.edit) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const key = apply_ir.requireString(edit_obj, "key") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     validateSetKeyName(key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const value = edit_obj.get("value") orelse return emitFailure(ApplyError.MissingField, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const encoded_value = canonicalJsonValue(allocator, value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    defer allocator.free(encoded_value);
-    const match = findJsonTopLevelKey(allocator, original, key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const built: JsonBuildResult = if (match.found)
-        .{ .contents = apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded_value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len), .edit_start = match.value_start, .edit_end = match.value_end }
-    else
-        buildInsertedJsonKey(allocator, original, match, key, encoded_value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
-    defer allocator.free(built.contents);
-    if (!jsonObjectValid(allocator, built.contents)) return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+
+    const built_plan: FormatSetKeyPlan = if (std.mem.eql(u8, ext, ".json")) blk: {
+        const encoded_value = canonicalJsonValue(allocator, value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        defer allocator.free(encoded_value);
+        const match = findJsonTopLevelKey(allocator, original, key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const built: JsonBuildResult = if (match.found)
+            .{ .contents = apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded_value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len), .edit_start = match.value_start, .edit_end = match.value_end }
+        else
+            buildInsertedJsonKey(allocator, original, match, key, encoded_value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+        if (!jsonObjectValid(allocator, built.contents)) {
+            allocator.free(built.contents);
+            return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+        }
+        break :blk .{ .contents = built.contents, .edit_start = built.edit_start, .edit_end = built.edit_end, .language = "json", .reason_code = "format_text_json_set_key", .single_match = match.found };
+    } else buildFormatSetKey(allocator, ext, original, key, value) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, err != ApplyError.UnsupportedLanguage, false, request_bytes.len);
+    defer allocator.free(built_plan.contents);
     const plan_ms = msSince(plan_start, Io.Clock.awake.now(io));
 
-    const changed = !std.mem.eql(u8, original, built.contents);
+    const changed = !std.mem.eql(u8, original, built_plan.contents);
     const write_start = Io.Clock.awake.now(io);
     if (changed and !dry_run) {
         var lock_guard = file_lock.acquire(allocator, io, real_path) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, true, request_bytes.len);
@@ -1296,22 +1499,22 @@ fn runSetKey(
         const cache_dir = backup.defaultCacheDir(allocator) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, true, request_bytes.len);
         defer allocator.free(cache_dir);
         backup.store(allocator, io, cache_dir, real_path, original) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, true, request_bytes.len);
-        backup.atomicWrite(allocator, io, real_path, built.contents) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, true, request_bytes.len);
+        backup.atomicWrite(allocator, io, real_path, built_plan.contents) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, true, request_bytes.len);
     }
     const write_ms = msSince(write_start, Io.Clock.awake.now(io));
 
     const end = Io.Clock.awake.now(io);
     const wall_ms: u64 = @intCast(start.durationTo(end).toMilliseconds());
     const status = if (dry_run) "preview" else if (changed) "applied" else "no_changes";
-    const changed_before = built.edit_end - built.edit_start;
-    const changed_after = built.contents.len - (original.len - changed_before);
+    const changed_before = built_plan.edit_end - built_plan.edit_start;
+    const changed_after = built_plan.contents.len - (original.len - changed_before);
     const diffSummary = if (changed)
         try std.fmt.allocPrint(allocator, "+{d} -{d}", .{ changed_after, changed_before })
     else
         try allocator.dupe(u8, "no changes");
     defer allocator.free(diffSummary);
 
-    const reason_code = "format_text_json_set_key";
+    const reason_code = built_plan.reason_code;
     const decision = formatTextRouteDecision(reason_code);
     const result = ApplyResult{
         .status = status,
@@ -1321,14 +1524,14 @@ fn runSetKey(
         .routeDecision = decision,
         .file = real_path,
         .symbol = "",
-        .language = "json",
+        .language = built_plan.language,
         .dryRun = dry_run,
         .changed = changed,
-        .validation = .{ .parseBeforeClean = true, .parseAfterClean = true, .singleMatch = match.found },
-        .ranges = .{ .targetStart = 0, .targetEnd = original.len, .bodyStart = null, .bodyEnd = null, .editStart = built.edit_start, .editEnd = built.edit_end },
+        .validation = .{ .parseBeforeClean = true, .parseAfterClean = true, .singleMatch = built_plan.single_match },
+        .ranges = .{ .targetStart = 0, .targetEnd = original.len, .bodyStart = null, .bodyEnd = null, .editStart = built_plan.edit_start, .editEnd = built_plan.edit_end },
         .metrics = .{
             .fileBytesBefore = original.len,
-            .fileBytesAfter = built.contents.len,
+            .fileBytesAfter = built_plan.contents.len,
             .requestBytes = request_bytes.len,
             .changedBytesBefore = changed_before,
             .changedBytesAfter = changed_after,
@@ -1769,6 +1972,178 @@ test "apply set_key rejects duplicate JSON keys without mutation" {
     const post = try tmp.dir.readFileAlloc(io, "dup.json", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply set_key updates existing YAML value preserving trailing comment" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\name: old # keep me
+        \\nested:
+        \\  name: inner
+        \\keep: true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.yaml", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.yaml", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"name","value":"new"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_yaml_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.yaml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\name: "new" # keep me
+        \\nested:
+        \\  name: inner
+        \\keep: true
+    , post);
+}
+
+test "apply set_key inserts missing YAML key preserving final newline" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\name: old
+        \\keep: true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.yml", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.yml", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"added","value":42}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.yml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\name: old
+        \\keep: true
+        \\added: 42
+    , post);
+}
+
+test "apply set_key rejects duplicate YAML key without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\a: 1
+        \\a: 2
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup.yaml", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "dup.yaml", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"a","value":3}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "dup.yaml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply set_key updates and inserts TOML top-level keys before tables" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\name = "old" # keep me
+        \\keep = true
+        \\[table]
+        \\name = "inner"
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.toml", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.toml", allocator);
+    defer allocator.free(path);
+    const update_req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"name","value":"new"}}
+    ;
+    const out = try runApplyTest(allocator, io, update_req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_toml_set_key\"") != null);
+    const insert_req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"added","value":5}}
+    ;
+    const out2 = try runApplyTest(allocator, io, insert_req, path);
+    defer allocator.free(out2);
+    const post = try tmp.dir.readFileAlloc(io, "a.toml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\name = "new" # keep me
+        \\keep = true
+        \\added = 5
+        \\[table]
+        \\name = "inner"
+    , post);
+}
+
+test "apply set_key rejects TOML duplicate dotted key and dry-run preserves file" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const duplicate =
+        \\a = 1
+        \\a = 2
+    ;
+    const dotted =
+        \\a.b = 1
+    ;
+    const table_scoped =
+        \\[table]
+        \\a = 1
+    ;
+    const dry_original =
+        \\a = 1
+        \\[table]
+        \\b = 2
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup.toml", .data = duplicate });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dotted.toml", .data = dotted });
+    try tmp.dir.writeFile(io, .{ .sub_path = "table.toml", .data = table_scoped });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dry.toml", .data = dry_original });
+    const dup_path = try tmp.dir.realPathFileAlloc(io, "dup.toml", allocator);
+    defer allocator.free(dup_path);
+    const dotted_path = try tmp.dir.realPathFileAlloc(io, "dotted.toml", allocator);
+    defer allocator.free(dotted_path);
+    const table_path = try tmp.dir.realPathFileAlloc(io, "table.toml", allocator);
+    defer allocator.free(table_path);
+    const dry_path = try tmp.dir.realPathFileAlloc(io, "dry.toml", allocator);
+    defer allocator.free(dry_path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"a","value":3}}
+    ;
+    const dup_out = try runApplyTestExpectFailure(allocator, io, req, dup_path);
+    defer allocator.free(dup_out);
+    try std.testing.expect(std.mem.indexOf(u8, dup_out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, dup_out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const dotted_out = try runApplyTestExpectFailure(allocator, io, req, dotted_path);
+    defer allocator.free(dotted_out);
+    try std.testing.expect(std.mem.indexOf(u8, dotted_out, "\"code\":\"UNSUPPORTED_LANGUAGE\"") != null);
+    const table_out = try runApplyTestExpectFailure(allocator, io, req, table_path);
+    defer allocator.free(table_out);
+    try std.testing.expect(std.mem.indexOf(u8, table_out, "\"code\":\"UNSUPPORTED_LANGUAGE\"") != null);
+    const dry_req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"a","value":9},"options":{"dryRun":true}}
+    ;
+    const dry_out = try runApplyTest(allocator, io, dry_req, dry_path);
+    defer allocator.free(dry_out);
+    try std.testing.expect(std.mem.indexOf(u8, dry_out, "\"status\":\"preview\"") != null);
+    const dry_post = try tmp.dir.readFileAlloc(io, "dry.toml", allocator, .unlimited);
+    defer allocator.free(dry_post);
+    try std.testing.expectEqualStrings(dry_original, dry_post);
 }
 
 test "apply set_key rejects non-json extension and nested key syntax" {
