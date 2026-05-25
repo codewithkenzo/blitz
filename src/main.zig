@@ -249,6 +249,7 @@ fn dispatchApply(
     var dry_run = false;
     var diff = false;
     var json_output = false;
+    var cli_route: ?[]const u8 = null;
 
     while (it.next()) |flag| {
         if (std.mem.eql(u8, flag, "--edit")) {
@@ -262,6 +263,16 @@ fn dispatchApply(
             diff = true;
         } else if (std.mem.eql(u8, flag, "--json")) {
             json_output = true;
+        } else if (std.mem.eql(u8, flag, "--route")) {
+            const value = it.next() orelse {
+                try stderr.writeAll("blitz apply: --route expects one of auto|force-blitz|force-core|explain\n");
+                return 1;
+            };
+            if (!isValidApplyRoute(value)) {
+                try stderr.print("blitz apply: invalid --route '{s}' (expected auto|force-blitz|force-core|explain)\n", .{value});
+                return 1;
+            }
+            cli_route = value;
         } else {
             try stderr.print("blitz apply: unknown flag '{s}'\n", .{flag});
             return 1;
@@ -279,7 +290,16 @@ fn dispatchApply(
         try gpa.dupe(u8, request_bytes);
     defer gpa.free(request_data);
 
-    return try cmd_apply.run(gpa, io, request_data, dry_run, diff, json_output, stdout, stderr);
+    // CLI --route wins over JSON options.route so shell callers can force/explain
+    // routing without rewriting request payloads.
+    return try cmd_apply.run(gpa, io, request_data, dry_run, diff, json_output, cli_route, stdout, stderr);
+}
+
+fn isValidApplyRoute(value: []const u8) bool {
+    return std.mem.eql(u8, value, "auto") or
+        std.mem.eql(u8, value, "force-blitz") or
+        std.mem.eql(u8, value, "force-core") or
+        std.mem.eql(u8, value, "explain");
 }
 
 fn dispatchRename(

@@ -21,6 +21,8 @@ const supported_grammars = [_]GrammarProbe{
 };
 
 fn probeGrammar(lang: bindings.Language) bool {
+    if (!lang.isAbiCompatible()) return false;
+
     var parser = bindings.Parser.init();
     defer parser.deinit();
 
@@ -33,16 +35,20 @@ fn probeGrammar(lang: bindings.Language) bool {
 }
 
 fn writeGrammarLine(w: *Writer) !bool {
-    try w.writeAll("  tree-sitter: linked\n");
+    try w.print(
+        "  tree-sitter: linked (runtime {s}, abi {d}, min-compatible {d})\n",
+        .{ bindings.runtime_version, bindings.language_abi_version, bindings.min_compatible_language_abi_version },
+    );
     try w.writeAll("  grammars:    ");
 
     var all_ok = true;
     for (supported_grammars, 0..) |probe, idx| {
+        const grammar_abi = probe.lang.abiVersion();
         const ok = probeGrammar(probe.lang);
         all_ok = all_ok and ok;
 
         if (idx != 0) try w.writeAll(", ");
-        try w.print("{s} {s}", .{ probe.name, if (ok) "ok" else "FAIL" });
+        try w.print("{s} {s}(abi {d})", .{ probe.name, if (ok) "ok" else "FAIL", grammar_abi });
     }
 
     try w.writeAll("\n");
@@ -123,7 +129,9 @@ test "doctor output contains version and grammars blocks" {
     const text = out.written();
 
     try std.testing.expect(std.mem.indexOf(u8, text, "version:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "tree-sitter: linked (runtime v0.26.9, abi 15") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "grammars:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "abi ") != null);
 }
 
 test "doctor cache line uses one of expected forms" {

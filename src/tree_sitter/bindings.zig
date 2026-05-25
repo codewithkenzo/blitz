@@ -1,5 +1,9 @@
 const std = @import("std");
 
+pub const runtime_version = "v0.26.9";
+pub const language_abi_version: u32 = 15;
+pub const min_compatible_language_abi_version: u32 = 13;
+
 pub const c = struct {
     pub const TSLanguage = opaque {};
     pub const TSParser = opaque {};
@@ -59,6 +63,7 @@ pub const c = struct {
     pub extern fn ts_parser_new() *TSParser;
     pub extern fn ts_parser_delete(self: *TSParser) void;
     pub extern fn ts_parser_set_language(self: *TSParser, language: *const TSLanguage) bool;
+    pub extern fn ts_language_abi_version(self: *const TSLanguage) u32;
     pub extern fn ts_parser_parse_string(
         self: *TSParser,
         old_tree: ?*const TSTree,
@@ -68,6 +73,8 @@ pub const c = struct {
     pub extern fn ts_tree_delete(self: *TSTree) void;
     pub extern fn ts_tree_root_node(self: *const TSTree) TSNode;
     pub extern fn ts_tree_edit(self: *TSTree, edit: *const TSInputEdit) void;
+    pub extern fn ts_tree_get_changed_ranges(old_tree: *const TSTree, new_tree: *const TSTree, length: *u32) ?[*]TSRange;
+    pub extern fn free(ptr: ?*anyopaque) void;
     pub extern fn ts_node_type(self: TSNode) [*:0]const u8;
     pub extern fn ts_node_start_byte(self: TSNode) u32;
     pub extern fn ts_node_start_point(self: TSNode) TSPoint;
@@ -127,6 +134,15 @@ pub const Language = enum {
         };
     }
 
+    pub fn abiVersion(self: Language) u32 {
+        return c.ts_language_abi_version(self.raw());
+    }
+
+    pub fn isAbiCompatible(self: Language) bool {
+        const abi = self.abiVersion();
+        return abi >= min_compatible_language_abi_version and abi <= language_abi_version;
+    }
+
     pub fn fromExtension(ext: []const u8) ?Language {
         if (std.ascii.eqlIgnoreCase(ext, ".rs")) return .rust;
         if (std.ascii.eqlIgnoreCase(ext, ".ts")) return .typescript;
@@ -179,6 +195,19 @@ pub const Tree = struct {
 
     pub fn edit(self: *Tree, input_edit: c.TSInputEdit) void {
         c.ts_tree_edit(self.raw, &input_edit);
+    }
+
+    pub fn changedRanges(self: *const Tree, allocator: std.mem.Allocator, new_tree: *const Tree) ![]c.TSRange {
+        var len: u32 = 0;
+        const raw_ranges = c.ts_tree_get_changed_ranges(self.raw, new_tree.raw, &len) orelse {
+            if (len == 0) return &[_]c.TSRange{};
+            return error.OutOfMemory;
+        };
+        defer c.free(raw_ranges);
+
+        const ranges = try allocator.alloc(c.TSRange, len);
+        @memcpy(ranges, raw_ranges[0..len]);
+        return ranges;
     }
 };
 
@@ -351,6 +380,29 @@ test "Parser parses each supported grammar" {
     try expectParsedNode(.tsx, "<div />");
     try expectParsedNode(.python, "x = 1\n");
     try expectParsedNode(.go, "package main\nfunc main() {}\n");
+}
+
+test "Tree.changedRanges reports incremental structural edits" {
+    var parser = Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    const before = "function value() { return 1; }";
+    const after = "function value() { const next = 2; return next; }";
+
+    var old_tree = parser.parseString(before) orelse return error.ParseFailed;
+    defer old_tree.deinit();
+
+    var edited_tree = old_tree;
+    const incremental = @import("../incremental.zig");
+    edited_tree.edit(try incremental.makeInputEditBetween(before, after));
+
+    var new_tree = parser.parseStringWithOld(after, &edited_tree) orelse return error.ParseFailed;
+    defer new_tree.deinit();
+
+    const ranges = try edited_tree.changedRanges(std.testing.allocator, &new_tree);
+    defer std.testing.allocator.free(ranges);
+    try std.testing.expect(ranges.len > 0);
 }
 
 test "TypeScript query finds identifier capture" {

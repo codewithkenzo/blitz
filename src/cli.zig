@@ -20,7 +20,8 @@ pub fn printHelp(w: *Writer) Writer.Error!void {
         \\    batch-edit <file> --edits -                 Multi-hunk edit from JSON stdin
         \\    rename <file> <old> <new> [--dry-run]       AST-verified rename in one file
         \\    undo <file>                                 Revert last backup
-        \\    apply --edit - [--json]                     Structured JSON edit IR
+        \\    apply --edit - [--json] [--route auto|force-blitz|force-core|explain]
+        \\                                                Structured JSON edit IR
         \\    doctor                                      Report version + supported grammars
         \\    --version                                   Print version
         \\    --help                                      Print this help
@@ -41,7 +42,7 @@ pub fn runDoctor(w: *Writer) Writer.Error!void {
         \\blitz doctor
         \\  version:     0.1.0-alpha.10
         \\  stage:       v0.1 alpha
-        \\  tree-sitter: linked
+        \\  tree-sitter: linked (runtime v0.26.9, abi 15, min-compatible 13)
         \\  commands:    read, edit, batch-edit, rename, undo, apply, doctor
         \\
     );

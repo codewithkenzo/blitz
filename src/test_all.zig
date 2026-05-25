@@ -13,6 +13,7 @@ const cmd_undo = @import("cmd_undo.zig");
 const edit_support = @import("edit_support.zig");
 const fallback = @import("fallback.zig");
 const incremental = @import("incremental.zig");
+const line_index = @import("line_index.zig");
 const lock = @import("lock.zig");
 const main = @import("main.zig");
 const metrics = @import("metrics.zig");
@@ -35,6 +36,7 @@ test "import module tests" {
     _ = edit_support;
     _ = fallback;
     _ = incremental;
+    _ = line_index;
     _ = lock;
     _ = main;
     _ = metrics;

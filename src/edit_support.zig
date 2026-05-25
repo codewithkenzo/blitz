@@ -4,6 +4,7 @@ const ast = @import("ast.zig");
 const bindings = @import("tree_sitter/bindings.zig");
 const grammar_config = @import("grammar_config.zig");
 const incremental = @import("incremental.zig");
+const line_index = @import("line_index.zig");
 const splice = @import("splice.zig");
 
 pub const EditMode = enum {
@@ -127,6 +128,50 @@ pub fn validateEditedSourceIncremental(
     var new_tree = parser.parseStringWithOld(next_source, old_tree) orelse return error.ParseFailed;
     defer new_tree.deinit();
     if (new_tree.rootNode().isNull() or new_tree.rootNode().hasError()) return error.ParseFailed;
+}
+
+pub fn validateSingleRangeEditIncremental(
+    allocator: std.mem.Allocator,
+    parser: *bindings.Parser,
+    old_tree: *bindings.Tree,
+    original_source: []const u8,
+    next_source: []const u8,
+    edit_start: usize,
+    edit_end: usize,
+    replacement: []const u8,
+) !void {
+    var index = try line_index.LineIndex.init(allocator, original_source);
+    defer index.deinit();
+    const input_edit = try incremental.makeInputEditWithLineIndex(index, replacement, edit_start, edit_end);
+    old_tree.edit(input_edit);
+
+    var new_tree = parser.parseStringWithOld(next_source, old_tree) orelse return error.ParseFailed;
+    defer new_tree.deinit();
+    if (new_tree.rootNode().isNull() or new_tree.rootNode().hasError()) return error.ParseFailed;
+
+    const ranges = try old_tree.changedRanges(allocator, &new_tree);
+    defer allocator.free(ranges);
+    if (!changedRangesWithinEnvelope(ranges, edit_start, edit_end, replacement.len, original_source.len, next_source.len)) return error.ChangedRangesTooBroad;
+}
+
+fn changedRangesWithinEnvelope(
+    ranges: []const bindings.c.TSRange,
+    edit_start: usize,
+    edit_end: usize,
+    replacement_len: usize,
+    original_len: usize,
+    next_len: usize,
+) bool {
+    _ = original_len;
+    const new_end = edit_start + replacement_len;
+    const margin: usize = 4096;
+    const lower = edit_start -| margin;
+    const upper = @min(next_len, @max(edit_end, new_end) +| margin);
+    for (ranges) |range| {
+        if (range.start_byte < lower) return false;
+        if (range.end_byte > upper) return false;
+    }
+    return true;
 }
 
 pub fn commentStylesFor(language: bindings.Language) []const []const u8 {
