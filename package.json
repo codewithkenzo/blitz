@@ -30,6 +30,7 @@
   "scripts": {
     "bench": "bun bench/run.ts",
     "bench:llm": "bun bench/llm-tokens.ts",
+    "bench:pi-local": "bun bench/pi-matrix.ts",
     "bench:large": "bun bench/deep-large-symbol.ts",
     "bench:small-target": "bun bench/deep-small-target.ts",
     "smoke:mcp": "bun scripts/mcp-smoke.ts",
@@ -44,6 +45,7 @@
     "pi-agent"
   ],
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "tiktoken": "^1.0.22"
   }
 }

@@ -5,11 +5,33 @@
     "": {
       "name": "@codewithkenzo/blitz-bench",
       "devDependencies": {
+        "@types/node": "^24.10.1",
         "tiktoken": "^1.0.22",
+      },
+      "optionalDependencies": {
+        "@codewithkenzo/blitz-darwin-arm64": "0.1.0-alpha.10",
+        "@codewithkenzo/blitz-darwin-x64": "0.1.0-alpha.10",
+        "@codewithkenzo/blitz-linux-arm64-musl": "0.1.0-alpha.10",
+        "@codewithkenzo/blitz-linux-x64-musl": "0.1.0-alpha.10",
+        "@codewithkenzo/blitz-windows-x64": "0.1.0-alpha.10",
       },
     },
   },
   "packages": {
+    "@codewithkenzo/blitz-darwin-arm64": ["@codewithkenzo/blitz-darwin-arm64@0.1.0-alpha.10", "", { "os": "darwin", "cpu": "arm64" }, "sha512-zd/WuIl+2pKOCYULozOC0RmcG4Y8XSqs72W2fQPee4d3E3DCuHu0ahZA+V2s/i6vGxvBypUDXX7IaGn42TYqWA=="],
+
+    "@codewithkenzo/blitz-darwin-x64": ["@codewithkenzo/blitz-darwin-x64@0.1.0-alpha.10", "", { "os": "darwin", "cpu": "x64" }, "sha512-4koSF6rp0K1w8lE+iGf2m8JnRuMdV5+7sgpVPWdH9cQBCE1zQKGRLPMyCmf6d4OJL1NOmLbS6MF/s6Whmi1Egw=="],
+
+    "@codewithkenzo/blitz-linux-arm64-musl": ["@codewithkenzo/blitz-linux-arm64-musl@0.1.0-alpha.10", "", { "os": "linux", "cpu": "arm64" }, "sha512-0WIHLxz2MZKo+5RNDq+fLPARx9YaPZh+HJei+Pfet2TDuBmHFlrP/gRuv1wrhd3hghhMh3ZgmYJzt17nmXLoNQ=="],
+
+    "@codewithkenzo/blitz-linux-x64-musl": ["@codewithkenzo/blitz-linux-x64-musl@0.1.0-alpha.10", "", { "os": "linux", "cpu": "x64" }, "sha512-rYAgOamZ1W7tBxAen9eq7VhAxCqx2+9dzqr8xWKZCDSEGRAwWMELz0ktkna/yf0WX02V3ZLmTrNiW8ots/KuvA=="],
+
+    "@codewithkenzo/blitz-windows-x64": ["@codewithkenzo/blitz-windows-x64@0.1.0-alpha.10", "", { "os": "win32", "cpu": "x64" }, "sha512-GXbt5rQNpKxRd1XCZIYmJ1j8E2542x8wIuvQyu/bG1VRh3M9c4u69uco7kl5TKjzNZVBWDgaH+3wOqvsPVPu7w=="],
+
+    "@types/node": ["@types/node@24.12.4", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA=="],
+
     "tiktoken": ["tiktoken@1.0.22", "", {}, "sha512-PKvy1rVF1RibfF3JlXBSP0Jrcw2uq3yXdgcEXtKTYn3QJ/cBRBHDnrJ5jHky+MENZ6DIPwNUGWpkVx+7joCpNA=="],
+
+    "undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
   }
 }

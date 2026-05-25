@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Route-aware authentic Pi-driven token matrix bench.
+ * Route-aware authentic local Pi-driven token matrix bench.
  *
  * For each fixture, runs `pi -p` in two isolated configurations:
  *   core lane:  --no-extensions --no-skills --no-context-files --no-prompt-templates --tools edit
@@ -16,20 +16,46 @@
  *     fastedit-style payload comparison
  *
  * Run:
- *   bun bench/llm-pi.ts
- *   bun bench/llm-pi.ts --model claude-haiku-4-5 --iters 1
+ *   bun bench/pi-matrix.ts --iters 1
+ *   bun bench/pi-matrix.ts --case medium-10k --lane blitz --timeout-ms 120000
+ *
+ * Syntax check note: do not use `bun --check bench/pi-matrix.ts` here; in some
+ * Bun versions that still executes the script. Use `bun build bench/pi-matrix.ts
+ * --target=bun --outfile=/tmp/pi-matrix-check.js` for a parse/type-ish smoke
+ * without running provider benchmarks.
  */
 
-import { readFile, writeFile, readdir, mkdtemp, rm, mkdir } from "node:fs/promises";
+import {
+	readFile,
+	writeFile,
+	readdir,
+	mkdtemp,
+	rm,
+	mkdir,
+	copyFile,
+	chmod,
+} from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join, basename, dirname } from "node:path";
+import { join, basename, dirname, resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
-const PI_BLITZ_DIST = "/home/kenzo/dev/pi-plugins-repo-kenzo/.dmux/worktrees/dmux-1777009913426-opus47/extensions/pi-blitz/dist/index.js";
-const PI_BLITZ_SKILL = "/home/kenzo/dev/pi-plugins-repo-kenzo/.dmux/worktrees/dmux-1777009913426-opus47/extensions/pi-blitz/skills/pi-blitz";
+const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
+const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
+const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
+const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
+const ALL_BLITZ_EDIT_TOOLS = [
+	"pi_blitz_replace_body_span",
+	"pi_blitz_insert_body_span",
+	"pi_blitz_wrap_body",
+	"pi_blitz_compose_body",
+	"pi_blitz_multi_body",
+	"pi_blitz_patch",
+	"pi_blitz_try_catch",
+	"pi_blitz_replace_return",
+].join(",");
 
 type Fixture = {
 	id: string;
@@ -60,6 +86,37 @@ const caseFilter = argFlag("--case", "");
 const laneFilter = argFlag("--lane", "") as Lane | "";
 const jsonOut = argFlag("--json-out", "");
 const mdOut = argFlag("--md-out", "");
+const piBin = argFlag("--pi-bin", process.env.PI_BIN ?? DEFAULT_PI_BIN);
+const extension = argFlag(
+	"--extension",
+	process.env.PI_BLITZ_DIST ?? DEFAULT_PI_BLITZ_DIST,
+);
+const skill = argFlag(
+	"--skill",
+	process.env.PI_BLITZ_SKILL ?? DEFAULT_PI_BLITZ_SKILL,
+);
+const keepTemp = argv.includes("--keep-temp");
+const runner = argFlag("--runner", "spawn") as "spawn" | "tmux";
+if (runner !== "spawn" && runner !== "tmux") {
+	throw new Error(`invalid --runner ${runner}; expected spawn or tmux`);
+}
+const runRootArg = argFlag("--run-root", "");
+const runStamp = new Date().toISOString().replace(/[:.]/g, "-");
+const runRoot =
+	runner === "tmux"
+		? runRootArg || join(REPO_ROOT, "reports/pi-tmux-runs", runStamp)
+		: runRootArg;
+const tmuxSession = `pi-bench-${runStamp}`;
+const tokScaleRequired = argv.includes("--tokscale");
+const tokScaleDisabled = argv.includes("--no-tokscale");
+if (tokScaleRequired && tokScaleDisabled) {
+	throw new Error("pass only one of --tokscale or --no-tokscale");
+}
+const tokScaleMode: "required" | "attempt" | "disabled" = tokScaleRequired
+	? "required"
+	: tokScaleDisabled
+		? "disabled"
+		: "attempt";
 
 const fixtureDir = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -71,7 +128,11 @@ Goal: change the body of the smallTarget function so it returns "hello " followe
 Original file contents:
 ${src}`;
 
-const buildHugeIntent = (filePath: string, src: string, symbol = "hugeCompute"): string =>
+const buildHugeIntent = (
+	filePath: string,
+	src: string,
+	symbol = "hugeCompute",
+): string =>
 	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
 
 Goal: change the final return statement of the ${symbol} function from \`return total;\` to \`return total + 1;\`. Leave every other line unchanged.
@@ -79,7 +140,11 @@ Goal: change the final return statement of the ${symbol} function from \`return 
 Original file contents:
 ${src}`;
 
-const buildWrapIntent = (filePath: string, src: string, symbol = "mediumCompute"): string =>
+const buildWrapIntent = (
+	filePath: string,
+	src: string,
+	symbol = "mediumCompute",
+): string =>
 	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
 
 Goal: wrap the entire body of the ${symbol} function in a try/catch. Preserve every existing statement inside the try block unchanged. In the catch block, call console.error(error); then throw error.
@@ -87,7 +152,11 @@ Goal: wrap the entire body of the ${symbol} function in a try/catch. Preserve ev
 Original file contents:
 ${src}`;
 
-const buildComposeIntent = (filePath: string, src: string, symbol = "mediumCompute"): string =>
+const buildComposeIntent = (
+	filePath: string,
+	src: string,
+	symbol = "mediumCompute",
+): string =>
 	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
 
 Goal: update ${symbol} with two preserved islands and small structural edits:
@@ -95,6 +164,19 @@ Goal: update ${symbol} with two preserved islands and small structural edits:
 2) before return, add an early return when total is negative.
 
 Preserve every original arithmetic statement exactly. Do not rewrite unchanged lines.
+
+Original file contents:
+${src}`;
+
+const buildInsertIntent = (
+	filePath: string,
+	src: string,
+	symbol = "mediumCompute",
+): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
+
+Goal: in ${symbol}, insert this guard immediately after \`let total = seed;\`:
+\`if (!Number.isFinite(total)) { throw new RangeError("seed must be finite"); }\`
 
 Original file contents:
 ${src}`;
@@ -121,10 +203,23 @@ Goal: make three edits in the same file:
 Original file contents:
 ${src}`;
 
-const buildSemanticIntent = (filePath: string, src: string, goal: string): string =>
+const buildSemanticIntent = (
+	filePath: string,
+	src: string,
+	goal: string,
+): string =>
 	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once. Use the smallest valid tool-call arguments; do not repeat unchanged code.
 
 Goal: ${goal}
+
+Original file contents:
+${src}`;
+
+const buildReadmeIntent = (filePath: string, src: string): string =>
+	`Apply this change to the Markdown file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+
+Goal: under the marker \`<!-- benchmark-smoke-list -->\`, add this bullet before the existing bullet:
+\`- Confirm README smoke path stays cheap.\`
 
 Original file contents:
 ${src}`;
@@ -153,7 +248,7 @@ const FIXTURES: Fixture[] = [
 		intent: (p: string) => buildWrapIntent(p, mediumSrc, "mediumCompute"),
 		expectedFile: "",
 		blitzGuidance:
-			"For this edit, use compact body-marker shape: `  try {\\n    let total = seed;\\n    // ... existing code ...\\n    return total;\\n  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }`.",
+			'For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.',
 		recommendedLane: "blitz",
 		className: "medium_wrap_body",
 	},
@@ -164,6 +259,14 @@ const FIXTURES: Fixture[] = [
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "compose_preserve_islands",
+	},
+	{
+		id: "medium-10k/insert-body-span",
+		relPath: "medium.ts",
+		intent: (p: string) => buildInsertIntent(p, mediumSrc, "mediumCompute"),
+		expectedFile: "",
+		recommendedLane: "blitz",
+		className: "insert_body_span",
 	},
 	{
 		id: "multi/three-body-ops",
@@ -192,7 +295,12 @@ const FIXTURES: Fixture[] = [
 	{
 		id: "semantic/async-try-catch",
 		relPath: "semantic.ts",
-		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "wrap the entire body of async function loadUser in try/catch. Preserve all await statements unchanged. Catch should call console.error(error); then throw error."),
+		intent: (p: string) =>
+			buildSemanticIntent(
+				p,
+				semanticSrc,
+				"wrap the entire body of async function loadUser in try/catch. Preserve all await statements unchanged. Catch should call console.error(error); then throw error on the next line.",
+			),
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "async_try_catch",
@@ -200,7 +308,12 @@ const FIXTURES: Fixture[] = [
 	{
 		id: "semantic/class-method-try-catch",
 		relPath: "semantic.ts",
-		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "wrap the entire body of class method renderScore in try/catch. Catch should call console.error(error); then throw error."),
+		intent: (p: string) =>
+			buildSemanticIntent(
+				p,
+				semanticSrc,
+				"wrap the entire body of class method renderScore in try/catch. Catch should call console.error(error); then throw error on the next line.",
+			),
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "class_method_try_catch",
@@ -208,7 +321,12 @@ const FIXTURES: Fixture[] = [
 	{
 		id: "semantic/arrow-replace-return",
 		relPath: "semantic.ts",
-		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "in arrow function pickLabel, replace the last return expression with \"unknown\". Leave the earlier active return unchanged."),
+		intent: (p: string) =>
+			buildSemanticIntent(
+				p,
+				semanticSrc,
+				'in arrow function pickLabel, replace the last return expression with "unknown". Leave the earlier active return unchanged.',
+			),
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "arrow_replace_return",
@@ -216,7 +334,12 @@ const FIXTURES: Fixture[] = [
 	{
 		id: "semantic/nested-return-occurrence",
 		relPath: "semantic.ts",
-		intent: (p: string) => buildSemanticIntent(p, semanticSrc, "in function classify, replace only the last return expression with \"other\". Leave the negative and zero returns unchanged."),
+		intent: (p: string) =>
+			buildSemanticIntent(
+				p,
+				semanticSrc,
+				'in function classify, replace only the last return expression with "other". Leave the negative and zero returns unchanged.',
+			),
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "nested_return_occurrence",
@@ -224,10 +347,24 @@ const FIXTURES: Fixture[] = [
 	{
 		id: "semantic/tsx-replace-return",
 		relPath: "component.tsx",
-		intent: (p: string) => buildSemanticIntent(p, componentSrc, "in function StatusBadge, replace the return expression with <strong className=\"badge\">{label.toUpperCase()}</strong>."),
+		intent: (p: string) =>
+			buildSemanticIntent(
+				p,
+				componentSrc,
+				'in function StatusBadge, replace the return expression with <strong className="badge">{label.toUpperCase()}</strong>.',
+			),
 		expectedFile: "",
 		recommendedLane: "blitz",
 		className: "tsx_replace_return",
+	},
+	{
+		id: "readme/core-smoke",
+		relPath: "readme.md",
+		intent: (p: string) => buildReadmeIntent(p, readmeSrc),
+		expectedFile: "",
+		lanePolicy: "core-only",
+		recommendedLane: "core",
+		className: "markdown_core_only",
 	},
 ];
 
@@ -241,7 +378,10 @@ const smallExpected = smallSrc.replace(
 }`,
 );
 const mediumSrc = await readFile(join(fixtureDir, "medium.ts"), "utf8");
-const mediumExpected = mediumSrc.replace("  return total;", "  return total + 1;");
+const mediumExpected = mediumSrc.replace(
+	"  return total;",
+	"  return total + 1;",
+);
 const mediumComposeExpected = (() => {
 	const withSeedGuard = mediumSrc.replace(
 		"  let total = seed;\n",
@@ -252,6 +392,10 @@ const mediumComposeExpected = (() => {
 		"  if (total < 0) {\n    return 0;\n  }\n\n  return total;\n",
 	);
 })();
+const mediumInsertExpected = mediumSrc.replace(
+	"  let total = seed;\n",
+	`  let total = seed;\n  if (!Number.isFinite(total)) {\n    throw new RangeError("seed must be finite");\n  }\n`,
+);
 const mediumBody = mediumSrc.slice(
 	mediumSrc.indexOf("{\n") + 2,
 	mediumSrc.lastIndexOf("\n}"),
@@ -260,12 +404,18 @@ const mediumWrapExpected = `function mediumCompute(seed: number): number {\n  tr
 const multiSrc = await readFile(join(fixtureDir, "multi.ts"), "utf8");
 const multiExpected = multiSrc
 	.replace("  return base;", "  return base + 1;")
-	.replace("  const marker = value;\n", "  const marker = value;\n  const markerUpper = value.toUpperCase();\n")
+	.replace(
+		"  const marker = value;\n",
+		"  const marker = value;\n  const markerUpper = value.toUpperCase();\n",
+	)
 	.replace(
 		`export function risky(value: number): number {\n  return value;\n}`,
 		`export function risky(value: number): number {\n  try {\n    return value;\n  } catch (error) {\n    throw error;\n  }\n}`,
 	);
-const multiLargeSrc = await readFile(join(fixtureDir, "multi-large.ts"), "utf8");
+const multiLargeSrc = await readFile(
+	join(fixtureDir, "multi-large.ts"),
+	"utf8",
+);
 const multiLargeBody = multiLargeSrc.slice(
 	multiLargeSrc.indexOf("{\n") + 2,
 	multiLargeSrc.indexOf("\n}\n\nexport function auditEvent"),
@@ -279,7 +429,10 @@ const multiLargeExpected = multiLargeSrc
 		`function mediumCompute(seed: number): number {\n${multiLargeBody}\n}`,
 		`function mediumCompute(seed: number): number {\n  try {\n${multiLargeIndented}\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}`,
 	)
-	.replace("  const normalized = event.trim();\n", "  const normalized = event.trim();\n  const tagged = `[audit] ${normalized}`;\n")
+	.replace(
+		"  const normalized = event.trim();\n",
+		"  const normalized = event.trim();\n  const tagged = `[audit] ${normalized}`;\n",
+	)
 	.replace("  return status;", "  return status.toUpperCase();");
 const hugeSrc = await readFile(join(fixtureDir, "huge.ts"), "utf8");
 const hugeExpected = hugeSrc.replace("  return total;", "  return total + 1;");
@@ -316,36 +469,62 @@ const classTryCatchExpected = semanticSrc.replace(
     }
   }`,
 );
-const arrowReturnExpected = semanticSrc.replace(`  return "idle";`, `  return "unknown";`);
-const nestedReturnExpected = semanticSrc.replace(`  return "positive";`, `  return "other";`);
+const arrowReturnExpected = semanticSrc.replace(
+	`  return "idle";`,
+	`  return "unknown";`,
+);
+const nestedReturnExpected = semanticSrc.replace(
+	`  return "positive";`,
+	`  return "other";`,
+);
 const componentSrc = await readFile(join(fixtureDir, "component.tsx"), "utf8");
 const componentReturnExpected = componentSrc.replace(
 	`  return <span className="badge">{label}</span>;`,
 	`  return <strong className="badge">{label.toUpperCase()}</strong>;`,
+);
+const readmeSrc = await readFile(join(fixtureDir, "readme.md"), "utf8");
+const readmeExpected = readmeSrc.replace(
+	"<!-- benchmark-smoke-list -->\n",
+	"<!-- benchmark-smoke-list -->\n- Confirm README smoke path stays cheap.\n",
 );
 
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
 FIXTURES[3]!.expectedFile = mediumComposeExpected;
-FIXTURES[4]!.expectedFile = multiExpected;
-FIXTURES[5]!.expectedFile = multiLargeExpected;
-FIXTURES[6]!.expectedFile = hugeExpected;
-FIXTURES[7]!.expectedFile = asyncTryCatchExpected;
-FIXTURES[8]!.expectedFile = classTryCatchExpected;
-FIXTURES[9]!.expectedFile = arrowReturnExpected;
-FIXTURES[10]!.expectedFile = nestedReturnExpected;
-FIXTURES[11]!.expectedFile = componentReturnExpected;
-
-const isLineLike = (a: string, b: string): boolean => a.trim() === b.trim();
+FIXTURES[4]!.expectedFile = mediumInsertExpected;
+FIXTURES[5]!.expectedFile = multiExpected;
+FIXTURES[6]!.expectedFile = multiLargeExpected;
+FIXTURES[7]!.expectedFile = hugeExpected;
+FIXTURES[8]!.expectedFile = asyncTryCatchExpected;
+FIXTURES[9]!.expectedFile = classTryCatchExpected;
+FIXTURES[10]!.expectedFile = arrowReturnExpected;
+FIXTURES[11]!.expectedFile = nestedReturnExpected;
+FIXTURES[12]!.expectedFile = componentReturnExpected;
+FIXTURES[13]!.expectedFile = readmeExpected;
 
 type Lane = "core" | "blitz";
+type Route = "core_edit" | "ast_narrow" | "ast_batch";
+type RouteReasonCode = "lane_core_edit" | "lane_blitz_structured_tool";
+
+const routeForLane = (
+	lane: Lane,
+	fx?: Fixture,
+): { route: Route; routeReasonCode: RouteReasonCode } =>
+	lane === "core"
+		? { route: "core_edit", routeReasonCode: "lane_core_edit" }
+		: {
+				route:
+					fx?.id.includes("multi/") || fx?.id.includes("patch")
+						? "ast_batch"
+						: "ast_narrow",
+				routeReasonCode: "lane_blitz_structured_tool",
+			};
 
 const piArgs = (
 	lane: Lane,
 	prompt: string,
 	sessionDir: string,
-	cwd: string,
 	toolsOverride?: string,
 ): string[] => {
 	const common = [
@@ -363,28 +542,208 @@ const piArgs = (
 		sessionDir,
 	];
 	if (lane === "core") {
-		return [...common, "--no-skills", "--no-extensions", "--tools", "edit", prompt];
+		return [
+			...common,
+			"--no-skills",
+			"--no-extensions",
+			"--tools",
+			"edit",
+			prompt,
+		];
 	}
 	return [
 		...common,
 		"--no-extensions",
 		"--extension",
-		PI_BLITZ_DIST,
+		extension,
 		"--skill",
-		PI_BLITZ_SKILL,
+		skill,
 		"--tools",
-		toolsOverride ?? "pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return",
+		toolsOverride ?? ALL_BLITZ_EDIT_TOOLS,
 		prompt,
 	];
 };
 
-const runPi = (lane: Lane, prompt: string, cwd: string, toolsOverride?: string) => {
+type PiRunResult = {
+	ms: number;
+	status: number;
+	stdout: string;
+	stderr: string;
+	sessionDir: string;
+	timedOut: boolean;
+	runDir?: string;
+	commandFile?: string;
+	stdoutLog?: string;
+	stderrLog?: string;
+	exitFile?: string;
+	workDir?: string;
+};
+
+const runPiSpawn = (
+	lane: Lane,
+	prompt: string,
+	cwd: string,
+	toolsOverride?: string,
+): PiRunResult => {
 	const sessionDir = join(cwd, `sessions-${lane}`);
-	const args = piArgs(lane, prompt, sessionDir, cwd, toolsOverride);
+	const args = piArgs(lane, prompt, sessionDir, toolsOverride);
 	const t0 = performance.now();
-	const r = spawnSync("pi", args, { cwd, encoding: "utf8", maxBuffer: 200 * 1024 * 1024, timeout: timeoutMs, killSignal: "SIGTERM" });
+	const env = {
+		...process.env,
+		PATH: `${BLITZ_BIN_DIR}:${process.env.PATH ?? ""}`,
+	};
+	const r = spawnSync(piBin, args, {
+		cwd,
+		env,
+		encoding: "utf8",
+		maxBuffer: 200 * 1024 * 1024,
+		timeout: timeoutMs,
+		killSignal: "SIGTERM",
+	});
 	const ms = performance.now() - t0;
-	return { ms, status: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "", sessionDir, timedOut: r.error?.name === "Error" && /ETIMEDOUT/.test(String(r.error)) };
+	return {
+		ms,
+		status: r.status ?? -1,
+		stdout: r.stdout ?? "",
+		stderr: r.stderr ?? "",
+		sessionDir,
+		timedOut: r.error?.name === "Error" && /ETIMEDOUT/.test(String(r.error)),
+	};
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const safeName = (value: string) => value.replace(/[^a-zA-Z0-9_.-]+/g, "_");
+const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
+
+const runPiTmux = async (
+	lane: Lane,
+	prompt: string,
+	workDir: string,
+	fx: Fixture,
+	iter: number,
+	toolsOverride?: string,
+): Promise<PiRunResult> => {
+	const runDir = resolve(dirname(workDir));
+	const workDirAbs = resolve(workDir);
+	const sessionDir = join(runDir, "sessions");
+	const promptFile = join(runDir, "prompt.md");
+	const commandFile = join(runDir, "command.sh");
+	const stdoutLog = join(runDir, "stdout.log");
+	const stderrLog = join(runDir, "stderr.log");
+	const exitFile = join(runDir, "exit.json");
+	await mkdir(sessionDir, { recursive: true });
+	await writeFile(promptFile, prompt, "utf8");
+	await writeFile(stdoutLog, "", "utf8");
+	await writeFile(stderrLog, "", "utf8");
+	const args = piArgs(lane, `@${promptFile}`, sessionDir, toolsOverride);
+	const tmuxArgs = args.map((arg) => (arg === "--print" ? "-p" : arg));
+	const command = [piBin, ...tmuxArgs].map(shellQuote).join(" ");
+	await writeFile(
+		commandFile,
+		`#!/usr/bin/env bash
+set -u
+RUN_DIR=${shellQuote(runDir)}
+STDOUT_LOG="$RUN_DIR/stdout.log"
+STDERR_LOG="$RUN_DIR/stderr.log"
+EXIT_FILE="$RUN_DIR/exit.json"
+export PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"
+cd ${shellQuote(workDirAbs)}
+start_ms=$(date +%s%3N)
+status=0
+{
+	${command}
+} > >(tee "$STDOUT_LOG") 2> >(tee "$STDERR_LOG" >&2) || status=$?
+end_ms=$(date +%s%3N)
+wall_ms=$((end_ms - start_ms))
+printf '{"status":%s,"wallMs":%s,"timedOut":false}\n' "$status" "$wall_ms" > "$EXIT_FILE.tmp"
+mv "$EXIT_FILE.tmp" "$EXIT_FILE"
+exit "$status"
+`,
+		"utf8",
+	);
+	await chmod(commandFile, 0o755);
+	await mkdir(join(runDir, "work"), { recursive: true });
+	await mkdir(join(runDir, "sessions"), { recursive: true });
+
+	const window = safeName(`${fx.id}-${lane}-${iter}`).slice(0, 80) || "run";
+	const hasSession = spawnSync("tmux", ["has-session", "-t", tmuxSession], {
+		encoding: "utf8",
+	});
+	if (hasSession.status === 0) {
+		spawnSync(
+			"tmux",
+			["new-window", "-t", tmuxSession, "-n", window, commandFile],
+			{ encoding: "utf8" },
+		);
+	} else {
+		spawnSync(
+			"tmux",
+			["new-session", "-d", "-s", tmuxSession, "-n", window, commandFile],
+			{ encoding: "utf8" },
+		);
+		spawnSync(
+			"tmux",
+			["set-option", "-t", tmuxSession, "remain-on-exit", "on"],
+			{ encoding: "utf8" },
+		);
+	}
+	spawnSync(
+		"tmux",
+		[
+			"set-window-option",
+			"-t",
+			`${tmuxSession}:${window}`,
+			"remain-on-exit",
+			"on",
+		],
+		{ encoding: "utf8" },
+	);
+	console.error(`tmux attach -t ${tmuxSession} # window ${window}`);
+
+	const t0 = performance.now();
+	while (!existsSync(exitFile) && performance.now() - t0 < timeoutMs) {
+		await sleep(500);
+	}
+	if (!existsSync(exitFile)) {
+		const ms = performance.now() - t0;
+		await writeFile(
+			exitFile,
+			JSON.stringify({ status: -1, wallMs: ms, timedOut: true }, null, 2),
+		);
+		return {
+			ms,
+			status: -1,
+			stdout: await readFile(stdoutLog, "utf8").catch(() => ""),
+			stderr: await readFile(stderrLog, "utf8").catch(() => ""),
+			sessionDir,
+			timedOut: true,
+			runDir,
+			commandFile,
+			stdoutLog,
+			stderrLog,
+			exitFile,
+			workDir,
+		};
+	}
+	const exit = JSON.parse(await readFile(exitFile, "utf8")) as {
+		status: number;
+		wallMs: number;
+		timedOut?: boolean;
+	};
+	return {
+		ms: exit.wallMs,
+		status: exit.status,
+		stdout: await readFile(stdoutLog, "utf8").catch(() => ""),
+		stderr: await readFile(stderrLog, "utf8").catch(() => ""),
+		sessionDir,
+		timedOut: Boolean(exit.timedOut),
+		runDir,
+		commandFile,
+		stdoutLog,
+		stderrLog,
+		exitFile,
+		workDir,
+	};
 };
 
 const findSessionFile = async (sessionDir: string): Promise<string> => {
@@ -404,10 +763,20 @@ const findSessionFile = async (sessionDir: string): Promise<string> => {
 type Usage = {
 	input: number;
 	output: number;
+	inputTokens?: number;
+	outputTokens?: number;
+	input_tokens?: number;
+	output_tokens?: number;
 	cacheRead?: number;
 	cacheWrite?: number;
+	cache_read?: number;
+	cache_write?: number;
+	cachedInputTokens?: number;
+	cacheCreationInputTokens?: number;
+	cached_input_tokens?: number;
+	cache_creation_input_tokens?: number;
 	totalTokens?: number;
-	cost?: { total?: number };
+	cost?: { total?: number } | number;
 };
 
 type ToolCallEntry = {
@@ -429,6 +798,13 @@ type ParsedSession = {
 
 const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 	readFile(file, "utf8").then((raw) => {
+		const usageNum = (u: Usage, keys: (keyof Usage)[]): number => {
+			for (const key of keys) {
+				const value = u[key];
+				if (typeof value === "number") return value;
+			}
+			return 0;
+		};
 		let turnCount = 0;
 		let totalOutputTokens = 0;
 		let totalInputTokens = 0;
@@ -445,17 +821,37 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 			turnCount += 1;
 			const u: Usage | undefined = j.message?.usage;
 			if (u) {
-				totalOutputTokens += u.output ?? 0;
-				totalInputTokens += u.input ?? 0;
-				totalCacheRead += u.cacheRead ?? 0;
-				totalCacheWrite += u.cacheWrite ?? 0;
-				totalCost += u.cost?.total ?? 0;
+				totalOutputTokens += usageNum(u, [
+					"output",
+					"outputTokens",
+					"output_tokens",
+				]);
+				totalInputTokens += usageNum(u, [
+					"input",
+					"inputTokens",
+					"input_tokens",
+				]);
+				totalCacheRead += usageNum(u, [
+					"cacheRead",
+					"cache_read",
+					"cachedInputTokens",
+					"cached_input_tokens",
+				]);
+				totalCacheWrite += usageNum(u, [
+					"cacheWrite",
+					"cache_write",
+					"cacheCreationInputTokens",
+					"cache_creation_input_tokens",
+				]);
+				totalCost += typeof u.cost === "number" ? u.cost : (u.cost?.total ?? 0);
 			}
 			for (const part of j.message?.content ?? []) {
 				if (part?.type === "toolCall") {
 					if (
 						(lane === "core" && part.name === "edit") ||
-						(lane === "blitz" && typeof part.name === "string" && part.name.startsWith("pi_blitz_"))
+						(lane === "blitz" &&
+							typeof part.name === "string" &&
+							part.name.startsWith("pi_blitz_"))
 					) {
 						editCalls.push({ name: part.name, arguments: part.arguments });
 						editToolName = part.name;
@@ -479,16 +875,171 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 		};
 	});
 
+type TokScaleValidation = {
+	input: number | null;
+	output: number | null;
+	cacheRead: number | null;
+	cacheWrite: number | null;
+	messages: number | null;
+	cost: number | null;
+	processingTimeMs: number | null;
+	matchesParser: boolean;
+	details: string;
+};
+
 type LaneResult = {
 	lane: Lane;
 	wallMs: number;
 	session: ParsedSession;
+	tokScale: TokScaleValidation;
 	correct: boolean;
 	exitCode: number;
+	timedOut: boolean;
+	stderr: string;
+	stdout: string;
+	runDir?: string;
+	sessionDir?: string;
+	commandFile?: string;
+	stdoutLog?: string;
+	stderrLog?: string;
+	exitFile?: string;
 };
 
-const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
-	const tmp = await mkdtemp(join(tmpdir(), `pi-bench-${lane}-`));
+const emptyTokScale = (details: string): TokScaleValidation => ({
+	input: null,
+	output: null,
+	cacheRead: null,
+	cacheWrite: null,
+	messages: null,
+	cost: null,
+	processingTimeMs: null,
+	matchesParser: false,
+	details,
+});
+
+const tokScaleAvailable = () => {
+	const r = spawnSync("tokscale", ["--version"], {
+		encoding: "utf8",
+		timeout: 10_000,
+	});
+	return r.status === 0;
+};
+
+const copySessionForTokScale = async (sessionFile: string) => {
+	const home = await mkdtemp(join(tmpdir(), "pi-bench-tokscale-"));
+	const destDir = join(
+		home,
+		".pi/agent/sessions/bench",
+		basename(dirname(sessionFile)),
+	);
+	await mkdir(destDir, { recursive: true });
+	await copyFile(sessionFile, join(destDir, basename(sessionFile)));
+	return home;
+};
+
+const numberFrom = (value: unknown): number | null =>
+	typeof value === "number" && Number.isFinite(value) ? value : null;
+
+const runTokScale = async (
+	sessionFile: string,
+	parsed: ParsedSession,
+	cwd: string,
+): Promise<TokScaleValidation> => {
+	if (tokScaleMode === "disabled") return emptyTokScale("");
+	if (!tokScaleAvailable()) {
+		const details = "tokscale not found on PATH";
+		if (tokScaleMode === "required") throw new Error(details);
+		return emptyTokScale(details);
+	}
+	const home = await copySessionForTokScale(sessionFile);
+	const args = [
+		"--home",
+		home,
+		"--client",
+		"pi",
+		"--json",
+		"--light",
+		"--benchmark",
+		"--no-spinner",
+	];
+	const r = spawnSync("tokscale", args, {
+		cwd,
+		encoding: "utf8",
+		maxBuffer: 50 * 1024 * 1024,
+		timeout: 60_000,
+	});
+	if (!keepTemp) await rm(home, { recursive: true, force: true });
+	if (r.status !== 0) {
+		const details = (r.stderr || r.stdout)
+			.trim()
+			.split("\n")
+			.slice(0, 3)
+			.join(" ");
+		if (tokScaleMode === "required")
+			throw new Error(`tokscale failed: ${details}`);
+		return emptyTokScale(`tokscale failed: ${details}`);
+	}
+	let payload: Record<string, unknown>;
+	try {
+		payload = JSON.parse(r.stdout) as Record<string, unknown>;
+	} catch (error) {
+		const details = `tokscale JSON parse failed: ${String(error)}`;
+		if (tokScaleMode === "required") throw new Error(details);
+		return emptyTokScale(details);
+	}
+	const totals = {
+		input: numberFrom(payload.totalInput),
+		output: numberFrom(payload.totalOutput),
+		cacheRead: numberFrom(payload.totalCacheRead),
+		cacheWrite: numberFrom(payload.totalCacheWrite),
+		messages: numberFrom(payload.totalMessages),
+		cost: numberFrom(payload.totalCost),
+		processingTimeMs: numberFrom(payload.processingTimeMs),
+	};
+	const tokenMismatches: string[] = [];
+	const details: string[] = [];
+	const compare = (name: string, got: number | null, expected: number) => {
+		if (got === null || Math.abs(got - expected) > 0.000001) {
+			tokenMismatches.push(
+				`${name} tokscale=${got ?? "null"} parser=${expected}`,
+			);
+		}
+	};
+	compare("input", totals.input, parsed.totalInputTokens);
+	compare("output", totals.output, parsed.totalOutputTokens);
+	compare("cacheRead", totals.cacheRead, parsed.totalCacheRead);
+	compare("cacheWrite", totals.cacheWrite, parsed.totalCacheWrite);
+	compare("messages", totals.messages, parsed.turnCount);
+	if (parsed.totalCost !== 0) {
+		if (
+			totals.cost === null ||
+			Math.abs(totals.cost - parsed.totalCost) > 0.000001
+		) {
+			details.push(
+				`cost tokscale=${totals.cost ?? "null"} parser=${parsed.totalCost}`,
+			);
+		}
+	}
+	if (tokenMismatches.length && tokScaleMode === "required") {
+		throw new Error(`tokscale mismatch: ${tokenMismatches.join("; ")}`);
+	}
+	details.unshift(...tokenMismatches);
+	return {
+		...totals,
+		matchesParser: tokenMismatches.length === 0,
+		details: details.join("; "),
+	};
+};
+
+const runLane = async (
+	lane: Lane,
+	fx: Fixture,
+	iter: number,
+): Promise<LaneResult> => {
+	const tmp =
+		runner === "tmux"
+			? join(runRoot, `${safeName(fx.id)}__${lane}__${iter}`)
+			: await mkdtemp(join(tmpdir(), `pi-bench-${lane}-`));
 	const targetDir = join(tmp, "work");
 	await mkdir(targetDir, { recursive: true });
 	const targetPath = join(targetDir, fx.relPath);
@@ -497,30 +1048,57 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 
 	let prompt = fx.intent(targetPath);
 	if (lane === "blitz") {
-		let guidance = "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+		let guidance =
+			"Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
 		if (fx.id.includes("wrap-body")) {
-			guidance += " For this edit, call `pi_blitz_wrap_body` with symbol `mediumCompute`, before `\\n  try {`, after `  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n`, and indentKeptBodyBy 2.";
+			guidance +=
+				' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
-				" For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: \"only\" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\\"seed must be finite\\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: \"last\" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: \"last\" } } ].";
+				' For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: "only" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\"seed must be finite\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: "last" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: "last" } } ].';
+		} else if (fx.id.includes("insert-body-span")) {
+			guidance +=
+				' For this edit, call `pi_blitz_insert_body_span` with symbol `mediumCompute`, anchor `let total = seed;`, position `after`, text `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError("seed must be finite");\\n  }`, occurrence `only`.';
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+			guidance +=
+				" For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
-			guidance += " For this edit, call `pi_blitz_patch` with ops [[`replace`,`adjust`,`return base;`,`return base + 1;`,`only`], [`insert_after`,`emit`,`const marker = value;`,`\n  const markerUpper = value.toUpperCase();`,`only`], [`try_catch`,`risky`,`throw error;`]].";
+			guidance +=
+				' For this edit, call `pi_blitz_multi_body`. Exact tool args JSON: {"edits":[{"symbol":"adjust","op":"replace_body_span","find":"return base;","replace":"return base + 1;","occurrence":"only"},{"symbol":"emit","op":"insert_body_span","anchor":"const marker = value;","position":"after","text":"\\n  const markerUpper = value.toUpperCase();","occurrence":"only"},{"symbol":"risky","op":"wrap_body","before":"\\n  try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}]}. JSON escapes must decode to newline characters; do not pass literal backslash-n text. Emit insert text starts with newline escape `\\n`; risky `after` MUST end with newline escape `\\n`.';
 		} else if (fx.id.includes("multi/large-structural")) {
-			guidance += " For this edit, call `pi_blitz_patch` with ops [[`try_catch`,`mediumCompute`,`console.error(error);\nthrow error;`], [`insert_after`,`auditEvent`,`const normalized = event.trim();`,`\n  const tagged = `[audit] ${normalized}`;`,`only`], [`replace_return`,`formatStatus`,`status.toUpperCase()`,`only`]].";
+			const patchArgs = JSON.stringify({
+				file: targetPath,
+				ops: [
+					["try_catch", "mediumCompute", "console.error(error);\nthrow error;"],
+					[
+						"insert_after",
+						"auditEvent",
+						"const normalized = event.trim();",
+						"\n  const tagged = `[audit] ${normalized}`;",
+						"only",
+					],
+					["replace_return", "formatStatus", "status.toUpperCase()", "only"],
+				],
+			});
+			guidance += ` For this edit, call \`pi_blitz_patch\`. Copy exact one-line tool args JSON: ${patchArgs}. Critical: insert_after text MUST start with newline escape \`\\n\` followed by two spaces.`;
 		} else if (fx.id.includes("huge-100k/marker-tail")) {
-			guidance += " For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+			guidance +=
+				" For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("semantic/async-try-catch")) {
-			guidance += " For this edit, call `pi_blitz_try_catch` with symbol `loadUser`, catchBody `console.error(error);\nthrow error;`, and indent 2.";
+			guidance +=
+				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/class-method-try-catch")) {
-			guidance += " For this edit, call `pi_blitz_try_catch` with symbol `renderScore`, catchBody `console.error(error);\nthrow error;`, and indent 2.";
+			guidance +=
+				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/arrow-replace-return")) {
-			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, expr `\"unknown\"`, occurrence `last`.";
+			guidance +=
+				' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
-			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `classify`, expr `\"other\"`, occurrence `last`.";
+			guidance +=
+				' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/tsx-replace-return")) {
-			guidance += " For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, expr `<strong className=\"badge\">{label.toUpperCase()}</strong>`, occurrence `only`.";
+			guidance +=
+				' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
 		} else if (fx.id.includes("small")) {
 			guidance += " For this edit, route to core oldText/newText.";
 		}
@@ -533,14 +1111,31 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 		"semantic/nested-return-occurrence": "pi_blitz_replace_return",
 		"semantic/tsx-replace-return": "pi_blitz_replace_return",
 	};
-	const toolsOverride = lane !== "blitz"
-		? undefined
-		: fx.id.includes("multi/large-structural")
-			? "pi_blitz_patch"
-			: semanticTools[fx.id];
-	const r = runPi(lane, prompt, targetDir, toolsOverride);
+	const toolsOverride =
+		lane !== "blitz"
+			? undefined
+			: fx.id.includes("multi/large-structural")
+				? "pi_blitz_patch"
+				: fx.id.includes("multi/three-body-ops")
+					? "pi_blitz_multi_body"
+					: fx.id.includes("insert-body-span")
+						? "pi_blitz_insert_body_span"
+						: fx.id.includes("compose-preserve-islands")
+							? "pi_blitz_compose_body"
+							: fx.id.includes("wrap-body")
+								? "pi_blitz_wrap_body"
+								: fx.id.includes("marker-tail")
+									? "pi_blitz_replace_body_span"
+									: semanticTools[fx.id];
+	const r =
+		runner === "tmux"
+			? await runPiTmux(lane, prompt, targetDir, fx, iter, toolsOverride)
+			: runPiSpawn(lane, prompt, targetDir, toolsOverride);
 	if (r.status !== 0) {
-		if (verbose) console.error(`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`);
+		if (verbose)
+			console.error(
+				`[${lane}] pi exit ${r.status}${r.timedOut ? " (timeout)" : ""}\nstderr: ${r.stderr}\nstdout: ${r.stdout}`,
+			);
 	}
 
 	const sessionFile = await findSessionFile(r.sessionDir).catch(() => "");
@@ -556,26 +1151,69 @@ const runLane = async (lane: Lane, fx: Fixture): Promise<LaneResult> => {
 		editToolName: null,
 	};
 	if (sessionFile) parsed = await parseSession(sessionFile, lane);
+	const tokScale = sessionFile
+		? await runTokScale(sessionFile, parsed, targetDir)
+		: emptyTokScale("no session jsonl");
+	if (tokScaleMode === "required" && !sessionFile) {
+		throw new Error("tokscale validation required but no session jsonl found");
+	}
 
 	const got = await readFile(targetPath, "utf8").catch(() => "");
 	const correct = got === fx.expectedFile;
 	if (!correct && verbose) console.error(`[${lane}] golden mismatch`);
 
-	if (!verbose) await rm(tmp, { recursive: true, force: true });
-	return { lane, wallMs: r.ms, session: parsed, correct, exitCode: r.status };
+	if (runner === "spawn" && !keepTemp)
+		await rm(tmp, { recursive: true, force: true });
+	return {
+		lane,
+		wallMs: r.ms,
+		session: parsed,
+		tokScale,
+		correct,
+		exitCode: r.status,
+		timedOut: r.timedOut,
+		stderr: r.stderr,
+		stdout: r.stdout,
+		runDir: r.runDir,
+		sessionDir: r.sessionDir,
+		commandFile: r.commandFile,
+		stdoutLog: r.stdoutLog,
+		stderrLog: r.stderrLog,
+		exitFile: r.exitFile,
+	};
 };
 
-const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]!;
+const median = (xs: number[]) =>
+	[...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]!;
+const medianNullable = (xs: (number | null)[]) => {
+	const numbers = xs.filter((v): v is number => v !== null);
+	return numbers.length ? median(numbers) : null;
+};
+const sumNullable = (xs: (number | null)[]) =>
+	xs.some((v) => v !== null)
+		? xs.reduce<number>((a, v) => a + (v ?? 0), 0)
+		: null;
+const formatNullable = (v: number | null, digits = 0) =>
+	v === null ? "" : v.toFixed(digits);
 const pct = (n: number) => `${n.toFixed(1)}%`;
 
 const main = async () => {
 	console.log(`# Pi-driven authentic LLM token bench`);
 	console.log(`Provider: ${provider} / Model: ${model}`);
 	console.log(`Iterations: ${iters}`);
+	console.log(`Runner: ${runner}`);
+	if (runner === "tmux") console.log(`Run root: ${runRoot}`);
 	console.log(`Timeout per Pi run: ${timeoutMs}ms`);
+	console.log(`Pi: ${piBin}`);
+	console.log(`Blitz binary PATH prepend: ${BLITZ_BIN_DIR}`);
+	console.log(`Extension: ${extension}`);
+	console.log(`Skill: ${skill}`);
+	console.log(`Tokscale validation: ${tokScaleMode}`);
 	if (caseFilter) console.log(`Case filter: ${caseFilter}`);
 	if (laneFilter) console.log(`Lane filter: ${laneFilter}`);
-	console.log(`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`);
+	console.log(
+		`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`,
+	);
 	console.log("");
 
 	type Row = {
@@ -583,18 +1221,81 @@ const main = async () => {
 		className: string;
 		recommendedLane: Lane | "";
 		lane: Lane;
+		route: Route;
+		routeReasonCode: RouteReasonCode;
+		toolName: string;
 		wallMsMedian: number;
+		inputMedian: number;
 		outputMedian: number;
+		cacheReadMedian: number;
+		cacheWriteMedian: number;
 		argsTokensMedian: number;
+		tokScaleInputMedian: number | null;
+		tokScaleOutputMedian: number | null;
+		tokScaleCacheReadMedian: number | null;
+		tokScaleCacheWriteMedian: number | null;
+		tokScaleMessagesMedian: number | null;
+		tokScaleCostSum: number | null;
+		tokScaleProcessingTimeMsMedian: number | null;
+		tokScaleTokenMatchesParser: boolean;
+		tokScaleMatchesParser: boolean;
+		tokScaleDetails: string;
 		correctRate: number;
 		costSum: number;
+		exitCodes: number[];
+		timedOut: boolean;
+		failure: string;
 	};
 	const rows: Row[] = [];
+	type RunRecord = {
+		fixture: string;
+		lane: Lane;
+		route: Route;
+		routeReasonCode: RouteReasonCode;
+		iter: number;
+		toolName: string | null;
+		wallMs: number;
+		inputTokens: number;
+		outputTokens: number;
+		cacheReadTokens: number;
+		cacheWriteTokens: number;
+		toolCallArgTokens: number;
+		cost: number;
+		tokScaleInput: number | null;
+		tokScaleOutput: number | null;
+		tokScaleCacheRead: number | null;
+		tokScaleCacheWrite: number | null;
+		tokScaleMessages: number | null;
+		tokScaleCost: number | null;
+		tokScaleProcessingTimeMs: number | null;
+		tokScaleTokenMatchesParser: boolean;
+		tokScaleMatchesParser: boolean;
+		tokScaleDetails: string;
+		correct: boolean;
+		exitCode: number;
+		timedOut: boolean;
+		failure: string;
+		runDir?: string;
+		sessionDir?: string;
+		commandFile?: string;
+		stdoutLog?: string;
+		stderrLog?: string;
+		exitFile?: string;
+	};
+	const runRecords: RunRecord[] = [];
 
-	const selectedFixtures = caseFilter
-		? FIXTURES.filter((fx) => fx.id.includes(caseFilter))
-		: FIXTURES;
-	if (selectedFixtures.length === 0) throw new Error(`no fixtures match --case ${caseFilter}`);
+	const caseFilters = caseFilter
+		.split(",")
+		.map((v) => v.trim())
+		.filter(Boolean);
+	const selectedFixtures =
+		caseFilters.length > 0
+			? FIXTURES.filter((fx) =>
+					caseFilters.some((filter) => fx.id.includes(filter)),
+				)
+			: FIXTURES;
+	if (selectedFixtures.length === 0)
+		throw new Error(`no fixtures match --case ${caseFilter}`);
 
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
@@ -605,51 +1306,290 @@ const main = async () => {
 		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
 			for (let i = 0; i < iters; i++) {
-				const r = await runLane(lane, fx);
+				const r = await runLane(lane, fx, i);
 				runs.push(r);
-				if (verbose) console.error(`[${fx.id}][${lane}][iter ${i}] output=${r.session.totalOutputTokens} args=${r.session.editToolCallArgsTokens} ok=${r.correct} wall=${r.wallMs.toFixed(0)}`);
+				runRecords.push({
+					fixture: fx.id,
+					lane,
+					...routeForLane(lane, fx),
+					iter: i,
+					toolName: r.session.editToolName,
+					wallMs: r.wallMs,
+					inputTokens: r.session.totalInputTokens,
+					outputTokens: r.session.totalOutputTokens,
+					cacheReadTokens: r.session.totalCacheRead,
+					cacheWriteTokens: r.session.totalCacheWrite,
+					toolCallArgTokens: r.session.editToolCallArgsTokens,
+					cost: r.session.totalCost,
+					tokScaleInput: r.tokScale.input,
+					tokScaleOutput: r.tokScale.output,
+					tokScaleCacheRead: r.tokScale.cacheRead,
+					tokScaleCacheWrite: r.tokScale.cacheWrite,
+					tokScaleMessages: r.tokScale.messages,
+					tokScaleCost: r.tokScale.cost,
+					tokScaleProcessingTimeMs: r.tokScale.processingTimeMs,
+					tokScaleTokenMatchesParser: r.tokScale.matchesParser,
+					tokScaleMatchesParser: r.tokScale.matchesParser,
+					tokScaleDetails: r.tokScale.details,
+					correct: r.correct,
+					exitCode: r.exitCode,
+					timedOut: r.timedOut,
+					failure:
+						r.exitCode === 0
+							? ""
+							: (r.stderr || r.stdout).trim().split("\n").slice(0, 3).join(" "),
+					runDir: r.runDir,
+					sessionDir: r.sessionDir,
+					commandFile: r.commandFile,
+					stdoutLog: r.stdoutLog,
+					stderrLog: r.stderrLog,
+					exitFile: r.exitFile,
+				});
+				if (verbose)
+					console.error(
+						`[${fx.id}][${lane}][iter ${i}] output=${r.session.totalOutputTokens} args=${r.session.editToolCallArgsTokens} ok=${r.correct} wall=${r.wallMs.toFixed(0)}`,
+					);
 			}
+			const toolNames = [
+				...new Set(
+					runs
+						.map((r) => r.session.editToolName)
+						.filter((v): v is string => Boolean(v)),
+				),
+			];
+			const tokScaleDetails = [
+				...new Set(
+					runs.map((r) => r.tokScale.details).filter((detail) => detail),
+				),
+			].join("; ");
 			rows.push({
 				fixture: fx.id,
 				className: fx.className ?? "",
 				recommendedLane: fx.recommendedLane ?? "",
 				lane,
+				...routeForLane(lane, fx),
+				toolName: toolNames.join(",") || "",
 				wallMsMedian: median(runs.map((r) => r.wallMs)),
+				inputMedian: median(runs.map((r) => r.session.totalInputTokens)),
 				outputMedian: median(runs.map((r) => r.session.totalOutputTokens)),
-				argsTokensMedian: median(runs.map((r) => r.session.editToolCallArgsTokens)),
+				cacheReadMedian: median(runs.map((r) => r.session.totalCacheRead)),
+				cacheWriteMedian: median(runs.map((r) => r.session.totalCacheWrite)),
+				argsTokensMedian: median(
+					runs.map((r) => r.session.editToolCallArgsTokens),
+				),
+				tokScaleInputMedian: medianNullable(runs.map((r) => r.tokScale.input)),
+				tokScaleOutputMedian: medianNullable(
+					runs.map((r) => r.tokScale.output),
+				),
+				tokScaleCacheReadMedian: medianNullable(
+					runs.map((r) => r.tokScale.cacheRead),
+				),
+				tokScaleCacheWriteMedian: medianNullable(
+					runs.map((r) => r.tokScale.cacheWrite),
+				),
+				tokScaleMessagesMedian: medianNullable(
+					runs.map((r) => r.tokScale.messages),
+				),
+				tokScaleCostSum: sumNullable(runs.map((r) => r.tokScale.cost)),
+				tokScaleProcessingTimeMsMedian: medianNullable(
+					runs.map((r) => r.tokScale.processingTimeMs),
+				),
+				tokScaleTokenMatchesParser: runs.every((r) => r.tokScale.matchesParser),
+				tokScaleMatchesParser: runs.every((r) => r.tokScale.matchesParser),
+				tokScaleDetails,
 				correctRate: runs.filter((r) => r.correct).length / runs.length,
 				costSum: runs.reduce((a, r) => a + r.session.totalCost, 0),
+				exitCodes: [...new Set(runs.map((r) => r.exitCode))],
+				timedOut: runs.some((r) => r.timedOut),
+				failure:
+					runs
+						.find((r) => r.exitCode !== 0)
+						?.stderr.trim()
+						.split("\n")
+						.slice(0, 2)
+						.join(" ") ?? "",
 			});
 		}
 	}
 
 	const lines: string[] = [];
-	lines.push("| Fixture | Class | Recommended | Lane | wall ms | session output tok | edit args tok (cl100k) | correct | $ |");
-	lines.push("|---|---|---|---|---:|---:|---:|---:|---:|");
+	lines.push(
+		"| Fixture | Class | Recommended | Lane | route | tool | wall ms | input tok | output tok | cache read | cache write | edit args tok (cl100k) | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |",
+	);
+	lines.push(
+		"|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|",
+	);
 	for (const r of rows) {
-		lines.push(`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.wallMsMedian.toFixed(0)} | ${r.outputMedian} | ${r.argsTokensMedian} | ${pct(r.correctRate * 100)} | ${r.costSum.toFixed(4)} |`);
+		const failure = [r.failure, r.tokScaleDetails]
+			.filter(Boolean)
+			.join("; ")
+			.replaceAll("|", "\\|");
+		lines.push(
+			`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.route} | ${r.toolName} | ${r.wallMsMedian.toFixed(0)} | ${r.inputMedian} | ${r.outputMedian} | ${r.cacheReadMedian} | ${r.cacheWriteMedian} | ${r.argsTokensMedian} | ${formatNullable(r.tokScaleInputMedian)} | ${formatNullable(r.tokScaleOutputMedian)} | ${formatNullable(r.tokScaleCacheReadMedian)} | ${formatNullable(r.tokScaleCacheWriteMedian)} | ${formatNullable(r.tokScaleMessagesMedian)} | ${formatNullable(r.tokScaleProcessingTimeMsMedian)} | ${r.tokScaleTokenMatchesParser ? "yes" : "no"} | ${pct(r.correctRate * 100)} | ${r.exitCodes.join(",")} | ${failure} | ${r.costSum.toFixed(4)} | ${formatNullable(r.tokScaleCostSum, 4)} |`,
+		);
 	}
 
 	console.log(lines.join("\n"));
+	type PairwiseSummary = {
+		fixture: string;
+		status:
+			| "both_correct"
+			| "core_failed_blitz_correct"
+			| "blitz_failed"
+			| "incomplete";
+		outputSavingsPct?: number;
+		argsSavingsPct?: number;
+		wallSavingsPct?: number;
+		costSavingsPct?: number;
+		coreOutputTokens?: number;
+		blitzOutputTokens?: number;
+		coreArgsTokens?: number;
+		blitzArgsTokens?: number;
+		coreWallMs?: number;
+		blitzWallMs?: number;
+		coreCost?: number;
+		blitzCost?: number;
+	};
+	const rowSucceeded = (r: Row): boolean =>
+		r.correctRate === 1 &&
+		!r.timedOut &&
+		r.exitCodes.every((code) => code === 0);
+	const savingsPct = (before: number, after: number): number | undefined =>
+		before ? 100 * (1 - after / before) : undefined;
+	const formatSavings = (label: string, value: number | undefined): string => {
+		if (value === undefined) return `${label} unavailable`;
+		return value >= 0
+			? `saved ${label} ${pct(value)}`
+			: `lost ${label} ${pct(Math.abs(value))}`;
+	};
+	const pairwise: PairwiseSummary[] = [];
 	const summaryLines: string[] = [];
-	summaryLines.push("", "## Pairwise savings");
-	for (const fx of selectedFixtures) {
-		const core = rows.find((r) => r.fixture === fx.id && r.lane === "core");
-		const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz");
-		if (!core || !blitz) continue;
-		const savedOutput = core.outputMedian
-			? 100 * (1 - blitz.outputMedian / core.outputMedian)
-			: 0;
-		const savedArgs = core.argsTokensMedian
-			? 100 * (1 - blitz.argsTokensMedian / core.argsTokensMedian)
-			: 0;
-		summaryLines.push(`${fx.id}: saved session output ${pct(savedOutput)}, saved tool-call args ${pct(savedArgs)}`);
+	summaryLines.push("", "## Pairwise savings (correct rows only)");
+	if (!rows.some((r) => r.lane === "core")) {
+		summaryLines.push("Skipped; core lane not run.");
+	} else {
+		for (const fx of selectedFixtures) {
+			const core = rows.find((r) => r.fixture === fx.id && r.lane === "core");
+			const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz");
+			if (!core || !blitz) {
+				pairwise.push({ fixture: fx.id, status: "incomplete" });
+				continue;
+			}
+
+			const coreCorrect = rowSucceeded(core);
+			const blitzCorrect = rowSucceeded(blitz);
+			const basePair = {
+				fixture: fx.id,
+				coreOutputTokens: core.outputMedian,
+				blitzOutputTokens: blitz.outputMedian,
+				coreArgsTokens: core.argsTokensMedian,
+				blitzArgsTokens: blitz.argsTokensMedian,
+				coreWallMs: core.wallMsMedian,
+				blitzWallMs: blitz.wallMsMedian,
+				coreCost: core.costSum,
+				blitzCost: blitz.costSum,
+			};
+
+			if (coreCorrect && blitzCorrect) {
+				const outputSavingsPct = savingsPct(
+					core.outputMedian,
+					blitz.outputMedian,
+				);
+				const argsSavingsPct = savingsPct(
+					core.argsTokensMedian,
+					blitz.argsTokensMedian,
+				);
+				const wallSavingsPct = savingsPct(
+					core.wallMsMedian,
+					blitz.wallMsMedian,
+				);
+				const costSavingsPct = savingsPct(core.costSum, blitz.costSum);
+				pairwise.push({
+					...basePair,
+					status: "both_correct",
+					outputSavingsPct,
+					argsSavingsPct,
+					wallSavingsPct,
+					costSavingsPct,
+				});
+				summaryLines.push(
+					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}`,
+				);
+			} else if (!blitzCorrect) {
+				pairwise.push({ ...basePair, status: "blitz_failed" });
+				summaryLines.push(
+					`${fx.id}: Blitz failed; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
+				);
+			} else if (!coreCorrect) {
+				pairwise.push({
+					...basePair,
+					status: "core_failed_blitz_correct",
+				});
+				summaryLines.push(
+					`${fx.id}: correctness win; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
+				);
+			} else {
+				pairwise.push({ ...basePair, status: "incomplete" });
+				summaryLines.push(`${fx.id}: incomplete; savings not counted`);
+			}
+		}
+	}
+
+	const coreOnlyNotes = selectedFixtures
+		.filter((fx) => fx.lanePolicy === "core-only")
+		.map(
+			(fx) =>
+				`${fx.id}: core-only cost/control smoke; no Blitz structured AST savings claim.`,
+		);
+	if (coreOnlyNotes.length) {
+		summaryLines.push("", "## Core-only notes", ...coreOnlyNotes);
 	}
 
 	console.log(summaryLines.join("\n"));
-	const payload = { provider, model, iters, timeoutMs, generatedAt: new Date().toISOString(), rows };
+	const payload = {
+		provider,
+		model,
+		iters,
+		runner,
+		runRoot: runner === "tmux" ? runRoot : undefined,
+		tmuxSession: runner === "tmux" ? tmuxSession : undefined,
+		timeoutMs,
+		piBin,
+		blitzBinPathPrepend: BLITZ_BIN_DIR,
+		extension,
+		skill,
+		tokScaleMode,
+		generatedAt: new Date().toISOString(),
+		rows,
+		pairwise,
+		runs: runRecords,
+	};
 	if (jsonOut) await writeFile(jsonOut, JSON.stringify(payload, null, 2));
-	if (mdOut) await writeFile(mdOut, [`# Pi matrix results`, ``, `Provider: ${provider}`, `Model: ${model}`, `Iterations: ${iters}`, `Generated: ${payload.generatedAt}`, ``, lines.join("\n"), summaryLines.join("\n")].join("\n"));
+	if (mdOut)
+		await writeFile(
+			mdOut,
+			[
+				`# Pi local matrix results`,
+				``,
+				`Provider: ${provider}`,
+				`Model: ${model}`,
+				`Iterations: ${iters}`,
+				`Runner: ${runner}`,
+				...(runner === "tmux"
+					? [`Run root: ${runRoot}`, `Tmux session: ${tmuxSession}`]
+					: []),
+				`Timeout per run: ${timeoutMs}ms`,
+				`Pi: ${piBin}`,
+				`Blitz binary PATH prepend: ${BLITZ_BIN_DIR}`,
+				`Extension: ${extension}`,
+				`Skill: ${skill}`,
+				`Tokscale validation: ${tokScaleMode}`,
+				`Generated: ${payload.generatedAt}`,
+				``,
+				lines.join("\n"),
+				summaryLines.join("\n"),
+			].join("\n"),
+		);
 	releaseTokenizer();
 };
 
