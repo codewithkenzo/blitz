@@ -113,7 +113,7 @@ pub fn run(
 
     try stdout.writeAll(
         \\  extensions:  .rs .ts .tsx .py .go .json .jsonc .yaml .yml .toml .md .markdown .html .htm .css
-        \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply
+        \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply, daemon(stub)
         \\
     );
 
