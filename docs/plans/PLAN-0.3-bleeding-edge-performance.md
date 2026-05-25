@@ -254,8 +254,8 @@ Tasks:
 
 Acceptance:
 
-- [ ] Parse-after phase is measurably faster on large files for single-range edits.
-  - Note: incremental validation is implemented for strict single-range apply ops, but large-file timing evidence is still needed before marking this acceptance item complete.
+- [x] Parse-after phase is measurably faster on large files for single-range edits. [DONE:22]
+  - Evidence: `reports/lane-c-incremental-parse-after-20260525-133400.md` measures a 103,277-byte TypeScript single-range dry-run replace with parseAfter median 11ms / p95 13ms, under the suggested 25ms parse-after target.
 - [x] Changed-range validation catches accidental wide mutations. [DONE:12]
 - [x] All existing apply failure-contract tests pass. [DONE:12]
 
