@@ -312,6 +312,7 @@ Options:
 Tasks:
 
 - [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
+- [x] Add CLI extension point without starting a daemon: `blitz daemon --help` documents the planned warm-worker stub and `blitz daemon` exits unsupported. [DONE: safe skeleton only]
 - [ ] Keep parser/query caches in worker memory. [DEFERRED: requires warm worker implementation]
 - [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; implementation/security tests still open]
 - [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; implementation/benchmarks still open]
