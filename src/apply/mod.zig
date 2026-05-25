@@ -180,8 +180,8 @@ pub fn run(
         .replace_body_span => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try apply_ir.expectObject(req.edit);
-            const find = try apply_ir.requireString(edit_obj, "find");
-            const replace = try apply_ir.requireString(edit_obj, "replace");
+            const find = apply_ir.requireString(edit_obj, "find") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const replace = apply_ir.requireString(edit_obj, "replace") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
             const match = apply_target.selectMatch(original[body_range.start..body_range.end], find, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const edit_start = body_range.start + match.start;
@@ -197,9 +197,9 @@ pub fn run(
         .insert_body_span => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const anchor = try apply_ir.requireString(edit_obj, "anchor");
-            const text = try apply_ir.requireString(edit_obj, "text");
-            const raw_pos = try apply_ir.requireString(edit_obj, "position");
+            const anchor = apply_ir.requireString(edit_obj, "anchor") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const text = apply_ir.requireString(edit_obj, "text") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const raw_pos = apply_ir.requireString(edit_obj, "position") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const selector = apply_target.parseMatchSelector(edit_obj.get("occurrence"));
             const match = apply_target.selectMatch(original[body_range.start..body_range.end], anchor, selector, require_single_match) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const insert_at = if (std.mem.eql(u8, raw_pos, "after"))
@@ -219,9 +219,9 @@ pub fn run(
         .wrap_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const before = try apply_ir.requireString(edit_obj, "before");
-            const keep = try apply_ir.requireString(edit_obj, "keep");
-            const after = try apply_ir.requireString(edit_obj, "after");
+            const before = apply_ir.requireString(edit_obj, "before") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const keep = apply_ir.requireString(edit_obj, "keep") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const after = apply_ir.requireString(edit_obj, "after") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             if (!std.mem.eql(u8, keep, "body")) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const indent = if (edit_obj.get("indentKeptBodyBy")) |indent_raw| switch (indent_raw) {
                 .integer => |v| if (v < 0) return emitFailure(ApplyError.InvalidOccurrence, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len) else @as(usize, @intCast(v)),
@@ -271,7 +271,7 @@ pub fn run(
         },
         .insert_after_symbol => blk: {
             const edit_obj = try expectObject(req.edit);
-            const code = try apply_ir.requireString(edit_obj, "code");
+            const code = apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, target_end, target_end, code),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end },
@@ -283,7 +283,7 @@ pub fn run(
         .set_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const body = try apply_ir.requireString(edit_obj, "body");
+            const body = apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, body),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
@@ -328,12 +328,12 @@ pub fn run(
 
     const changed = !std.mem.eql(u8, original, op_result.contents);
     if (changed and !dry_run) {
-        var lock_guard = try file_lock.acquire(allocator, io, real_path);
+        var lock_guard = file_lock.acquire(allocator, io, real_path) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, parse_after, request_bytes.len);
         defer lock_guard.release();
-        const cache_dir = try backup.defaultCacheDir(allocator);
+        const cache_dir = backup.defaultCacheDir(allocator) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, parse_after, request_bytes.len);
         defer allocator.free(cache_dir);
-        try backup.store(allocator, io, cache_dir, real_path, original);
-        try backup.atomicWrite(allocator, io, real_path, op_result.contents);
+        backup.store(allocator, io, cache_dir, real_path, original) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, parse_after, request_bytes.len);
+        backup.atomicWrite(allocator, io, real_path, op_result.contents) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, parse_after, request_bytes.len);
     }
 
     const end = Io.Clock.awake.now(io);
@@ -701,6 +701,54 @@ test "apply set_body replaces complete body" {
     try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
+}
+
+test "apply set_body invalid body type rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function x() { return 1; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"x"},"edit":{"body":123}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply invalid target symbol type rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function settable(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":123},"edit":{"body":"return value;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply insert_body_span after anchor" {
@@ -1253,6 +1301,29 @@ test "apply unsupported language returns stable code" {
     try std.testing.expect(std.mem.indexOf(u8, stdout_buf.written(), "\"code\":\"UNSUPPORTED_LANGUAGE\"") != null);
 }
 
+test "apply unsupported language snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const allocator = std.testing.allocator;
+    const io = std.testing.io;
+    try tmp.dir.writeFile(io, .{ .sub_path = "x.zig", .data = "const x = 1;" });
+    const path = try tmp.dir.realPathFileAlloc(io, "x.zig", allocator);
+    defer allocator.free(path);
+    var stdout_buf: Writer.Allocating = .init(allocator);
+    defer stdout_buf.deinit();
+    var stderr_buf: Writer.Allocating = .init(allocator);
+    defer stderr_buf.deinit();
+    const req = try std.fmt.allocPrint(allocator, "{{\"version\":1,\"file\":\"{s}\",\"operation\":\"set_body\",\"target\":{{\"symbol\":\"x\"}},\"edit\":{{\"body\":\"const y = 1;\"}}}}", .{path});
+    defer allocator.free(req);
+    const status = try run(allocator, io, req, false, false, true, &stdout_buf.writer, &stderr_buf.writer);
+    try std.testing.expectEqual(@as(u8, 1), status);
+    const parsed = try parseApplyJson(allocator, stdout_buf.written());
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "rejected");
+    try expectJsonFieldString(obj, "code", "UNSUPPORTED_LANGUAGE");
+}
+
 test "apply file not found returns stable code" {
     const allocator = std.testing.allocator;
     const io = std.testing.io;
@@ -1329,4 +1400,442 @@ test "apply parse failure before edit returns stable code" {
     const post = try tmp.dir.readFileAlloc(io, "broken.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings("function broken( {", post);
+}
+
+test "apply write-path errors map to stable backup and io codes" {
+    try std.testing.expectEqualStrings("BACKUP_FAILED", apply_errors.code(error.CacheDirUnavailable));
+    try std.testing.expectEqualStrings("BACKUP_FAILED", apply_errors.code(error.AtomicWriteFailed));
+    try std.testing.expectEqualStrings("BACKUP_FAILED", apply_errors.code(error.NoBackup));
+    try std.testing.expectEqualStrings("IO_ERROR", apply_errors.code(error.LockContended));
+    try std.testing.expectEqualStrings("IO_ERROR", apply_errors.code(error.LockInvalidPath));
+    try std.testing.expectEqualStrings("IO_ERROR", apply_errors.code(error.OutOfMemory));
+}
+
+fn parseApplyJson(allocator: Allocator, bytes: []const u8) !std.json.Parsed(std.json.Value) {
+    return try std.json.parseFromSlice(std.json.Value, allocator, bytes, .{});
+}
+
+fn expectJsonFieldString(obj: std.json.ObjectMap, field: []const u8, expected: []const u8) !void {
+    try std.testing.expectEqualStrings(expected, obj.get(field).?.string);
+}
+
+test "apply json success snapshot exposes stable fields" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function snap(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"snap"},"edit":{"body":"\n  return value + 1;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try std.testing.expectEqualStrings("apply", obj.get("command").?.string);
+    try std.testing.expectEqualStrings("applied", obj.get("status").?.string);
+    try std.testing.expectEqualStrings("set_body", obj.get("operation").?.string);
+    try std.testing.expectEqualStrings(path, obj.get("file").?.string);
+    try std.testing.expect(obj.get("diffSummary") != null);
+    try std.testing.expect(obj.get("code") == null);
+}
+
+test "apply json rejection snapshot exposes stable code" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function reject(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"reject"},"edit":{"body":123}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try std.testing.expectEqualStrings("apply", obj.get("command").?.string);
+    try std.testing.expectEqualStrings("rejected", obj.get("status").?.string);
+    try std.testing.expectEqualStrings("INVALID_FIELD", obj.get("code").?.string);
+}
+
+test "apply json patch success snapshot exposes stable code-free response" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function patchy(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","patchy","value * 3"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "command", "apply");
+    try expectJsonFieldString(obj, "status", "applied");
+    try std.testing.expect(obj.get("code") == null);
+    try expectJsonFieldString(obj, "operation", "patch");
+}
+
+test "apply json replace_body_span snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function one(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"replace_body_span","target":{"symbol":"one"},"edit":{"find":"return 1;","replace":"return 2;"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "replace_body_span");
+    try std.testing.expect(obj.get("ranges") != null);
+}
+
+test "apply json insert_body_span snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function insertMe(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"insert_body_span","target":{"symbol":"insertMe"},"edit":{"anchor":"return 1;","position":"before","text":"  const x = 0;\n","occurrence":"only"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "insert_body_span");
+    try std.testing.expect(obj.get("ranges") != null);
+}
+
+test "apply json set_body snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function setMe(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"setMe"},"edit":{"body":"\n  return 2;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "set_body");
+    try std.testing.expect(obj.get("ranges") != null);
+}
+
+test "apply json wrap_body snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function wrapme(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"wrap_body","target":{"symbol":"wrapme"},"edit":{"before":"try {\n","keep":"body","after":"\n} finally {\n  cleanup();\n}","indentKeptBodyBy":2}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "wrap_body");
+    try std.testing.expect(obj.get("diffSummary") != null);
+}
+
+test "apply json multi_body snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function a(): number {
+        \\  return 1;
+        \\}
+        \\function b(): number {
+        \\  return 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"multi_body","edit":{"edits":[{"symbol":"a","op":"replace_body_span","find":"return 1;","replace":"return 10;"},{"symbol":"b","op":"replace_body_span","find":"return 2;","replace":"return 20;"}]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "multi_body");
+    try std.testing.expect(obj.get("ranges") != null);
+}
+
+test "apply json async function snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export async function asyncOne(value: number): Promise<number> {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","asyncOne","value + 1"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "patch");
+}
+
+test "apply json arrow function snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const arrowOne = (value: number): number => {
+        \\  return value;
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","arrowOne","value * 2"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "patch");
+}
+
+test "apply json class method snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class C {
+        \\  method(value: number): number {
+        \\    return value;
+        \\  }
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","method","value + 2"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "patch");
+}
+
+test "apply json duplicate symbol rejection snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function dup() {
+        \\  return 1;
+        \\}
+        \\function dup() {
+        \\  return 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"dup"},"edit":{"body":"return 3;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "rejected");
+    try expectJsonFieldString(obj, "code", "SYMBOL_AMBIGUOUS");
+}
+
+test "apply json nested return snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function outer(value: number): number {
+        \\  function inner(): number {
+        \\    return value;
+        \\  }
+        \\  return inner();
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"patch","edit":{"ops":[["replace_return","inner","value + 1"]]}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "applied");
+    try expectJsonFieldString(obj, "operation", "patch");
+}
+
+test "apply json parse-after rejection snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function parseAfter(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"parseAfter"},"edit":{"body":"return )"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "rejected");
+    try expectJsonFieldString(obj, "code", "PARSE_ERROR_AFTER");
+}
+
+test "apply json parse-before rejection snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function parseBefore( {
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_body","target":{"symbol":"parseBefore"},"edit":{"body":"return 1;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "rejected");
+    try expectJsonFieldString(obj, "code", "PARSE_ERROR_BEFORE");
+}
+
+test "apply json no match rejection snapshot is structured" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function noMatch(value: number): number {
+        \\  return value;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"replace_body_span","target":{"symbol":"noMatch"},"edit":{"find":"missing","replace":"present"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const parsed = try parseApplyJson(allocator, out);
+    defer parsed.deinit();
+    const obj = try apply_ir.expectObject(parsed.value);
+    try expectJsonFieldString(obj, "status", "rejected");
+    try expectJsonFieldString(obj, "code", "NO_MATCH");
 }

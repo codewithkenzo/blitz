@@ -232,5 +232,9 @@ pub fn expectObject(value: std.json.Value) !std.json.ObjectMap {
     };
 }
 pub fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
-    return (object.get(field) orelse return ApplyError.MissingField).string;
+    const value = object.get(field) orelse return ApplyError.MissingField;
+    return switch (value) {
+        .string => |str| str,
+        else => return ApplyError.FieldTypeMismatch,
+    };
 }
