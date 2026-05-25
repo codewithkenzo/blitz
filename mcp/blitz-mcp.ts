@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync, readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { findBlitzBinary } from "../scripts/resolve-platform-bin.js";
@@ -36,8 +37,17 @@ const blitz = findBlitzBinary() ?? "blitz";
 const cwd = resolveWorkspace();
 const timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30_000, 1, 600_000);
 const maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
+const warmMode = process.env.BLITZ_MCP_WARM === "1";
+const warmMaxHashBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_HASH_BYTES", 1024 * 1024, 1, 16 * 1024 * 1024);
 const maxBufferedBytes = maxFrameBytes + 4096;
 let initialized = false;
+
+type WarmCacheEntry = { hash: string; result: ToolResult };
+
+const warmCache = {
+  doctor: undefined as ToolResult | undefined,
+  reads: new Map<string, WarmCacheEntry>(),
+};
 
 type JsonRpc = { jsonrpc?: "2.0"; id?: string | number | null; method?: string; params?: Record<string, unknown> };
 type ToolResult = { content: Array<{ type: "text"; text: string }>; isError?: boolean };
@@ -82,6 +92,27 @@ const run = (args: string[], stdin?: string): ToolResult => {
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
 };
 
+const fileHash = (file: string): string | undefined => {
+  const stat = statSync(file);
+  if (!stat.isFile() || stat.size > warmMaxHashBytes) return undefined;
+  const bytes = readFileSync(file);
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+};
+
+const warmRead = (file: string): ToolResult => {
+  const hash = fileHash(file);
+  if (!hash) return run(["read", file]);
+  const cached = warmCache.reads.get(file);
+  if (cached?.hash === hash) return cached.result;
+  const result = run(["read", file]);
+  if (!result.isError) warmCache.reads.set(file, { hash, result });
+  return result;
+};
+
+const clearWarmFile = (file: string): void => {
+  warmCache.reads.delete(file);
+};
+
 const requiredString = (args: Record<string, unknown>, key: string): string => {
   const value = args[key];
   if (typeof value !== "string" || value.length === 0) throw new Error(`missing string ${key}`);
@@ -116,12 +147,24 @@ const applyArgs = (args: Record<string, unknown>): string[] => {
 
 const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult => {
   switch (name) {
-    case "blitz_doctor": return run(["doctor"]);
-    case "blitz_read": return run(["read", bindPath(requiredString(args, "file"))]);
-    case "blitz_undo": return run(["undo", bindPath(requiredString(args, "file"))]);
+    case "blitz_doctor": {
+      if (!warmMode) return run(["doctor"]);
+      warmCache.doctor ??= run(["doctor"]);
+      return warmCache.doctor;
+    }
+    case "blitz_read": {
+      const file = bindPath(requiredString(args, "file"));
+      return warmMode ? warmRead(file) : run(["read", file]);
+    }
+    case "blitz_undo": {
+      const file = bindPath(requiredString(args, "file"));
+      clearWarmFile(file);
+      return run(["undo", file]);
+    }
     case "blitz_patch": {
       const file = bindPath(requiredString(args, "file"));
       if (!Array.isArray(args.ops) || args.ops.length === 0) throw new Error("missing ops array");
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
     }
     case "blitz_try_catch": {
@@ -129,12 +172,14 @@ const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult 
       const symbol = requiredString(args, "symbol");
       const catchBody = requiredString(args, "catchBody");
       const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
     }
     case "blitz_replace_return": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...(args.occurrence !== undefined ? [args.occurrence] : [])]] } }));
     }
     default: throw new Error(`unknown tool ${name}`);

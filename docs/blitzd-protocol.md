@@ -1,6 +1,6 @@
 # `blitzd` warm-worker protocol (Lane E design)
 
-Status: protocol definition only. No daemon implementation exists yet. Current MCP server in `mcp/blitz-mcp.ts` still calls stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call.
+Status: protocol definition plus bounded MCP-host warm cache. No Zig daemon implementation exists yet. Current MCP server defaults to stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call. When `BLITZ_MCP_WARM=1`, the MCP host caches safe `doctor` output and `read` results keyed by canonical file path plus SHA-256 file bytes. Mutations still use stateless CLI fallback and mutation results are never cached.
 
 ## Goals
 
@@ -10,7 +10,7 @@ Status: protocol definition only. No daemon implementation exists yet. Current M
 
 ## Transport
 
-Use stdio JSONL for v1:
+Full `blitzd` v1 would use stdio JSONL:
 
 - one UTF-8 JSON object per line;
 - max frame size: 1 MiB default, configurable downward by host;
@@ -218,7 +218,9 @@ Response result:
 
 ## Timeout, crash, and fallback
 
-Host owns worker lifecycle:
+Host owns worker lifecycle. Current `BLITZ_MCP_WARM=1` cache path has no worker process; cache fallback is internal: cache miss, oversized hash input (`BLITZ_MCP_WARM_MAX_HASH_BYTES`, default 1 MiB), or process restart falls back to current stateless CLI for safe `doctor`/`read`. Path escape errors are raised before fallback. Mutation tools (`blitz_patch`, `blitz_try_catch`, `blitz_replace_return`, `blitz_undo`) always call stateless CLI and clear any cached read for that canonical file.
+
+Future daemon lifecycle:
 
 - per-request timeout defaults to current MCP timeout (`BLITZ_MCP_TIMEOUT_MS`, 30s);
 - if worker does not answer before timeout, host kills worker process and may call stateless CLI for non-mutating requests or safe dry-runs;

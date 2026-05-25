@@ -1,13 +1,16 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
+// @bun
+
 // mcp/blitz-mcp.ts
-import { existsSync as existsSync2, realpathSync } from "fs";
+import { existsSync as existsSync2, realpathSync, readFileSync, statSync } from "fs";
+import { createHash } from "crypto";
 import { dirname as dirname2, isAbsolute, relative, resolve } from "path";
 import { spawnSync } from "child_process";
 
 // scripts/resolve-platform-bin.js
-import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 var here = dirname(fileURLToPath(import.meta.url));
 var root = dirname(here);
 var platformPackage = () => {
@@ -76,8 +79,14 @@ var blitz = findBlitzBinary() ?? "blitz";
 var cwd = resolveWorkspace();
 var timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30000, 1, 600000);
 var maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
+var warmMode = process.env.BLITZ_MCP_WARM === "1";
+var warmMaxHashBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_HASH_BYTES", 1024 * 1024, 1, 16 * 1024 * 1024);
 var maxBufferedBytes = maxFrameBytes + 4096;
 var initialized = false;
+var warmCache = {
+  doctor: undefined,
+  reads: new Map
+};
 var tools = [
   { name: "blitz_doctor", description: "Run blitz doctor and return supported languages/commands/cache status.", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
   { name: "blitz_read", description: "Read a file with blitz AST/source summary.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
@@ -117,6 +126,28 @@ ${stderr}` : ""].filter(Boolean).join(`
 `);
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
 };
+var fileHash = (file) => {
+  const stat = statSync(file);
+  if (!stat.isFile() || stat.size > warmMaxHashBytes)
+    return;
+  const bytes = readFileSync(file);
+  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+};
+var warmRead = (file) => {
+  const hash = fileHash(file);
+  if (!hash)
+    return run(["read", file]);
+  const cached = warmCache.reads.get(file);
+  if (cached?.hash === hash)
+    return cached.result;
+  const result = run(["read", file]);
+  if (!result.isError)
+    warmCache.reads.set(file, { hash, result });
+  return result;
+};
+var clearWarmFile = (file) => {
+  warmCache.reads.delete(file);
+};
 var requiredString = (args, key) => {
   const value = args[key];
   if (typeof value !== "string" || value.length === 0)
@@ -152,16 +183,26 @@ var applyArgs = (args) => {
 };
 var callTool = (name, args = {}) => {
   switch (name) {
-    case "blitz_doctor":
-      return run(["doctor"]);
-    case "blitz_read":
-      return run(["read", bindPath(requiredString(args, "file"))]);
-    case "blitz_undo":
-      return run(["undo", bindPath(requiredString(args, "file"))]);
+    case "blitz_doctor": {
+      if (!warmMode)
+        return run(["doctor"]);
+      warmCache.doctor ??= run(["doctor"]);
+      return warmCache.doctor;
+    }
+    case "blitz_read": {
+      const file = bindPath(requiredString(args, "file"));
+      return warmMode ? warmRead(file) : run(["read", file]);
+    }
+    case "blitz_undo": {
+      const file = bindPath(requiredString(args, "file"));
+      clearWarmFile(file);
+      return run(["undo", file]);
+    }
     case "blitz_patch": {
       const file = bindPath(requiredString(args, "file"));
       if (!Array.isArray(args.ops) || args.ops.length === 0)
         throw new Error("missing ops array");
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
     }
     case "blitz_try_catch": {
@@ -169,12 +210,14 @@ var callTool = (name, args = {}) => {
       const symbol = requiredString(args, "symbol");
       const catchBody = requiredString(args, "catchBody");
       const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
     }
     case "blitz_replace_return": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
+      clearWarmFile(file);
       return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...args.occurrence !== undefined ? [args.occurrence] : []]] } }));
     }
     default:

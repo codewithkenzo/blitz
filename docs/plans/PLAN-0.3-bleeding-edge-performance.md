@@ -313,16 +313,17 @@ Tasks:
 
 - [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
 - [x] Add CLI extension point without starting a daemon: `blitz daemon --help` documents the planned warm-worker stub and `blitz daemon` exits unsupported. [DONE: safe skeleton only]
-- [ ] Keep parser/query caches in worker memory. [DEFERRED: requires warm worker implementation]
-- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; implementation/security tests still open]
-- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; implementation/benchmarks still open]
-- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [OPEN: checklist defined; tests/review not complete]
+- [ ] Keep parser/query caches in worker memory. [DEFERRED: true Zig worker/parser cache not implemented]
+- [x] Add bounded MCP-host warm cache for safe repeated calls. [DONE: `BLITZ_MCP_WARM=1` caches `doctor` and `read` only; `read` cache key is canonical file path + SHA-256 file bytes; default off]
+- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and SHA-256 read keys; mutation hash preconditions still deferred]
+- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart; true idle eviction still deferred]
+- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [PARTIAL: MCP warm cache runs after existing `bindPath`; no fallback for path escape; frame limits retained; stale reads guarded by file hash; mutation cache absent. Full daemon checklist still open]
 
 Acceptance:
 
-- [ ] Warm path p50/p95 wall time beats cold CLI on repeated operations. [OPEN: no daemon implemented]
-- [ ] Worker never mutates outside workspace. [OPEN: policy documented; implementation/security proof pending]
-- [ ] Crash/timeout falls back to stateless CLI safely. [OPEN: fallback policy documented; host implementation pending]
+- [x] Warm path p50/p95 wall time beats cold CLI on repeated safe operations. [DONE: `reports/mcp-warm-cache-bench-20260525.md`; 75-iteration parent rerun: doctor p50/p95 0.091/0.286ms warm vs 3.513/4.668ms cold; read 0.131/0.685ms warm vs 0.646/1.656ms cold]
+- [ ] Worker never mutates outside workspace. [PARTIAL: no mutation worker exists; MCP mutations still use existing stateless CLI after `bindPath`; full daemon mutation proof deferred]
+- [x] Crash/timeout falls back to stateless CLI safely for current warm slice. [DONE: current warm slice has no child worker; cache miss/oversized hash/process restart uses stateless CLI for safe calls; mutations already stateless]
 
 ### Lane F — Build and release benchmarking
 
