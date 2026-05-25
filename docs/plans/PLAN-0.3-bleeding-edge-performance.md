@@ -455,7 +455,7 @@ A 0.3 release candidate is accepted only if:
 - [x] Router can explain every core-vs-Blitz decision. [DONE: routeDecision + reasonCode emitted in apply JSON and benchmark rows]
 - [x] All selected rows are correct or fail closed before mutation. [DONE: apply route smokes, incremental changed-range broad failure fix, direct-text ambiguity rejections, JSON/JSONC set_key rejection]
 - [x] Tokscale validates real Pi session token totals for agent-facing claims. [DONE: locked GLM tmux/Tokscale reports saved under reports/]
-- [ ] CLI direct/incremental paths meet p95 wall-time targets on local microbench. [PARTIAL: p95 script/report added; `reports/lane-f-apply-microbench-p95-final-20260525-132013.md` shows cold CLI p95 ~10.98ms for dry-run cases, above the suggested ≤10ms direct target, so this remains open until warm/in-process measurement or optimization proves the target]
+- [x] CLI direct/incremental paths meet p95 wall-time targets on local microbench. [DONE: p95 script/report added; debug/cold `reports/lane-f-apply-microbench-p95-final-20260525-132013.md` showed ~10.98ms, but ReleaseFast evidence `reports/lane-f-apply-microbench-p95-releasefast-20260525-132131.md` shows dry-run p95 3.865ms/2.405ms, under the suggested ≤10ms direct target]
 - [x] Universal file routes exist for at least Markdown, JSON/JSONC, YAML, TOML, HTML, CSS, and arbitrary text anchors. [DONE: parser/doctor/read support for JSON, JSONC, YAML, TOML, Markdown, HTML, CSS; direct_text anchors for arbitrary files; format edit semantics beyond strict JSON set_key remain deferred]
 
 Suggested thresholds for first RC:
