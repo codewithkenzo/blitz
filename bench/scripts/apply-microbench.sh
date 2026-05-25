@@ -27,6 +27,10 @@ median_ms() {
 	awk 'NF { print $1 }' | sort -n | awk '{ a[NR]=$1 } END { if (NR == 0) print "n/a"; else if (NR % 2) printf "%.3f", a[(NR + 1) / 2]; else printf "%.3f", (a[NR / 2] + a[NR / 2 + 1]) / 2 }'
 }
 
+p95_ms() {
+	awk 'NF { print $1 }' | sort -n | awk '{ a[NR]=$1 } END { if (NR == 0) print "n/a"; else { rank = int(NR * 0.95); if (rank < NR * 0.95) rank++; if (rank < 1) rank = 1; printf "%.3f", a[rank] } }'
+}
+
 fixture="${TMP_ROOT}/sample.ts"
 cat >"${fixture}" <<'EOF'
 export function scale(value: number): number {
@@ -74,11 +78,13 @@ run_case() {
 		ms_delta "${start}" "${end}" >>"${samples}"
 		printf '\n' >>"${samples}"
 	done
-	median_ms <"${samples}"
+	printf '%s %s\n' "$(median_ms <"${samples}")" "$(p95_ms <"${samples}")"
 }
 
-replace_median="$(run_case replace_return "${request_replace}")"
-wrap_median="$(run_case try_catch "${request_wrap}")"
+replace_stats="$(run_case replace_return "${request_replace}")"
+read -r replace_median replace_p95 <<<"${replace_stats}"
+wrap_stats="$(run_case try_catch "${request_wrap}")"
+read -r wrap_median wrap_p95 <<<"${wrap_stats}"
 
 apply_fixture="${TMP_ROOT}/sample-apply.ts"
 cp "${fixture}" "${apply_fixture}"
@@ -99,15 +105,16 @@ Iterations per dry-run case: ${ITERATIONS}
 Temp fixture dir: ${TMP_ROOT}  
 Artifacts dir: ${OUT_DIR}
 
-| Case | Command | Median wall ms | Status |
-|---|---|---:|---:|
-| replace_return dry-run | \`blitz apply --edit - --json --dry-run\` | ${replace_median} | 0 |
-| try_catch dry-run | \`blitz apply --edit - --json --dry-run\` | ${wrap_median} | 0 |
-| replace_return apply smoke | \`blitz apply --edit - --json\` | n/a | ${apply_status} |
+| Case | Command | Median wall ms | p95 wall ms | Status |
+|---|---|---:|---:|---:|
+| replace_return dry-run | \`blitz apply --edit - --json --dry-run\` | ${replace_median} | ${replace_p95} | 0 |
+| try_catch dry-run | \`blitz apply --edit - --json --dry-run\` | ${wrap_median} | ${wrap_p95} | 0 |
+| replace_return apply smoke | \`blitz apply --edit - --json\` | n/a | n/a | ${apply_status} |
 
 Notes:
 - All mutations happen under \`${TMP_ROOT}\`.
 - Dry-run requests include JSON \`options.dryRun=true\` plus CLI \`--dry-run\`.
+- p95 uses nearest-rank over numeric ascending sample files: rank = ceil(0.95 * N).
 - Last JSON/stdout and stderr artifacts are stored in \`${OUT_DIR}\`.
 EOF
 
