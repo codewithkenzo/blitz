@@ -11,7 +11,8 @@
 ## tree-sitter grammars (vendored into `grammars/`)
 
 All grammars are MIT-licensed. Each vendored copy preserves the upstream
-`LICENSE` file and records its source in `grammars/tree-sitter-<lang>/VERSION`.
+license file (`LICENSE` or upstream spelling) and records its source in
+`grammars/tree-sitter-<lang>/VERSION`.
 
 | Language | Repo | Vendored path |
 |---|---|---|
@@ -21,6 +22,7 @@ All grammars are MIT-licensed. Each vendored copy preserves the upstream
 | Python | https://github.com/tree-sitter/tree-sitter-python | `grammars/tree-sitter-python/` |
 | Go | https://github.com/tree-sitter/tree-sitter-go | `grammars/tree-sitter-go/` |
 | JSON | https://github.com/tree-sitter/tree-sitter-json | `grammars/tree-sitter-json/` |
+| JSONC | https://github.com/sunilunnithan/tree-sitter-jsonc @ `02b01653c8a1c198ae7287d566efa86a135b30d5` | `grammars/tree-sitter-jsonc/` |
 | YAML | https://github.com/tree-sitter-grammars/tree-sitter-yaml | `grammars/tree-sitter-yaml/` |
 | TOML | https://github.com/tree-sitter/tree-sitter-toml | `grammars/tree-sitter-toml/` |
 | Markdown | https://github.com/tree-sitter-grammars/tree-sitter-markdown | `grammars/tree-sitter-markdown/` |

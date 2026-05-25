@@ -19,6 +19,7 @@ const supported_grammars = [_]GrammarProbe{
     .{ .name = "python", .lang = .python },
     .{ .name = "go", .lang = .go },
     .{ .name = "json", .lang = .json },
+    .{ .name = "jsonc", .lang = .jsonc },
     .{ .name = "yaml", .lang = .yaml },
     .{ .name = "toml", .lang = .toml },
     .{ .name = "markdown", .lang = .markdown },
@@ -111,7 +112,7 @@ pub fn run(
     try writeCacheLine(allocator, io, stdout);
 
     try stdout.writeAll(
-        \\  extensions:  .rs .ts .tsx .py .go .json .yaml .yml .toml .md .markdown .html .htm .css
+        \\  extensions:  .rs .ts .tsx .py .go .json .jsonc .yaml .yml .toml .md .markdown .html .htm .css
         \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply
         \\
     );
@@ -137,6 +138,8 @@ test "doctor output contains version and grammars blocks" {
     try std.testing.expect(std.mem.indexOf(u8, text, "version:") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "tree-sitter: linked (runtime v0.26.9, abi 15") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "grammars:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "jsonc ok(abi ") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, ".jsonc") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "abi ") != null);
 }
 

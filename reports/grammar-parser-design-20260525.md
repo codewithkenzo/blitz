@@ -20,6 +20,7 @@ Format grammars added in this slice:
 | Format | Repo | Commit | Path | Scanner | ABI |
 |---|---|---:|---|---|---:|
 | JSON | https://github.com/tree-sitter/tree-sitter-json | `001c28d7a29832b06b0e831ec77845553c89b56d` | `grammars/tree-sitter-json/` | none | 14 |
+| JSONC | https://github.com/sunilunnithan/tree-sitter-jsonc | `02b01653c8a1c198ae7287d566efa86a135b30d5` | `grammars/tree-sitter-jsonc/` | none | 13 |
 | YAML | https://github.com/tree-sitter-grammars/tree-sitter-yaml | `a1c4812a73ec5e089de8e441fdea3a921e8d5079` | `grammars/tree-sitter-yaml/` | `scanner.c` | 15 |
 | TOML | https://github.com/tree-sitter/tree-sitter-toml | `342d9be207c2dba869b9967124c679b5e6fd0ebe` | `grammars/tree-sitter-toml/` | `scanner.c` | 13 |
 | Markdown | https://github.com/tree-sitter-grammars/tree-sitter-markdown | `c3570720f7f7bbad22fe96603f106276618e0cf5` | `grammars/tree-sitter-markdown/` | `scanner.c` | 15 |
@@ -33,6 +34,7 @@ Format grammars added in this slice:
 Validated maintained Tree-sitter grammar sources:
 
 - JSON: `tree-sitter/tree-sitter-json`
+- JSONC: `sunilunnithan/tree-sitter-jsonc` (maintained fork; no scanner; upstream license file is spelled `LICENCE`; no upstream `VERSION`, so Blitz records exact commit in vendored `VERSION`)
 - YAML: `tree-sitter-grammars/tree-sitter-yaml` (`tree-sitter/tree-sitter-yaml` unavailable)
 - TOML: `tree-sitter/tree-sitter-toml`
 - Markdown: `tree-sitter-grammars/tree-sitter-markdown` (`tree-sitter/tree-sitter-markdown` unavailable)
@@ -41,9 +43,7 @@ Validated maintained Tree-sitter grammar sources:
 
 ## Slice boundaries
 
-Implemented only parser/doctor support. No YAML/TOML/Markdown edit semantics added. Current `set_key` remains strict JSON-only local scanner.
-
-JSONC extension is not mapped because vendored JSON grammar has no JSONC support in this slice.
+Implemented only parser/doctor/read support for format grammars. No YAML/TOML/Markdown/JSONC edit semantics added. Current `set_key` remains strict JSON-only local scanner; `.jsonc` parser support does not imply comment-preserving `set_key` edit semantics.
 
 Markdown upstream repo contains separate block and inline grammars. Blitz vendors/builds block grammar source from `tree-sitter-markdown/tree-sitter-markdown/src` only. Inline Markdown grammar remains skipped until a combined parse strategy is designed.
 

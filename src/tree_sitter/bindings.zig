@@ -116,6 +116,7 @@ pub const c = struct {
     pub extern fn tree_sitter_python() *const TSLanguage;
     pub extern fn tree_sitter_go() *const TSLanguage;
     pub extern fn tree_sitter_json() *const TSLanguage;
+    pub extern fn tree_sitter_jsonc() *const TSLanguage;
     pub extern fn tree_sitter_yaml() *const TSLanguage;
     pub extern fn tree_sitter_toml() *const TSLanguage;
     pub extern fn tree_sitter_markdown() *const TSLanguage;
@@ -130,6 +131,7 @@ pub const Language = enum {
     python,
     go,
     json,
+    jsonc,
     yaml,
     toml,
     markdown,
@@ -144,6 +146,7 @@ pub const Language = enum {
             .python => c.tree_sitter_python(),
             .go => c.tree_sitter_go(),
             .json => c.tree_sitter_json(),
+            .jsonc => c.tree_sitter_jsonc(),
             .yaml => c.tree_sitter_yaml(),
             .toml => c.tree_sitter_toml(),
             .markdown => c.tree_sitter_markdown(),
@@ -168,6 +171,7 @@ pub const Language = enum {
         if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
         if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
         if (std.ascii.eqlIgnoreCase(ext, ".json")) return .json;
+        if (std.ascii.eqlIgnoreCase(ext, ".jsonc")) return .jsonc;
         if (std.ascii.eqlIgnoreCase(ext, ".yaml") or std.ascii.eqlIgnoreCase(ext, ".yml")) return .yaml;
         if (std.ascii.eqlIgnoreCase(ext, ".toml")) return .toml;
         if (std.ascii.eqlIgnoreCase(ext, ".md") or std.ascii.eqlIgnoreCase(ext, ".markdown")) return .markdown;
@@ -383,12 +387,12 @@ test "Language.fromExtension matches supported extensions" {
     try std.testing.expectEqual(Language.python, Language.fromExtension(".py").?);
     try std.testing.expectEqual(Language.go, Language.fromExtension(".go").?);
     try std.testing.expectEqual(Language.json, Language.fromExtension(".json").?);
+    try std.testing.expectEqual(Language.jsonc, Language.fromExtension(".jsonc").?);
     try std.testing.expectEqual(Language.yaml, Language.fromExtension(".yml").?);
     try std.testing.expectEqual(Language.toml, Language.fromExtension(".toml").?);
     try std.testing.expectEqual(Language.markdown, Language.fromExtension(".markdown").?);
     try std.testing.expectEqual(Language.html, Language.fromExtension(".htm").?);
     try std.testing.expectEqual(Language.css, Language.fromExtension(".css").?);
-    try std.testing.expect(Language.fromExtension(".jsonc") == null);
     try std.testing.expect(Language.fromExtension(".zig") == null);
 }
 
@@ -413,6 +417,7 @@ test "Parser parses each supported grammar" {
     try expectParsedNode(.python, "x = 1\n");
     try expectParsedNode(.go, "package main\nfunc main() {}\n");
     try expectParsedNode(.json, "{\"ok\": true, \"n\": 1}\n");
+    try expectParsedNode(.jsonc, "{\n  // line comment\n  \"ok\": true,\n  /* block comment */\n  \"n\": 1\n}\n");
     try expectParsedNode(.yaml, "ok: true\nn: 1\n");
     try expectParsedNode(.toml, "ok = true\nn = 1\n");
     try expectParsedNode(.markdown, "# Title\n\nBody text.\n");

@@ -48,6 +48,7 @@ const configs = [_]GrammarConfig{
     .{ .language = .python, .name = "python", .extensions = &.{".py"}, .comment_styles = &python_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = false },
     .{ .language = .go, .name = "go", .extensions = &.{".go"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
     .{ .language = .json, .name = "json", .extensions = &.{".json"}, .comment_styles = &no_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = true },
+    .{ .language = .jsonc, .name = "jsonc", .extensions = &.{".jsonc"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = true },
     .{ .language = .yaml, .name = "yaml", .extensions = &.{ ".yaml", ".yml" }, .comment_styles = &python_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
     .{ .language = .toml, .name = "toml", .extensions = &.{".toml"}, .comment_styles = &python_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
     .{ .language = .markdown, .name = "markdown", .extensions = &.{ ".md", ".markdown" }, .comment_styles = &no_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
@@ -62,6 +63,7 @@ pub fn languageForExtension(ext: []const u8) ?bindings.Language {
     if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
     if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
     if (std.ascii.eqlIgnoreCase(ext, ".json")) return .json;
+    if (std.ascii.eqlIgnoreCase(ext, ".jsonc")) return .jsonc;
     if (std.ascii.eqlIgnoreCase(ext, ".yaml") or std.ascii.eqlIgnoreCase(ext, ".yml")) return .yaml;
     if (std.ascii.eqlIgnoreCase(ext, ".toml")) return .toml;
     if (std.ascii.eqlIgnoreCase(ext, ".md") or std.ascii.eqlIgnoreCase(ext, ".markdown")) return .markdown;
@@ -125,4 +127,13 @@ pub fn configForLanguage(language: bindings.Language) GrammarConfig {
         if (config.language == language) return config;
     }
     return configs[0];
+}
+
+test "grammar config maps jsonc extension" {
+    try std.testing.expectEqual(bindings.Language.jsonc, languageForExtension(".jsonc").?);
+
+    const config = configForLanguage(.jsonc);
+    try std.testing.expectEqualStrings("jsonc", config.name);
+    try std.testing.expectEqual(@as(usize, 1), config.extensions.len);
+    try std.testing.expectEqualStrings(".jsonc", config.extensions[0]);
 }
