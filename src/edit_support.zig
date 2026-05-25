@@ -196,6 +196,7 @@ fn normalizeReplaceSnippet(allocator: std.mem.Allocator, lang: bindings.Language
     return switch (lang) {
         .typescript, .tsx, .rust, .go => normalizeBraceBodySnippet(allocator, original_body, snippet),
         .python => normalizePythonBodySnippet(allocator, snippet),
+        else => error.UnsupportedLanguage,
     };
 }
 

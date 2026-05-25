@@ -38,6 +38,8 @@ const body_kinds = [_][]const u8{
 const typescript_comment_styles = [_][]const u8{ "//", "/*" };
 const python_comment_styles = [_][]const u8{"#"};
 const name_fields = [_][]const u8{"name"};
+const no_comment_styles = [_][]const u8{};
+const no_kinds = [_][]const u8{};
 
 const configs = [_]GrammarConfig{
     .{ .language = .rust, .name = "rust", .extensions = &.{".rs"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
@@ -45,6 +47,12 @@ const configs = [_]GrammarConfig{
     .{ .language = .tsx, .name = "tsx", .extensions = &.{".tsx"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
     .{ .language = .python, .name = "python", .extensions = &.{".py"}, .comment_styles = &python_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = false },
     .{ .language = .go, .name = "go", .extensions = &.{".go"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
+    .{ .language = .json, .name = "json", .extensions = &.{".json"}, .comment_styles = &no_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = true },
+    .{ .language = .yaml, .name = "yaml", .extensions = &.{ ".yaml", ".yml" }, .comment_styles = &python_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
+    .{ .language = .toml, .name = "toml", .extensions = &.{".toml"}, .comment_styles = &python_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
+    .{ .language = .markdown, .name = "markdown", .extensions = &.{ ".md", ".markdown" }, .comment_styles = &no_comment_styles, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = false },
+    .{ .language = .html, .name = "html", .extensions = &.{ ".html", ".htm" }, .comment_styles = &.{"<!--"}, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = true },
+    .{ .language = .css, .name = "css", .extensions = &.{".css"}, .comment_styles = &.{"/*"}, .declaration_kinds = &no_kinds, .body_kinds = &no_kinds, .name_fields = &no_kinds, .brace_body = true },
 };
 
 pub fn languageForExtension(ext: []const u8) ?bindings.Language {
@@ -53,6 +61,12 @@ pub fn languageForExtension(ext: []const u8) ?bindings.Language {
     if (std.ascii.eqlIgnoreCase(ext, ".tsx")) return .tsx;
     if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
     if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
+    if (std.ascii.eqlIgnoreCase(ext, ".json")) return .json;
+    if (std.ascii.eqlIgnoreCase(ext, ".yaml") or std.ascii.eqlIgnoreCase(ext, ".yml")) return .yaml;
+    if (std.ascii.eqlIgnoreCase(ext, ".toml")) return .toml;
+    if (std.ascii.eqlIgnoreCase(ext, ".md") or std.ascii.eqlIgnoreCase(ext, ".markdown")) return .markdown;
+    if (std.ascii.eqlIgnoreCase(ext, ".html") or std.ascii.eqlIgnoreCase(ext, ".htm")) return .html;
+    if (std.ascii.eqlIgnoreCase(ext, ".css")) return .css;
     return null;
 }
 

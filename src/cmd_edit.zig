@@ -184,6 +184,12 @@ fn languageName(lang: bindings.Language) []const u8 {
         .tsx => "tsx",
         .python => "python",
         .go => "go",
+        .json => "json",
+        .yaml => "yaml",
+        .toml => "toml",
+        .markdown => "markdown",
+        .html => "html",
+        .css => "css",
     };
 }
 

@@ -56,15 +56,21 @@ The plan combines:
 
 ## Current scope and limitations
 
-Current Blitz AST coverage is limited to the grammars reported by `blitz doctor`:
+Current Blitz parser coverage reported by `blitz doctor`:
 
 - Rust (`.rs`)
 - TypeScript (`.ts`)
 - TSX (`.tsx`)
 - Python (`.py`)
 - Go (`.go`)
+- JSON (`.json`; JSONC deliberately unmapped)
+- YAML (`.yaml`, `.yml`)
+- TOML (`.toml`)
+- Markdown (`.md`, `.markdown`; block grammar only)
+- HTML (`.html`, `.htm`)
+- CSS (`.css`)
 
-Markdown/README, JSON, YAML, TOML, HTML, CSS, config files, prose files, and arbitrary text are **not** first-class Blitz AST edit targets today. They can only be edited by core `edit` or by future generic text/format routes.
+Format grammar support is parser/doctor/routing substrate only. YAML/TOML/Markdown edit semantics are still deferred; current `set_key` remains strict JSON-only local scanning.
 
 ## 0.3 thesis
 
@@ -271,15 +277,15 @@ Format support plan:
 
 | Format | 0.3 target | Implementation strategy |
 |---|---|---|
-| Markdown | section/block insert/replace | tree-sitter-markdown or lightweight heading scanner; raw text edits |
-| JSON/JSONC | JSON: top-level `set_key` complete; delete key/array insert deferred; JSONC explicitly unsupported for `set_key` | small strict-JSON scanner + std.json validation; preserve raw indentation via local span edits |
-| YAML | simple key/section edits | tree-sitter-yaml first; no broad serializer rewrite |
-| TOML | table/key edits | tree-sitter-toml or minimal table scanner |
-| HTML | element/block anchor edits | tree-sitter-html; range edits |
-| CSS | rule/property edits | tree-sitter-css; range edits |
+| Markdown | parser support added; section/block insert/replace deferred | tree-sitter-markdown block grammar vendored; raw text edits |
+| JSON/JSONC | JSON parser support and top-level `set_key` complete; delete key/array insert deferred; JSONC unmapped/unsupported | tree-sitter-json vendored for parser support; `set_key` remains strict scanner + std.json validation |
+| YAML | parser support added; simple key/section edits deferred | tree-sitter-yaml vendored; no broad serializer rewrite |
+| TOML | parser support added; table/key edits deferred | tree-sitter-toml vendored; no broad serializer rewrite |
+| HTML | parser support added; element/block anchor edits deferred | tree-sitter-html vendored; range edits |
+| CSS | parser support added; rule/property edits deferred | tree-sitter-css vendored; range edits |
 | arbitrary text | anchors/hashes | deterministic byte edits only |
 
-Parser/grammar expansion note: `reports/grammar-parser-design-20260525.md` validates maintained grammar sources for JSON/YAML/Markdown/HTML/CSS and recommends pinned, audited grammar slices instead of adding every format grammar blindly in this branch.
+Parser/grammar expansion note: `reports/grammar-parser-design-20260525.md` records the pinned parser-support slice for JSON/YAML/TOML/Markdown/HTML/CSS, including exact repo commits, ABI status, and skipped inline Markdown/JSONC behavior. This slice adds parser and doctor support only; no YAML/TOML/Markdown edit semantics.
 
 Acceptance:
 

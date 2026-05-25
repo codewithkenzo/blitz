@@ -18,6 +18,12 @@ const supported_grammars = [_]GrammarProbe{
     .{ .name = "tsx", .lang = .tsx },
     .{ .name = "python", .lang = .python },
     .{ .name = "go", .lang = .go },
+    .{ .name = "json", .lang = .json },
+    .{ .name = "yaml", .lang = .yaml },
+    .{ .name = "toml", .lang = .toml },
+    .{ .name = "markdown", .lang = .markdown },
+    .{ .name = "html", .lang = .html },
+    .{ .name = "css", .lang = .css },
 };
 
 fn probeGrammar(lang: bindings.Language) bool {
@@ -105,7 +111,7 @@ pub fn run(
     try writeCacheLine(allocator, io, stdout);
 
     try stdout.writeAll(
-        \\  extensions:  .rs .ts .tsx .py .go
+        \\  extensions:  .rs .ts .tsx .py .go .json .yaml .yml .toml .md .markdown .html .htm .css
         \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply
         \\
     );
@@ -113,7 +119,7 @@ pub fn run(
     return if (grammars_ok) 0 else 1;
 }
 
-test "doctor exits 0 when all five grammars parse" {
+test "doctor exits 0 when all grammars parse" {
     var out: Writer.Allocating = .init(std.testing.allocator);
     defer out.deinit();
 

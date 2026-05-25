@@ -1,7 +1,7 @@
 //! blitz build.zig — Zig 0.16 stable.
 //!
 //! Statically links the vendored tree-sitter runtime (third_party/tree-sitter/)
-//! and the five vendored grammars under grammars/tree-sitter-<lang>/.
+//! and the vendored grammars under grammars/tree-sitter-<lang>/.
 
 const std = @import("std");
 
@@ -11,6 +11,12 @@ const grammars = [_]Grammar{
     .{ .name = "tsx", .has_scanner = true },
     .{ .name = "python", .has_scanner = true },
     .{ .name = "go", .has_scanner = false },
+    .{ .name = "json", .has_scanner = false },
+    .{ .name = "yaml", .has_scanner = true },
+    .{ .name = "toml", .has_scanner = true },
+    .{ .name = "markdown", .has_scanner = true },
+    .{ .name = "html", .has_scanner = true },
+    .{ .name = "css", .has_scanner = true },
 };
 
 const Grammar = struct {
