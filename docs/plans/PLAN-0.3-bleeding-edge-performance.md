@@ -314,16 +314,16 @@ Tasks:
 - [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
 - [x] Add CLI extension point without starting a daemon: `blitz daemon --help` documents the planned warm-worker stub and `blitz daemon` exits unsupported. [DONE: safe skeleton only]
 - [ ] Keep parser/query caches in worker memory. [DEFERRED: true Zig worker/parser cache not implemented]
-- [x] Add bounded MCP-host warm cache for safe repeated calls. [DONE: `BLITZ_MCP_WARM=1` caches `doctor` and `read` only; `read` cache key is canonical file path + SHA-256 file bytes; default off]
-- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and SHA-256 read keys; mutation hash preconditions still deferred]
-- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart; true idle eviction still deferred]
-- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [PARTIAL: MCP warm cache runs after existing `bindPath`; no fallback for path escape; frame limits retained; stale reads guarded by file hash; mutation cache absent. Full daemon checklist still open]
+- [x] Add bounded MCP-host warm cache for safe repeated calls. [DONE: `BLITZ_MCP_WARM=1` caches `doctor` and `read` only; `read` cache key is canonical file path + same-fd SHA-256/content metadata fingerprint; default off; read cache defaults: 128 entries and 1 MiB total cached result text]
+- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and same-fd SHA-256/content metadata read fingerprints; mutation hash preconditions still deferred]
+- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart and evicts read entries oldest/LRU-first when entry/result-byte bounds are exceeded; true idle eviction still deferred]
+- [ ] Security review: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [PARTIAL: MCP warm cache runs after existing `bindPath`; no fallback for path escape; frame limits retained; stale reads guarded by same-fd SHA-256/content metadata fingerprint pre/post checks; fingerprint stat/open/read errors, non-regular files, oversized inputs/results, and pre/post mismatches run stateless without cache fill. This is not fully adversarial TOCTOU-safe; future same-fd daemon parsing remains needed under hostile concurrent writers. Mutation cache absent. Full daemon checklist still open]
 
 Acceptance:
 
-- [x] Warm path p50/p95 wall time beats cold CLI on repeated safe operations. [DONE: `reports/mcp-warm-cache-bench-20260525.md`; 75-iteration parent rerun: doctor p50/p95 0.091/0.286ms warm vs 3.513/4.668ms cold; read 0.131/0.685ms warm vs 0.646/1.656ms cold]
-- [ ] Worker never mutates outside workspace. [PARTIAL: no mutation worker exists; MCP mutations still use existing stateless CLI after `bindPath`; full daemon mutation proof deferred]
-- [x] Crash/timeout falls back to stateless CLI safely for current warm slice. [DONE: current warm slice has no child worker; cache miss/oversized hash/process restart uses stateless CLI for safe calls; mutations already stateless]
+- [x] Warm path p50/p95 wall time beats cold CLI on repeated safe operations. [DONE: `reports/mcp-warm-cache-bench-20260525.md`; fixed-harness 25-iteration verification rerun rejects MCP `isError` tool results and asserts expected doctor/read content; doctor p50/p95 0.110/0.185ms warm vs 3.133/3.568ms cold; read p50/p95 0.157/0.799ms warm vs 0.439/1.091ms cold]
+- [ ] Worker never mutates outside workspace. [PARTIAL: no mutation worker exists; MCP mutations still use existing stateless CLI after `bindPath` and clear cached read entry before mutation; full daemon mutation proof deferred]
+- [x] Crash/timeout falls back to stateless CLI safely for current warm slice. [DONE: current warm slice has no child worker; cache miss, unsafe/oversized fingerprint input, oversized result, pre/post fingerprint mismatch, and process restart use stateless CLI for safe calls without cache fill; mutations already stateless]
 
 ### Lane F — Build and release benchmarking
 

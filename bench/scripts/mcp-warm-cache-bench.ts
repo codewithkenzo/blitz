@@ -45,6 +45,15 @@ const rpc = async (child: ChildProcessWithoutNullStreams, id: number, method: st
   return msg;
 };
 
+const toolCall = async (child: ChildProcessWithoutNullStreams, id: number, name: string, args: Record<string, unknown>, expectedText: string): Promise<void> => {
+  const msg = await rpc(child, id, "tools/call", { name, arguments: args });
+  const result = msg.result;
+  if (typeof result !== "object" || result === null) throw new Error(`tools/call missing result for id ${id}`);
+  if ("isError" in result && result.isError === true) throw new Error(JSON.stringify(result));
+  const content = "content" in result ? result.content : undefined;
+  if (!Array.isArray(content) || !content.some((part) => typeof part === "object" && part !== null && "text" in part && typeof part.text === "string" && part.text.includes(expectedText))) throw new Error(`tools/call missing expected text ${expectedText} for id ${id}`);
+};
+
 const percentile = (values: number[], pct: number): number => {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.ceil((pct / 100) * sorted.length) - 1)] ?? 0;
@@ -65,10 +74,10 @@ const runMode = async (mode: Mode): Promise<{ doctor: number[]; read: number[] }
   const read: number[] = [];
   for (let i = 0; i < iterations; i += 1) {
     let start = performance.now();
-    await rpc(child, 10_000 + i, "tools/call", { name: "blitz_doctor", arguments: {} });
+    await toolCall(child, 10_000 + i, "blitz_doctor", {}, "blitz doctor");
     doctor.push(performance.now() - start);
     start = performance.now();
-    await rpc(child, 20_000 + i, "tools/call", { name: "blitz_read", arguments: { file } });
+    await toolCall(child, 20_000 + i, "blitz_read", { file }, file);
     read.push(performance.now() - start);
   }
   child.kill();
@@ -106,7 +115,7 @@ Scope:
 - File: \`${file}\`
 - Iterations: ${iterations}; first iteration dropped
 - Cold: MCP subprocess with stateless Blitz CLI per call
-- Warm: \`BLITZ_MCP_WARM=1\`; MCP-host doctor cache and read cache keyed by SHA-256 file bytes when file is regular and within \`BLITZ_MCP_WARM_MAX_HASH_BYTES\`
+- Warm: \`BLITZ_MCP_WARM=1\`; MCP-host doctor cache and bounded read cache keyed by same-fd SHA-256/content metadata fingerprint when safe pre/post fingerprints match, file is regular, input is within \`BLITZ_MCP_WARM_MAX_HASH_BYTES\`, and result is within \`BLITZ_MCP_WARM_MAX_RESULT_BYTES\`
 - Mutation ops stayed stateless CLI fallback; no mutation result cache
 
 Results:
@@ -115,7 +124,7 @@ Results:
 |---|---:|---:|---:|
 ${rows.map(([mode, entry]) => `| ${mode} | ${entry.name} | ${entry.p50Ms.toFixed(3)} | ${entry.p95Ms.toFixed(3)} |`).join("\n")}
 
-Conclusion: bounded MCP warm cache targets repeated safe \`doctor\` and \`read\` calls. Rebenchmark larger safe-read files before default-on.
+Conclusion: bounded MCP warm cache targets repeated safe \`doctor\` and \`read\` calls. Fingerprint guard reduces accidental stale reuse but is not a replacement for future same-fd daemon parsing under hostile concurrent writers. Rebenchmark larger safe-read files before default-on.
 `;
 mkdirSync(dirname(reportPath), { recursive: true });
 writeFileSync(reportPath, report);

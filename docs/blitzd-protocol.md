@@ -1,6 +1,6 @@
 # `blitzd` warm-worker protocol (Lane E design)
 
-Status: protocol definition plus bounded MCP-host warm cache. No Zig daemon implementation exists yet. Current MCP server defaults to stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call. When `BLITZ_MCP_WARM=1`, the MCP host caches safe `doctor` output and `read` results keyed by canonical file path plus SHA-256 file bytes. Mutations still use stateless CLI fallback and mutation results are never cached.
+Status: protocol definition plus bounded MCP-host warm cache. No Zig daemon implementation exists yet. Current MCP server defaults to stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call. When `BLITZ_MCP_WARM=1`, the MCP host caches safe `doctor` output and bounded `read` results keyed by canonical file path plus a same-fd SHA-256/content metadata fingerprint. Cache fills only when pre-`blitz read` fingerprint equals post-`blitz read` fingerprint. This default-off guard reduces accidental stale reuse but is not a replacement for future same-fd daemon parsing under hostile concurrent writers. Mutations still use stateless CLI fallback and mutation results are never cached.
 
 ## Goals
 
@@ -209,6 +209,9 @@ Response result:
 ## Parser/query cache lifecycle
 
 - Cache key: language id, grammar ABI/version, file canonical path, file hash, parse options.
+- Current MCP read cache key is canonical file path plus fingerprint: SHA-256 over bytes read from one opened regular-file fd, size, dev/ino when Node exposes them, and mtime/ctime in nanoseconds when available or milliseconds otherwise. Fingerprinting opens the bound path with nonblocking read flags, `fstat`s the same fd, rejects non-regular files and files larger than `BLITZ_MCP_WARM_MAX_HASH_BYTES` (default 1 MiB), reads bounded bytes from that fd, re-`fstat`s to confirm file type and size are unchanged, and treats any stat/open/read error as “uncacheable”. Uncacheable reads still run stateless CLI but do not reuse/fill read cache.
+- Current MCP read cache fill policy computes safe pre-fingerprint, runs `blitz read`, computes safe post-fingerprint, and caches only if fingerprints match, result is non-error, and result text is at most `BLITZ_MCP_WARM_MAX_RESULT_BYTES` (default 1 MiB; range 0..16 MiB). Cache hits compare the current fingerprint against the cached entry fingerprint and refresh recency. This is a default-off guard against stale warm-cache reuse, not a fully adversarial TOCTOU solution; future daemon parsing should read/parse from the same fd when hostile concurrent writers matter.
+- Current MCP read cache bounds: `BLITZ_MCP_WARM_MAX_ENTRIES` default 128 (range 1..4096) and `BLITZ_MCP_WARM_MAX_RESULT_BYTES` default 1 MiB. Eviction is deterministic LRU/oldest-first until both entry count and total cached result bytes are within bounds. `doctor` remains a single-entry cache.
 - Parser instances and compiled queries may be retained per language.
 - Parsed trees may be retained per file hash; any hash change invalidates tree.
 - Any mutation success increments `cacheEpoch` and invalidates stale tree entries for that file.
@@ -218,7 +221,7 @@ Response result:
 
 ## Timeout, crash, and fallback
 
-Host owns worker lifecycle. Current `BLITZ_MCP_WARM=1` cache path has no worker process; cache fallback is internal: cache miss, oversized hash input (`BLITZ_MCP_WARM_MAX_HASH_BYTES`, default 1 MiB), or process restart falls back to current stateless CLI for safe `doctor`/`read`. Path escape errors are raised before fallback. Mutation tools (`blitz_patch`, `blitz_try_catch`, `blitz_replace_return`, `blitz_undo`) always call stateless CLI and clear any cached read for that canonical file.
+Host owns worker lifecycle. Current `BLITZ_MCP_WARM=1` cache path has no worker process; cache fallback is internal: cache miss, unsafe/oversized fingerprint input (`BLITZ_MCP_WARM_MAX_HASH_BYTES`, default 1 MiB), fingerprint error, pre/post fingerprint mismatch, oversized result (`BLITZ_MCP_WARM_MAX_RESULT_BYTES`, default 1 MiB), or process restart falls back to current stateless CLI for safe `doctor`/`read` without cache fill. Path binding happens before cache lookup; path escape/security errors are raised before fallback and are never cached. Mutation tools (`blitz_patch`, `blitz_try_catch`, `blitz_replace_return`, `blitz_undo`) always call stateless CLI and clear any cached read for that canonical file before mutation.
 
 Future daemon lifecycle:
 

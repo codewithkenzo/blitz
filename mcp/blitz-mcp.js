@@ -2,7 +2,7 @@
 // @bun
 
 // mcp/blitz-mcp.ts
-import { existsSync as existsSync2, realpathSync, readFileSync, statSync } from "fs";
+import { closeSync, constants as fsConstants, existsSync as existsSync2, fstatSync, openSync, realpathSync, readSync } from "fs";
 import { createHash } from "crypto";
 import { dirname as dirname2, isAbsolute, relative, resolve } from "path";
 import { spawnSync } from "child_process";
@@ -81,6 +81,8 @@ var timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30000, 1, 600000);
 var maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
 var warmMode = process.env.BLITZ_MCP_WARM === "1";
 var warmMaxHashBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_HASH_BYTES", 1024 * 1024, 1, 16 * 1024 * 1024);
+var warmMaxEntries = parseEnvInt("BLITZ_MCP_WARM_MAX_ENTRIES", 128, 1, 4096);
+var warmMaxResultBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_RESULT_BYTES", 1024 * 1024, 0, 16 * 1024 * 1024);
 var maxBufferedBytes = maxFrameBytes + 4096;
 var initialized = false;
 var warmCache = {
@@ -126,23 +128,84 @@ ${stderr}` : ""].filter(Boolean).join(`
 `);
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
 };
-var fileHash = (file) => {
-  const stat = statSync(file);
-  if (!stat.isFile() || stat.size > warmMaxHashBytes)
+var resultBytes = (result) => Buffer.byteLength(result.content.map((part) => part.text).join(""), "utf8");
+var touchWarmRead = (file, entry) => {
+  warmCache.reads.delete(file);
+  warmCache.reads.set(file, entry);
+  return entry.result;
+};
+var trimWarmReads = () => {
+  let bytes = 0;
+  for (const entry of warmCache.reads.values())
+    bytes += entry.resultBytes;
+  for (const [file, entry] of warmCache.reads) {
+    if (warmCache.reads.size <= warmMaxEntries && bytes <= warmMaxResultBytes)
+      break;
+    warmCache.reads.delete(file);
+    bytes -= entry.resultBytes;
+  }
+};
+var statFingerprint = (stat, hash) => {
+  const statAny = stat;
+  const size = Number(stat.size);
+  if (!Number.isSafeInteger(size))
     return;
-  const bytes = readFileSync(file);
-  return `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+  const fingerprint = {
+    hash,
+    size,
+    dev: String(stat.dev),
+    ino: String(stat.ino)
+  };
+  if (statAny.mtimeNs !== undefined && statAny.ctimeNs !== undefined) {
+    fingerprint.mtimeNs = String(statAny.mtimeNs);
+    fingerprint.ctimeNs = String(statAny.ctimeNs);
+  } else {
+    fingerprint.mtimeMs = Number(stat.mtimeMs);
+    fingerprint.ctimeMs = Number(stat.ctimeMs);
+  }
+  return fingerprint;
+};
+var fingerprintEquals = (a, b) => a !== undefined && b !== undefined && a.hash === b.hash && a.size === b.size && a.dev === b.dev && a.ino === b.ino && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs;
+var fileFingerprint = (file) => {
+  let fd;
+  try {
+    fd = openSync(file, fsConstants.O_RDONLY | fsConstants.O_NONBLOCK | (fsConstants.O_NOFOLLOW ?? 0));
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size > warmMaxHashBytes)
+      return;
+    const bytes = Buffer.allocUnsafe(stat.size);
+    let offset = 0;
+    while (offset < stat.size) {
+      const read = readSync(fd, bytes, offset, stat.size - offset, offset);
+      if (read === 0)
+        return;
+      offset += read;
+    }
+    const after = fstatSync(fd, { bigint: true });
+    if (!after.isFile() || after.size !== BigInt(stat.size))
+      return;
+    return statFingerprint(after, `sha256:${createHash("sha256").update(bytes).digest("hex")}`);
+  } catch {
+    return;
+  } finally {
+    if (fd !== undefined)
+      closeSync(fd);
+  }
 };
 var warmRead = (file) => {
-  const hash = fileHash(file);
-  if (!hash)
+  const preFingerprint = fileFingerprint(file);
+  if (!preFingerprint)
     return run(["read", file]);
   const cached = warmCache.reads.get(file);
-  if (cached?.hash === hash)
-    return cached.result;
+  if (cached && fingerprintEquals(cached.fingerprint, preFingerprint))
+    return touchWarmRead(file, cached);
   const result = run(["read", file]);
-  if (!result.isError)
-    warmCache.reads.set(file, { hash, result });
+  const postFingerprint = fileFingerprint(file);
+  const bytes = resultBytes(result);
+  if (!result.isError && postFingerprint && fingerprintEquals(postFingerprint, preFingerprint) && bytes <= warmMaxResultBytes) {
+    warmCache.reads.set(file, { fingerprint: postFingerprint, result, resultBytes: bytes });
+    trimWarmReads();
+  }
   return result;
 };
 var clearWarmFile = (file) => {
