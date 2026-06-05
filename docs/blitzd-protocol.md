@@ -1,6 +1,6 @@
 # `blitzd` warm-worker protocol (Lane E design)
 
-Status: protocol definition plus bounded MCP-host warm cache. No Zig daemon implementation exists yet. Current MCP server defaults to stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call. The MCP stdio parser now rejects duplicate `Content-Length`, malformed header lines, oversized headers, and body lengths above `BLITZ_MCP_MAX_FRAME_BYTES` before dispatching a JSON-RPC request. When `BLITZ_MCP_WARM=1`, the MCP host caches safe `doctor` output and bounded `read` results keyed by canonical file path plus a same-fd SHA-256/content metadata fingerprint. Cache fills only when pre-`blitz read` fingerprint equals post-`blitz read` fingerprint. This default-off guard reduces accidental stale reuse but is not a replacement for future same-fd daemon parsing under hostile concurrent writers. Mutations still use stateless CLI fallback and mutation results are never cached.
+Status: protocol definition plus bounded MCP-host warm cache plus minimal Zig JSONL daemon prototype. `blitz daemon --help` works. `blitz [--workspace-root <root>] daemon` reads one JSON object per stdin line and writes one JSON response per stdout line. Implemented daemon methods are non-mutating only: `doctor` and `read`. Unknown methods and mutating methods (`apply`, `edit`, `batch-edit`, `rename`, `undo`) fail closed with `fallbackAllowed:false` for mutating requests; no daemon mutation fallback exists. Current MCP server still defaults to stateless `blitz --workspace-root <root> ...` via `spawnSync` for each tool call. The MCP stdio parser now rejects duplicate `Content-Length`, malformed header lines, oversized headers, and body lengths above `BLITZ_MCP_MAX_FRAME_BYTES` before dispatching a JSON-RPC request. When `BLITZ_MCP_WARM=1`, the MCP host caches safe `doctor` output and bounded `read` results keyed by canonical file path plus a same-fd SHA-256/content metadata fingerprint. Cache fills only when pre-`blitz read` fingerprint equals post-`blitz read` fingerprint. This default-off guard reduces accidental stale reuse but is not a replacement for future same-fd daemon parsing under hostile concurrent writers. Mutations still use stateless CLI fallback and mutation results are never cached.
 
 ## Goals
 
@@ -10,7 +10,7 @@ Status: protocol definition plus bounded MCP-host warm cache. No Zig daemon impl
 
 ## Transport
 
-Full `blitzd` v1 would use stdio JSONL:
+Prototype `blitz daemon` and full `blitzd` v1 use stdio JSONL:
 
 - one UTF-8 JSON object per line;
 - max frame size: 1 MiB default, configurable downward by host;
@@ -116,7 +116,7 @@ Response result mirrors current CLI `blitz read` JSON/source summary when JSON m
 }
 ```
 
-### `apply`
+### `apply` (deferred; rejected by current Zig daemon)
 
 Request params:
 

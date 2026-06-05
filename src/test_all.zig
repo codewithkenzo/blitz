@@ -5,6 +5,7 @@ const backup = @import("backup.zig");
 const cli = @import("cli.zig");
 const cmd_batch = @import("cmd_batch.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
+const cmd_daemon = @import("cmd_daemon.zig");
 const cmd_edit = @import("cmd_edit.zig");
 const cmd_apply = @import("apply/mod.zig");
 const cmd_read = @import("cmd_read.zig");
@@ -28,6 +29,7 @@ test "import module tests" {
     _ = cli;
     _ = cmd_batch;
     _ = cmd_doctor;
+    _ = cmd_daemon;
     _ = cmd_edit;
     _ = cmd_apply;
     _ = cmd_read;

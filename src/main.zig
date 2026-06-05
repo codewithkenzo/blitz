@@ -13,6 +13,7 @@ const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
+const cmd_daemon = @import("cmd_daemon.zig");
 
 pub const version = "0.1.0-alpha.10";
 const MAX_STDIN_BYTES = 4 * 1024 * 1024;
@@ -84,7 +85,7 @@ pub fn main(init: std.process.Init) !void {
             if (std.mem.eql(u8, next_cmd, "edit")) break :blk try dispatchEdit(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "batch-edit")) break :blk try dispatchBatch(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "apply")) break :blk try dispatchApply(gpa, io, &it, stdout, stderr);
-            if (std.mem.eql(u8, next_cmd, "daemon")) break :blk try dispatchDaemon(&it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "daemon")) break :blk try cmd_daemon.run(gpa, io, root, stdout, stderr, &it);
             if (std.mem.eql(u8, next_cmd, "rename")) break :blk try dispatchRename(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "undo")) {
                 const file = it.next() orelse {
@@ -110,7 +111,7 @@ pub fn main(init: std.process.Init) !void {
         }
 
         if (std.mem.eql(u8, cmd, "daemon")) {
-            break :blk try dispatchDaemon(&it, stdout, stderr);
+            break :blk try cmd_daemon.run(gpa, io, "", stdout, stderr, &it);
         }
 
         if (std.mem.eql(u8, cmd, "rename")) {
@@ -132,40 +133,6 @@ pub fn main(init: std.process.Init) !void {
     try stdout.flush();
     try stderr.flush();
     if (exit_code != 0) std.process.exit(exit_code);
-}
-
-fn dispatchDaemon(
-    it: *std.process.Args.Iterator,
-    stdout: *std.Io.Writer,
-    stderr: *std.Io.Writer,
-) !u8 {
-    const arg = it.next();
-    if (arg) |value| {
-        if (std.mem.eql(u8, value, "--help") or std.mem.eql(u8, value, "-h") or
-            std.mem.eql(u8, value, "help"))
-        {
-            try stdout.writeAll(
-                \\blitz daemon — planned warm-worker extension point
-                \\
-                \\USAGE:
-                \\    blitz daemon --help
-                \\
-                \\STATUS:
-                \\    Not implemented. The Lane E protocol is documented in docs/blitzd-protocol.md.
-                \\    Current MCP and CLI behavior remains stateless and shells out per command.
-                \\
-            );
-            return 0;
-        }
-
-        try stderr.print("blitz daemon: unknown argument '{s}'\n", .{value});
-        return 1;
-    }
-
-    try stderr.writeAll(
-        "blitz daemon: not implemented; see docs/blitzd-protocol.md for the planned protocol\n",
-    );
-    return 1;
 }
 
 fn dispatchEdit(

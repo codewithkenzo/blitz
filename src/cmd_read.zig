@@ -3,7 +3,7 @@ const bindings = @import("tree_sitter/bindings.zig");
 const workspace = @import("workspace.zig");
 
 const Writer = std.Io.Writer;
-const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
+pub const MAX_SOURCE_BYTES = 32 * 1024 * 1024;
 
 pub fn run(
     allocator: std.mem.Allocator,
@@ -52,7 +52,7 @@ pub fn run(
     return 0;
 }
 
-fn readFileAlloc(allocator: std.mem.Allocator, io: std.Io, file_path: []const u8) ![]u8 {
+pub fn readFileAlloc(allocator: std.mem.Allocator, io: std.Io, file_path: []const u8) ![]u8 {
     const cwd = std.Io.Dir.cwd();
     var file = try cwd.openFile(io, file_path, .{});
     defer file.close(io);
@@ -67,7 +67,7 @@ fn readFileAlloc(allocator: std.mem.Allocator, io: std.Io, file_path: []const u8
     return buffer[0..n];
 }
 
-fn countLines(source: []const u8) usize {
+pub fn countLines(source: []const u8) usize {
     if (source.len == 0) return 0;
 
     var lines: usize = 1;
@@ -78,7 +78,7 @@ fn countLines(source: []const u8) usize {
     return lines;
 }
 
-fn writeStructureSummary(stdout: *Writer, root: bindings.Node, source: []const u8) !void {
+pub fn writeStructureSummary(stdout: *Writer, root: bindings.Node, source: []const u8) !void {
     var i: u32 = 0;
     const child_count = root.namedChildCount();
     while (i < child_count) : (i += 1) {
