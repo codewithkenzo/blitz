@@ -241,8 +241,8 @@ Tasks:
   - Future `blitzd` / warm worker should keep parsers warm; CLI remains stateless but reports cold-start metrics.
 - [ ] Cache compiled `TSQuery` per language/op. [DEFERRED]
   - Current targeting path does not use `TSQuery` yet beyond bindings; cache becomes actionable with query-based targeting or warm worker.
-- [ ] Limit queries by byte/point range and max depth/match count. [DEFERRED]
-  - Depends on query-based targeting; keep as acceptance for future TSQuery slices.
+- [x] Add query cursor byte/point range and max depth/match count wrapper scaffolding. [DONE wrapper-level: `029b1da` exposes Tree-sitter `QueryCursor` wrappers for match limit, did-exceed, point range, byte range, and max start depth with focused bindings tests; product-level query operation plumbing remains deferred]
+  - Future query-based targeting must apply these limits in user-facing CLI/daemon operations and decide whether invalid ranges should return errors instead of assert-only low-level wrapper checks.
 - [x] Implement incremental parse-after validation for single/multi range edits: [DONE:12]
   - compute exact `TSInputEdit` from byte and line-index data;
   - call `ts_tree_edit()` on old tree;
