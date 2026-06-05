@@ -1,16 +1,16 @@
-# Blitz 0.4 — Context and Token Optimization Plan
+# Blitz 0.4 — Context/Token Optimization to Replace Core Edit
 
 Date: 2026-06-05
-Status: planning record; implementation not started
-Source baseline: `reports/pi-pair-full-gpt54mini-2026-05-25.json`, `reports/pi-lane-g-glm-arrow-20260525-123212.json`, `@codewithkenzo/pi-blitz` source at `/home/kenzo/dev/pi-blitz`
+Status: finalized research + implementation plan; implementation not started
+Primary objective: make Blitz save context-window and tokens across as many real coding-agent edits as possible, enough to become the default replacement for core edit where safe.
 
-## Objective
+## Non-negotiable framing
 
-Make Blitz save context-window and tokens as broadly as possible in real agent usage.
+This is **not** a raw speed plan. It is a context-window and token-savings plan.
 
-This is not a raw speed plan. Speed matters only when it helps agent throughput. Primary success metric is fewer model-visible tokens and less context pollution while preserving correctness.
+A Blitz edit is successful only if it reduces model-visible context/output/tool-call tokens or correctly routes away from Blitz when core is cheaper. Wall time stays a secondary guardrail: keep Blitz fast or make it faster, but do not call speed the main win.
 
-## Baseline from 26-run GPT matrix
+## Baseline from existing real Pi/Tokscale bench
 
 Report: `reports/pi-pair-full-gpt54mini-2026-05-25.json`
 
@@ -21,347 +21,587 @@ Report: `reports/pi-pair-full-gpt54mini-2026-05-25.json`
 - Token accounting matched parser: 26/26
 - Core-vs-Blitz pairs: 12
 
-### Current wins
+### What works today
 
-Blitz works when core would rewrite or fail structural edits.
+Blitz gives massive savings when core would rewrite/fail structural edits.
 
 | Fixture | Core output | Blitz output | Output saved | Core args | Blitz args | Arg saved | Correctness |
 |---|---:|---:|---:|---:|---:|---:|---|
 | `medium-10k/wrap-body` | 9,672 | 117 | 9,555 | 9,656 | 97 | 9,559 | core failed, Blitz correct |
 | `multi/large-structural` | 9,773 | 134 | 9,639 | 9,755 | 115 | 9,640 | core failed, Blitz correct |
 
-### Current losses
+Router-selected aggregate vs wrong lane across 12 pairs:
 
-Blitz does not yet save everywhere.
+- output tokens saved: 19,230
+- edit-arg tokens saved: 19,277
+- total Tokscale tokens saved: 31,878
+- cost saved: $0.07598
+
+### What fails the user's actual goal today
+
+Blitz does **not** yet save everywhere.
 
 Across 8 both-correct pairs:
 
 - Blitz saved output/args in only 3/8.
 - Blitz lost output/args in 5/8.
-- Total Tokscale tokens were worse for Blitz in 8/8 both-correct pairs because input/cache/tool overhead dominated.
+- Total Tokscale tokens were worse for Blitz in 8/8 both-correct pairs because input/cache/tool/skill overhead dominated.
 
-Example:
+Examples:
 
 | Fixture | Core output | Blitz output | Core args | Blitz args | Result |
 |---|---:|---:|---:|---:|---|
 | `medium-10k/marker-tail` | 92 | 112 | 76 | 91 | Blitz worse |
 | `semantic/arrow-replace-return` | 92 | 101 | 76 | 81 | Blitz worse on output/args |
 
-### Router-selected aggregate
+Conclusion: the previous 0.3 work proved routing and structural wins. It did **not** prove Blitz can replace core. 0.4 must attack overhead so Blitz becomes cheaper on simple edits too, or routes core with explicit token proof.
 
-Using current recommended lane per pair instead of the other lane saved across 12 pairs:
+## Local codebase findings
 
-- Output tokens saved: 19,230
-- Edit-arg tokens saved: 19,277
-- Total Tokscale tokens saved: 31,878
-- Cost saved: $0.07598
+### `@codewithkenzo/pi-blitz` overhead
 
-This proves routing avoids catastrophic losses, but it does not prove Blitz is optimized everywhere.
+Companion repo: `/home/kenzo/dev/pi-blitz`
 
-## Root-cause hypothesis
+Measured roughly from current source:
 
-Blitz narrow op argument payloads are already small enough in many cases:
+- resident skill: `skills/pi-blitz/SKILL.md`
+  - 9,741 chars
+  - ~2,435 rough tokens by chars/4
+  - 265 lines
+- registered tools in `index.ts`: 15 total
+  - `pi_blitz_read`
+  - `pi_blitz_edit`
+  - `pi_blitz_batch`
+  - `pi_blitz_apply`
+  - `pi_blitz_replace_body_span`
+  - `pi_blitz_insert_body_span`
+  - `pi_blitz_wrap_body`
+  - `pi_blitz_compose_body`
+  - `pi_blitz_multi_body`
+  - `pi_blitz_patch`
+  - `pi_blitz_try_catch`
+  - `pi_blitz_replace_return`
+  - `pi_blitz_rename`
+  - `pi_blitz_undo`
+  - `pi_blitz_doctor`
+- rough source-size estimates for model-facing tool definitions in `src/tools.ts`:
+  - `pi_blitz_apply`: ~741 rough tokens
+  - `pi_blitz_edit`: ~680
+  - `pi_blitz_batch`: ~581
+  - narrow/semantic tools: ~250-415 each
+  - full registered surface is several thousand schema/description tokens before runtime serialization overhead.
+- existing benchmark Blitz lane narrows to 8 `pi_blitz_*` tools, but that is still too many for simple edits.
 
-- `replace_return`: roughly 70-100 arg tokens
-- `wrap_body`: roughly 90-120 arg tokens for known wrappers
-- structural large-body savings: ~9.5k output/arg tokens per edit
+Diagnosis: simple-edit losses are mainly **resident tool/skill/schema/prompt tax**, not Zig runtime or edit-arg size.
 
-The broad-loss problem is not primarily Zig execution. It is likely:
+### Blitz CLI strengths already present
 
-1. **Tool schema/context tax**: `pi-blitz` registers 14 tools, each with TypeBox schemas and descriptions. Even the benchmark's narrow Blitz lane exposes 8 `pi_blitz_*` structured tools.
-2. **Skill/prompt tax**: `skills/pi-blitz/SKILL.md` is ~9,741 chars / ~2.4k rough tokens and tells the model many cases/routes.
-3. **Input/cache overhead**: both-correct Blitz rows often have higher input/cache totals despite smaller edit args.
-4. **Too many near-duplicate tools**: `pi_blitz_apply`, `pi_blitz_patch`, `pi_blitz_replace_body_span`, `pi_blitz_insert_body_span`, `pi_blitz_wrap_body`, `pi_blitz_compose_body`, `pi_blitz_multi_body`, `pi_blitz_try_catch`, `pi_blitz_replace_return`, etc. compete in context.
-5. **No per-edit tool gating**: the model sees tools it cannot need for a given edit. External research agrees dynamic tool gating / lazy schema loading is the main fix for tool-schema context tax.
+Repo: `/home/kenzo/dev/blitz`
 
-## External research notes
+Existing useful pieces:
 
-- OpenAI function-calling docs emphasize that function descriptions and schemas are part of request context and should be concise.
-- OpenAI function calling docs mention tool search / deferred tool loading for many tools on newer models.
-- Tool-gating research and OSS projects (`tool-attention`, ATR-style routers) target the same problem: avoid injecting every full schema every turn. Reported reductions are large in tool-heavy catalogs, but Blitz must measure on real Pi sessions before claiming numbers.
+- deterministic ops in `src/apply/operations.zig`
+  - `replace_unique`
+  - `insert_after_anchor`
+  - `insert_before_anchor`
+  - `replace_between`
+  - `append_section`
+  - `ensure_line`
+  - `delete_range`
+  - `replace_body_span`
+  - `wrap_body`
+  - `set_key`
+  - `patch` / `compact_patch`
+- parser/query primitives
+  - tree-sitter 0.26.9 bindings
+  - query cursor wrappers for byte/point range, match limit, max start depth
+  - daemon parser/query cache for current TypeScript `read_summary`
+- benchmark harness
+  - `bench/pi-matrix.ts`
+  - Tokscale validation
+  - edit arg token estimates
+  - route/cost reporting
 
-## Success criteria
+Main missing pieces:
 
-Primary criteria:
+1. Exact schema/skill/token-tax accounting.
+2. A default minimal tool profile.
+3. A single ultra-compact model-facing op tool.
+4. A token-first router and benchmark report.
+5. Real-world benchmarks that prove simple edits improve, not only structural cases.
 
-1. On both-correct simple rows, Blitz must be no worse than core on model-visible context by threshold:
-   - output tokens <= core + 5%
-   - edit-arg tokens <= core + 5%
-   - total Tokscale tokens <= core + 10% or router must choose core
-2. On structural rows, preserve existing huge savings:
-   - keep ~9k+ output/arg token savings on large body/wrap cases
-   - preserve correctness when core fails
-3. Reduce always-present `pi-blitz` tool/skill overhead:
-   - measure current schema + skill token footprint
-   - reduce resident tool schema/context by at least 70% in the common simple-edit lane
-4. Real-world benchmark must use Pi/tmux/Tokscale, not synthetic-only numbers.
+## External research findings
 
-Secondary criteria:
+### OpenAI APIs
 
-- No loss of safety: deterministic preconditions, workspace checks, no mutation without exact target.
-- No misleading report rows: correctness and route choice must remain explicit.
+Sources:
 
-## Implementation plan
+- OpenAI function calling guide: https://developers.openai.com/api/docs/guides/function-calling
+- OpenAI tools guide: https://developers.openai.com/api/docs/guides/tools
+- OpenAI apply_patch guide: https://developers.openai.com/api/docs/guides/tools-apply-patch
+- GPT-5 tools/cfg/freeform examples: https://developers.openai.com/cookbook/examples/gpt-5/gpt-5_new_params_and_tools
 
-### Phase 0 — Measurement harness for actual context tax
+Findings:
 
-Owner: `d5` for scripts, reviewer for report.
+- Function/tool names, descriptions, and schemas are part of the model context. Large tool sets consume context.
+- `tool_search` exists for `gpt-5.4+`: defer rarely used tools and load them only when needed.
+- Custom/freeform tools can accept raw text payloads instead of JSON object wrapping. This can be better for compact edit DSLs.
+- Custom tools can be constrained by CFG grammar. That enables a compact Blitz edit language like `rr(path,symbol,expr)` or tuple text without verbose JSON keys. CFG can add generation latency, so benchmark required.
+- `apply_patch` is the current OpenAI-native code-edit baseline. It supports create/update/delete and streaming patch changes. Blitz should compare against it, not only core edit.
 
-Deliverables:
+Action for Blitz:
 
-- Add a benchmark mode that records:
-  - tool schemas exposed per run
-  - serialized tool schema token estimate
-  - skill prompt token estimate
-  - user prompt tokens
-  - model input/output/cache tokens from Tokscale
-  - edit-arg tokens
-  - selected tool name
-- Add a report section separating:
-  - `tool_schema_tokens`
-  - `skill_tokens`
-  - `user_prompt_tokens`
-  - `tool_arg_tokens`
-  - `model_output_tokens`
-  - `cache_read/write_tokens`
+- Implement `pi_blitz_op` as either:
+  - one JSON-schema tool with compact short keys, or
+  - one freeform custom tool with a compact grammar if Pi/OpenAI path supports it.
+- Add a `tool_search`/lazy profile path for `gpt-5.4+` models where available.
+- Benchmark against core edit and apply_patch-style patches.
 
-Why: current reports show input/cache overhead, but not which part is tool schema vs skill vs prompt.
+### Anthropic MCP/code-execution strategy
 
-Acceptance:
+Source: https://www.anthropic.com/engineering/code-execution-with-mcp
 
-- Re-run the 12-pair GPT matrix with schema/skill breakdown.
-- Produce a table showing exactly why Blitz loses simple both-correct rows.
+Findings:
 
-### Phase 1 — Tool-surface minimization
+- Direct tool calls consume context for each tool definition and each result.
+- Large MCP tool sets slow agents and increase costs because definitions are loaded up front.
+- Anthropic recommends presenting tools as code/filesystem APIs or adding `search_tools` so models load definitions on demand.
+- Example claim: a workflow can drop from 150,000 tokens to 2,000 tokens when tools/data are loaded and processed in code instead of passed through model context.
+- Progressive disclosure: models can navigate filesystems and read only needed tool definitions.
 
-Owner: `d5` in `/home/kenzo/dev/pi-blitz`.
+Action for Blitz:
 
-Current problem:
+- Treat `pi-blitz` tool definitions as a discoverable catalog, not always-on tools.
+- Add one resident discovery/execution tool or use Pi tool profiles so only relevant Blitz schema is visible.
+- Keep intermediate results in tool runtime. Return compact summaries; never return whole diffs unless requested.
 
-`index.ts` registers all tools by default:
+### Aider edit formats
 
-- read/edit/batch/apply
-- replace body span
-- insert body span
-- wrap body
-- compose body
-- multi body
-- patch
-- try catch
-- replace return
-- rename
-- undo
-- doctor
+Sources:
 
-Plan:
+- https://aider.chat/docs/more/edit-formats.html
+- https://aider.chat/docs/unified-diffs.html
 
-1. Add configurable tool profiles:
-   - `minimal`: only one compact edit tool + doctor optional
-   - `semantic`: `replace_return`, `try_catch`, `wrap_body`
-   - `structural`: body span / compose / multi
-   - `admin`: read/doctor/undo/rename
-   - `full`: current behavior
-2. Let benchmark and runtime select profile per task.
-3. Default to `minimal` or `semantic`, not `full`.
-4. Ensure unused tools are not registered, not merely ignored.
+Findings:
 
-Expected win:
+- Whole-file edit format is simple but slow/costly because the model returns the entire file.
+- Diff/udiff formats are efficient because the model returns only changed parts.
+- Unified diffs reduced lazy coding for GPT-4 Turbo by making outputs look like strict patch data.
+- Aider emphasizes formats that are familiar, simple, high-level, and flexible to apply.
 
-Cuts model-visible schema tax for simple edits by removing 8-13 unused tools.
+Action for Blitz:
 
-Acceptance:
+- Keep familiar patch/diff fallback for models that hate compact DSL.
+- But for Blitz-native path, avoid requiring old code/location text. Use AST symbol name + compact op.
+- Add forgiving parser for compact op text, like Aider's flexible patch application, but keep mutation preconditions strict.
 
-- Token report proves resident tool schema tokens fall by >=70% for simple edit lane.
-- Simple `replace_return` benchmark improves total Tokscale tokens vs current Blitz.
+### FastEdit / AST-aware edit strategies
 
-### Phase 2 — One ultra-compact op tool
+Source: https://github.com/parcadei/fastedit
 
-Owner: `d5` in `/home/kenzo/dev/pi-blitz`, maybe Blitz CLI if needed.
+Findings:
 
-Current problem:
+- FastEdit explicitly frames the waste: diffs/search-replace/apply_patch force the model to repeat old code to locate edits.
+- FastEdit eliminates location tokens with tree-sitter symbol lookup by name.
+- It reports deterministic text-matching handles 74% of real edits with zero model calls; complex cases use a ~35-line local merge model.
+- It claims deterministic path: 100% accuracy, 0 tokens, <1ms; model path: ~40 tokens, <1s; combined average ~10 tokens, ~130ms.
 
-Even narrow tools still have verbose field names and multiple schemas. `pi_blitz_patch` is close but still exposed alongside many tools.
+Action for Blitz:
 
-Plan:
+- Copy the strategic pattern, not the local ML dependency at first:
+  1. AST target by symbol/name.
+  2. Model emits only changed snippet plus optional `#...`/keep markers.
+  3. Deterministic anchor/splice first.
+  4. If ambiguous, fail closed or use local chunk-level merge later.
+- Add an optional chunk-local merge phase only after deterministic wins are measured.
 
-1. Add `pi_blitz_op` or replace default with `pi_blitz_patch`-only profile.
-2. Use compact tuple or short-key IR:
+### TanStack AI / tool lazy discovery
+
+Sources:
+
+- https://tanstack.com/ai/latest/docs/tools/lazy-tool-discovery
+- https://tanstack.com/blog/tanstack-ai-lazy-tool-discovery
+
+Findings:
+
+- Sending every tool definition wastes tokens and degrades tool choice.
+- Lazy tools are withheld; model sees one discovery tool listing names.
+- Model calls discovery for needed tools; full schema is injected only after discovery.
+- Example framing: 30 tools can burn 3k-5k tokens before conversation starts; lazy discovery keeps prompt lean.
+
+Action for Blitz:
+
+- Add Pi-level lazy discovery if Pi supports dynamic tool registration per turn; otherwise approximate with profiles:
+  - `blitz-min`: only `pi_blitz_op`
+  - `blitz-struct`: body/compose/multi
+  - `blitz-admin`: read/doctor/undo
+  - `blitz-full`: current behavior for debugging/manual use.
+
+### Zig and tree-sitter APIs
+
+Sources:
+
+- Zig 0.16 release notes: https://ziglang.org/download/0.16.0/release-notes.html
+- Tree-sitter query API: https://tree-sitter.github.io/tree-sitter/using-parsers/queries/4-api.html
+
+Findings:
+
+- Zig 0.16 production path should remain stable. `std.Io.Threaded` is the stable I/O lane. `--watch`, `-fincremental`, `--time-report`, and `--webui` are useful dev-loop features but not release proof.
+- Locally, current `--watch/-fincremental/--time-report` probes failed; keep as dev-loop backlog.
+- Tree-sitter QueryCursor supports byte ranges, point ranges, match limits, and max start depth. Blitz already exposed wrappers; next work is using them in product query ops.
+
+Action for Blitz:
+
+- Use Tree-sitter query limits to make symbol lookup/query targeting cheaper and bounded.
+- Keep Zig 0.16 stable for release. Optimize via less parsing, warm process, and cached parsers/queries before chasing compiler dev features.
+
+## Product target: replace core edit
+
+To replace core, Blitz must cover these real use cases:
+
+1. **Tiny exact edit**: one-line return/config/string replacement.
+2. **Small insert**: add logging/import/check line near anchor.
+3. **Symbol semantic edit**: replace return expression, wrap body, try/catch.
+4. **Large structural edit**: avoid repeated old code/location tokens.
+5. **Multi-edit same file**: one tool call, one parse, one write.
+6. **Text/Markdown/config edit**: deterministic anchors and section/key ops.
+7. **Fallback edit**: if Blitz cannot be cheaper/correct, it must choose core or apply_patch and report why.
+
+For each use case, Blitz must prove:
+
+- correctness
+- smaller output tokens or selected fallback
+- smaller tool arg tokens or selected fallback
+- smaller resident schema/skill tax or selected fallback
+- no huge intermediate output returned to model
+
+## Architecture recommendation
+
+### One resident model-facing edit tool
+
+Default resident tool should be one compact tool, not 15 tools.
+
+Candidate:
 
 ```json
-{"f":"src/a.ts","op":[["rr","fn","expr","only"]]}
+{
+  "name": "pi_blitz_op",
+  "description": "Compact code/text edit. Use short op tuples. Does not require old code for location.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "f": { "type": "string" },
+      "ops": { "type": "array" },
+      "p": { "type": "boolean" }
+    },
+    "required": ["f", "ops"],
+    "additionalProperties": false
+  }
+}
 ```
 
-Candidate aliases:
+Compact op examples:
 
-- `rr` = replace return
+```json
+{"f":"src/a.ts","ops":[["rr","formatStatus","status.toUpperCase()"]]}
+{"f":"src/a.ts","ops":[["ia","loadUser","const cached = cache.get(id);","after"]]}
+{"f":"src/a.ts","ops":[["wb","mediumCompute","\n  try {","  } catch (e) {\n    throw e;\n  }\n",2]]}
+{"f":"README.md","ops":[["as","## Usage","\nNew paragraph.\n"]]}
+```
+
+Alias map:
+
+- `rr` = replace return expression
 - `rb` = replace body span
 - `ib` = insert body span
 - `wb` = wrap body
 - `tc` = try/catch
-- `mb` = multi body
+- `ru` = replace unique text
+- `ia` = insert after/before anchor
+- `bt` = replace between anchors
+- `as` = append section
+- `ek` = ensure line
+- `dk` = delete range
+- `sk` = set key
 
-3. Keep long-form API for human/manual use, but hide it from default model context.
-4. Tool output should be compact by default:
-   - success: `ok file changedBytes backupId?`
-   - no large diff unless requested
-   - no verbose diagnostics unless failure
+Long-form tools stay available only in non-default profiles.
 
-Expected win:
+### Tool profiles
 
-- Lower arg tokens for simple semantic edits.
-- Lower schema tokens by consolidating ops into one schema.
+Implement real registration profiles in `pi-blitz/index.ts`; unused schemas must not be registered.
 
-Acceptance:
+Profiles:
 
-- `replace_return` args fall below current 76-98 token range where possible.
-- Both-correct simple Blitz rows become <= core output+arg tokens or route core.
+| Profile | Tools | Use |
+|---|---|---|
+| `minimal` | `pi_blitz_op` only | default for agent editing |
+| `semantic` | `pi_blitz_op`, maybe `pi_blitz_read` | symbol edits needing structure summary |
+| `structural` | `pi_blitz_op`, `pi_blitz_read`, `pi_blitz_patch` | complex structural edits |
+| `admin` | read/doctor/undo/rename | diagnostics/manual |
+| `full` | current 15 tools | debugging/backcompat |
 
-### Phase 3 — Skill compression and lazy guidance
+Configuration:
 
-Owner: `d5`/docs in `/home/kenzo/dev/pi-blitz`.
+- env: `PI_BLITZ_TOOL_PROFILE=minimal|semantic|structural|admin|full`
+- CLI/bench override: `--tools` already exists in `bench/pi-matrix.ts`; extend matrix profiles.
+- Pi extension should default to `minimal`.
 
-Current problem:
+### Skill compression
 
-`skills/pi-blitz/SKILL.md` is ~9,741 chars / ~2.4k rough tokens. It contains install docs, tool table, routing guidance, examples, undo discipline, etc. That is too much to keep resident for every simple edit.
+Resident `SKILL.md` target: <= 500 tokens.
 
-Plan:
+Move long content to references:
 
-1. Split skill into:
-   - short resident `SKILL.md` <= 500 tokens
-   - `references/full-routing.md`
-   - `references/examples.md`
-   - `references/benchmarks.md`
-2. Resident skill should say only:
-   - use minimal profile
-   - choose core for tiny/simple unless `pi_blitz_op` args are smaller
-   - use compact op aliases
-   - never repeat unchanged code
-3. Benchmark both:
-   - full current skill
-   - compressed skill
-   - no skill + tool descriptions only
+- `references/routing.md`
+- `references/op-aliases.md`
+- `references/examples.md`
+- `references/benchmarks.md`
+- `references/admin.md`
 
-Expected win:
+Resident skill should only say:
 
-Reduce static prompt/context tax by ~1.5k-2k tokens when skill is loaded.
+1. Use `pi_blitz_op` for edits that can be expressed compactly.
+2. Do not repeat unchanged code.
+3. Use core/apply_patch when compact op is longer than direct edit or unsupported.
+4. For uncertainty, call route/explain or read structure, then edit.
+5. Always verify.
 
-Acceptance:
+### Tool output compression
 
-- Resident skill <= 500 tokens by tokenizer estimate.
-- Matrix shows lower input/cache tokens without correctness regression.
-
-### Phase 4 — Prompt rewrite for model behavior
-
-Owner: benchmark skill + `d5`.
-
-Current benchmark prompts sometimes still include lengthy exact JSON instruction strings for difficult tools. That may be necessary for correctness, but it pollutes measurement.
-
-Plan:
-
-1. Create concise prompts for compact op tool:
+Default success output should be tiny:
 
 ```text
-Edit file X. Use pi_blitz_op once. Args: {"f":"X","op":[["rr","symbol","expr"]]}.
+ok f=src/a.ts op=rr changed=14 backup=abc123
 ```
 
-2. Keep a separate “human-natural” prompt set for real-world discoverability.
-3. Benchmark both prompt modes:
-   - copied args mode
-   - natural instruction mode
-4. Measure if compact tool descriptions are enough for natural usage without huge prompt hints.
+Only include diff/metrics when requested:
+
+- `d:1` / `include_diff: true`
+- `m:1` / `include_metrics: true`
+- failure always includes enough structured error to recover.
+
+### Token-first router
+
+Route decision must estimate and report:
+
+- resident tool schema tokens
+- skill tokens
+- user prompt tokens
+- expected arg tokens
+- expected output tokens
+- cache read/write tokens
+- total model-visible context tokens
+
+Route selection order:
+
+1. no-op if already applied
+2. compact deterministic Blitz op if shorter than core/apply_patch and safe
+3. direct text/core for tiny exact edits where core is cheaper
+4. structural Blitz for body/multi/symbol edits
+5. apply_patch/unified diff for model-familiar multi-file patches
+6. fail closed if target ambiguity or savings uncertain and no fallback chosen
+
+## Implementation phases
+
+### Phase 0 — Measurement harness for schema/skill/context tax
+
+Deliverables:
+
+- Extend `bench/pi-matrix.ts` to record:
+  - visible tool names
+  - serialized tool schema token estimate
+  - resident skill token estimate
+  - prompt tokens
+  - tool arg tokens
+  - model output tokens
+  - input/cache tokens from Tokscale
+  - selected route/tool profile
+- Add profile variants to bench:
+  - core
+  - current Blitz full/narrow
+  - optimized Blitz minimal
+  - optimized Blitz structural
+  - apply_patch-style baseline if available
+- Add report table: `schemaTokens`, `skillTokens`, `promptTokens`, `argTokens`, `outputTokens`, `cacheRead`, `cacheWrite`, `totalContextTokens`.
 
 Acceptance:
 
-- Copied-args mode proves theoretical floor.
-- Natural mode proves real-world usability.
-- Reports separate those two claims.
+- Re-run existing 12 pairs.
+- Report explains exactly why each current simple Blitz row loses.
 
-### Phase 5 — Router becomes token-first, not speed-first
+### Phase 1 — Tool profile registration
 
-Owner: `d5` in Blitz + pi-blitz.
+Deliverables in `/home/kenzo/dev/pi-blitz`:
 
-Plan:
-
-1. Change route decision report fields and docs from “faster” to:
-   - `contextTokensExpected`
-   - `argTokensExpected`
-   - `outputTokensExpected`
-   - `schemaTokensExpected`
-   - `contextSavingsPct`
-2. Router should choose Blitz only when:
-   - correctness risk acceptable
-   - expected context+output+arg tokens beat fallback
-3. Add simple-row guardrails:
-   - core if file/edit tiny and compact Blitz not strictly cheaper
-   - Blitz only if op alias avoids repeating code or core would likely emit large span
+- Add `PI_BLITZ_TOOL_PROFILE`.
+- Register only profile-selected tools.
+- Add tests proving each profile registers expected tools.
+- Keep `full` for backcompat.
 
 Acceptance:
 
-- Re-run matrix; every selected Blitz row must be token/context justified.
-- Reports label token wins/losses before wall time.
+- `minimal` exposes <= 2 tools.
+- Resident schema rough tokens reduced >=70% vs current full registration.
 
-### Phase 6 — Real-world usage benchmark
+### Phase 2 — Compact op tool / alias IR
 
-Owner: benchmark skill + reviewer.
+Deliverables:
 
-The 26-run matrix is useful but too fixture-shaped. Add a real-world benchmark set from actual agent edits:
+- Add `pi_blitz_op` tool.
+- Add parser/translator from aliases to Blitz apply JSON or compact_patch.
+- Support at least: `rr`, `rb`, `ib`, `wb`, `tc`, `ru`, `ia`, `bt`, `as`, `ek`, `dk`, `sk`.
+- Add compact success output mode by default.
+
+Acceptance:
+
+- `replace_return` op arg tokens below current 76-98 range.
+- `wrap_body` op arg tokens stays near/below current 90-120 but with much lower schema tax.
+- Existing Blitz safety/preconditions preserved.
+
+### Phase 3 — Skill compression and lazy docs
+
+Deliverables:
+
+- Resident `SKILL.md` <= 500 tokens.
+- Move long docs/examples to references.
+- Add benchmark mode with:
+  - current full skill
+  - compressed skill
+  - no skill
+
+Acceptance:
+
+- Input/cache tokens drop without correctness regression.
+- Skill no longer erases simple-edit savings.
+
+### Phase 4 — Streaming/freeform/custom tool exploration
+
+Deliverables:
+
+- Prototype one of:
+  - OpenAI custom/freeform Blitz DSL tool (if Pi/OpenAI path supports it), or
+  - grammar-constrained compact op text, or
+  - plain string `script` field inside `pi_blitz_op`.
+- Compare to JSON schema tool.
+- Study whether streaming parser can apply op as it arrives, like OpenAI apply_patch streaming.
+
+Acceptance:
+
+- Freeform/grammar path must reduce args/schema/output tokens or be rejected.
+- No correctness regression.
+
+### Phase 5 — Deterministic chunk-local merge
+
+Goal: make Blitz useful when exact deterministic op is too limited but full core edit would repeat too much code.
+
+Deliverables:
+
+- AST-scope target to ~35-60 line chunk.
+- Model emits changed snippet with keep markers, e.g. `#...` / `//...`.
+- Blitz tries deterministic anchor classification/splice first.
+- If ambiguous: fail closed initially; optional local merge model later.
+
+Acceptance:
+
+- Handles real small edits without repeating old code.
+- Beats core on output+arg tokens for previously losing semantic/simple rows.
+
+### Phase 6 — Token-first router and reports
+
+Deliverables:
+
+- Rename/report route contract away from speed-first:
+  - `contextSavingsPct`
+  - `schemaTokensExpected`
+  - `argTokensExpected`
+  - `outputTokensExpected`
+  - `fallbackContextTokensExpected`
+- Router chooses core/apply_patch if Blitz cannot beat token/context threshold.
+- Reports put token/context first; wall time second.
+
+Acceptance:
+
+- Every selected Blitz row has token/context justification.
+- Every non-selected Blitz row reports why core/apply_patch was cheaper.
+
+### Phase 7 — Real-world replacement benchmark
+
+Benchmark set:
 
 - one-line return expression
+- tiny exact text replace
 - small config key
 - insert logging line
 - wrap function body
 - replace long function body section
-- multi-hunk body edit
+- multi-hunk same-file edit
 - rename within file
 - Markdown section append
 - TSX component prop/body tweak
+- JSON/YAML/TOML top-level key update
+- HTML/CSS small edit
 
 For each case:
 
 - core edit
-- current Blitz full tool surface
-- optimized Blitz minimal/op profile
-- router-selected path
+- OpenAI/apply_patch-style baseline if available
+- current Blitz full/narrow
+- optimized Blitz minimal/op
+- token-first router-selected path
 
-Metrics:
+Required metrics:
 
 - correctness
 - output tokens
 - tool arg tokens
-- input/cache/tool schema tokens
-- total Tokscale tokens
-- context saved/lost
+- schema tokens estimate
+- skill tokens estimate
+- prompt tokens
+- input/cache Tokscale
+- total context+output tokens
+- wall time
+- route/tool profile
 
 Acceptance:
 
 - Optimized Blitz improves over current Blitz on simple both-correct rows.
-- Router-selected path is best or within 5-10% of best for each case.
+- Router-selected path is best or within 5-10% of best for every case.
 - No selected route exceeds core context tokens by >10% unless core fails correctness.
+- Structural rows preserve ~9k token savings.
 
-## Priority order
 
-1. Measurement breakdown (must know schema/skill tax exactly).
-2. Tool profile gating (largest likely win).
-3. Single compact op tool / alias IR.
-4. Skill compression.
-5. Prompt rewrite.
-6. Token-first router + real-world benchmark.
+## Research addendum from parallel researchers
 
-## Risks
+Additional source-backed requirements from `.pi/research/20260605-tool-schema-context-tax.md` and `.pi/research/20260605-token-efficient-edit-repos.md`:
 
-| Risk | Mitigation |
-|---|---|
-| Compact aliases hurt model correctness | Keep copied-args benchmark and natural prompt benchmark separate; add examples only in lazy docs. |
-| Hiding tools reduces discoverability | Use profile selection/router before model call; default minimal, expand only when needed. |
-| Token wins come only from benchmark prompts | Add natural real-world benchmark suite. |
-| Tool schema token counting inaccurate | Compare tokenizer estimates against Tokscale input/cache deltas and record both. |
-| Over-optimizing names harms human API | Keep long-form API hidden from default model context; expose compact model-facing API separately. |
+1. **Provider-native lazy loading where available.** OpenAI `tool_search` supports `defer_loading: true` for functions/MCP on `gpt-5.4+`; model sees namespace/server summary first, then loads needed schemas. OpenAI recommends fewer than 20 initial functions and fewer than 10 functions per namespace. Blitz should model edit capability as a deferred namespace/MCP server where possible.
+2. **Use custom/freeform tools for edit DSL experiments.** OpenAI custom tools accept raw string inputs and optional grammar constraints. This is a strong candidate for `pi_blitz_op` because compact edit scripts avoid JSON-key overhead. Benchmark CFG/freeform latency before adoption.
+3. **Cache-friendly stable prefix.** Prompt caching requires exact stable prefixes; changing tool lists can break locality. Prefer one stable resident discovery/execution facade plus on-demand schema loading, or stable small profiles, over ad-hoc large changing tool sets.
+4. **Generic MCP clients still eagerly expose schemas.** MCP `tools/list` includes full `inputSchema`. Do not assume lazy schemas unless provider/client explicitly supports it. For generic Pi/MCP, use a compressor facade: `list_tools`, `get_tool_schema`, `invoke_tool`, or a single `pi_blitz_op`.
+5. **Anthropic advanced tool-use validates same architecture.** Anthropic reports 58 tools ≈55K tokens and observed 134K tokens before optimization; Tool Search can load a ~500-token search tool plus 3-5 relevant tools (~3K tokens), and programmatic tool calling keeps intermediate results out of context. Blitz should expose code-callable APIs and keep edit/search intermediates in the runtime.
+6. **CEDARScript proves compact command IR can beat diff/whole on refactors.** Reported Aider integration showed received-token reductions up to 96% and duration reductions up to 93% in some Gemini Flash refactor tests, but model sensitivity is real. Blitz should borrow high-level command IR, not claim universal CEDARScript wins without Pi/Tokscale proof.
+7. **FastEdit proves target-name editing is the right north star.** FastEdit frames location tokens as waste, uses tree-sitter symbol lookup, reports 74% deterministic real edits with zero model calls, and uses chunk-local merge for hard cases. Blitz should implement deterministic chunk-local merge before any local model fallback.
+8. **AFT-style host-tool replacement matters.** To truly replace core, Blitz should intercept/wrap existing edit pathways or expose a familiar minimal tool name, so agents do not need to choose an optional niche tool. Token savings must become default behavior.
+9. **Morph/apply models are fallback baselines.** Morph Fast Apply and OpenAI `apply_patch` are the right competitors for non-deterministic edits. Blitz should benchmark against core edit **and** apply_patch/Morph-style chunk merge, not only against core.
+10. **Streaming parser is a real optimization path.** Codex has a streaming apply_patch parser. Blitz compact IR should be stream-parseable so invalid ops fail early and UI can show progress while tool payload streams.
+
+Plan impact: Phase 0 must measure schema/skill/prompt tax; Phase 1 must implement profiles/lazy facade; Phase 2 must evaluate both compact JSON and freeform DSL; Phase 5 must include deterministic chunk-local merge; Phase 7 must include apply_patch/Morph/CEDARScript-style baselines.
 
 ## Definition of done
 
-This plan is done only when an optimized Blitz path proves one of these outcomes on real Pi/Tokscale runs:
+Blitz can be considered a candidate core replacement only when real Pi/tmux/Tokscale reports prove:
 
-1. For simple both-correct rows: optimized Blitz total context+output+arg tokens <= core within configured threshold; or router chooses core and reports why.
-2. For structural rows: optimized Blitz preserves existing ~9k token savings and correctness wins.
-3. Tool/skill resident context overhead is measured and reduced by >=70% in common lanes.
-4. Reports present token/context savings first, wall time second.
+1. Current simple-edit losses are fixed by optimized Blitz or routed to core/apply_patch with explicit token proof.
+2. Tool/skill resident context overhead is reduced >=70% for common lanes.
+3. Structural edits preserve large savings (~9k tokens per current representative case).
+4. Reports prove token/context savings first and speed second.
+5. No hidden failed rows, no correctness regressions, no unmeasured savings claims.
+
+## Immediate next tasks
+
+1. Implement Phase 0 measurement breakdown, including schema/skill/prompt tax and profile-visible tool list.
+2. Implement `PI_BLITZ_TOOL_PROFILE=minimal|semantic|structural|admin|full` in `pi-blitz`; unused schemas must not register.
+3. Add `pi_blitz_op` compact alias tool; benchmark JSON short-key vs freeform DSL if runtime supports custom tools.
+4. Compress resident skill to <=500 tokens and move examples to references.
+5. Add deterministic chunk-local merge spike for symbol-scoped snippets with keep markers.
+6. Re-run 12-pair matrix plus real-world set against core, current Blitz, optimized Blitz, and apply_patch/Morph-style baselines.
