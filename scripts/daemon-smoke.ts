@@ -1,5 +1,12 @@
 #!/usr/bin/env bun
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	realpathSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { Buffer } from "node:buffer";
 import { resolve } from "node:path";
 
@@ -31,6 +38,11 @@ const invalidUtf8File = resolve(work, "invalid-utf8.ts");
 const outsideFile = "/tmp/blitz-daemon-outside-smoke.ts";
 const relativeRoot = realpathSync(mkdtempSync("/tmp/blitz-daemon-rel-"));
 const relativeFile = resolve(relativeRoot, "rel.ts");
+const securityRoot = realpathSync(mkdtempSync("/tmp/blitz-daemon-security-"));
+const securityWorkspace = resolve(securityRoot, "workspace");
+const securityOutsideFile = resolve(securityRoot, "outside.ts");
+const brokenLink = resolve(securityWorkspace, "broken");
+const rootAsFile = resolve(securityRoot, "root-as-file.txt");
 const lines = Array.from({ length: 101 }, (_, i) => `let x${i} = ${i};`).join(
 	"\n",
 );
@@ -44,6 +56,10 @@ writeFileSync(
 );
 writeFileSync(outsideFile, "export const outside = true;\n");
 writeFileSync(relativeFile, "function relativeProbe() {}\n");
+mkdirSync(securityWorkspace, { recursive: true });
+writeFileSync(securityOutsideFile, "export const outsideTraversal = true;\n");
+writeFileSync(rootAsFile, "not a directory\n");
+symlinkSync("missing-dir", brokenLink);
 
 type DaemonResponse = {
 	id: string | null;
@@ -77,6 +93,31 @@ async function runDaemon(args: string[], input: string, cwd = root) {
 		.split("\n")
 		.filter(Boolean)
 		.map((line) => JSON.parse(line) as DaemonResponse);
+}
+
+async function runDaemonExpectFailure(args: string[], input: string, cwd = root) {
+	const proc = Bun.spawn([bin, ...args], {
+		cwd,
+		stdin: "pipe",
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+
+	proc.stdin.write(input);
+	proc.stdin.end();
+
+	const [stdout, stderr, exitCode] = await Promise.all([
+		new Response(proc.stdout).text(),
+		new Response(proc.stderr).text(),
+		proc.exited,
+	]);
+
+	if (exitCode === 0) {
+		throw new Error(
+			`daemon unexpectedly accepted invalid startup: stdout=${stdout} stderr=${stderr}`,
+		);
+	}
+	return { stdout, stderr, exitCode };
 }
 
 function byId(responses: DaemonResponse[]) {
@@ -208,6 +249,65 @@ if (explicitById.get("wat-1")?.error?.code !== "UnsupportedMethod")
 if (explicitById.get("mismatch-1")?.error?.code !== "WorkspaceRootMismatch")
 	throw new Error("workspaceRoot mismatch was not rejected");
 
+const numericWorkspaceRootResponses = await runDaemon(
+	["--workspace-root", root, "daemon"],
+	JSON.stringify({ id: "numeric-root-1", method: "doctor", workspaceRoot: 123 }) +
+		"\n",
+);
+if (
+	numericWorkspaceRootResponses.length !== 1 ||
+	numericWorkspaceRootResponses[0]?.error?.code !== "InvalidWorkspaceRoot" ||
+	numericWorkspaceRootResponses[0]?.error?.fallbackAllowed !== false
+) {
+	throw new Error(
+		`numeric workspaceRoot was not fail-closed: ${JSON.stringify(numericWorkspaceRootResponses)}`,
+	);
+}
+
+const brokenSymlinkResponses = await runDaemon(
+	["--workspace-root", securityWorkspace, "daemon"],
+	JSON.stringify({
+		id: "broken-symlink-1",
+		method: "read",
+		params: { file: "broken/x.ts" },
+	}) + "\n",
+);
+if (
+	brokenSymlinkResponses.length !== 1 ||
+	brokenSymlinkResponses[0]?.error?.code !== "FileNotFound" ||
+	brokenSymlinkResponses[0]?.error?.fallbackAllowed !== false
+) {
+	throw new Error(
+		`broken symlink ancestor was not fail-closed: ${JSON.stringify(brokenSymlinkResponses)}`,
+	);
+}
+
+const traversalResponses = await runDaemon(
+	["--workspace-root", securityWorkspace, "daemon"],
+	JSON.stringify({
+		id: "traversal-1",
+		method: "read",
+		params: { file: "../outside.ts" },
+	}) + "\n",
+);
+if (
+	traversalResponses.length !== 1 ||
+	traversalResponses[0]?.error?.code !== "PathEscapesWorkspace" ||
+	traversalResponses[0]?.error?.fallbackAllowed !== false
+) {
+	throw new Error(
+		`relative traversal was not fail-closed: ${JSON.stringify(traversalResponses)}`,
+	);
+}
+
+const rootAsFileFailure = await runDaemonExpectFailure(
+	["--workspace-root", rootAsFile, "daemon"],
+	JSON.stringify({ id: "doctor-root-file-1", method: "doctor" }) + "\n",
+);
+if (rootAsFileFailure.exitCode === 0) {
+	throw new Error("regular file workspace root was accepted");
+}
+
 const cwdResponses = await runDaemon(
 	["daemon"],
 	JSON.stringify({
@@ -241,4 +341,5 @@ if (byId(malformedResponses).get("doctor-after-bad-json")?.ok !== true)
 rmSync(work, { recursive: true, force: true });
 rmSync(outsideFile, { force: true });
 rmSync(relativeRoot, { recursive: true, force: true });
+rmSync(securityRoot, { recursive: true, force: true });
 console.log("daemon smoke passed");

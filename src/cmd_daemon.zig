@@ -13,6 +13,7 @@ const MAX_FRAME_BYTES = 1024 * 1024;
 const DaemonError = error{
     InvalidJson,
     InvalidRequest,
+    InvalidWorkspaceRoot,
     MissingMethod,
     UnsupportedMethod,
     MutatingMethodRejected,
@@ -20,6 +21,7 @@ const DaemonError = error{
     PathEscapesWorkspace,
     UnsupportedLanguage,
     FileTooBig,
+    FileNotFound,
     ParserLanguageRejected,
     ParseFailed,
     IoError,
@@ -105,7 +107,7 @@ pub fn run(
 
     const effective_workspace_root = blk: {
         const root_path = if (workspace_root.len == 0) "." else workspace_root;
-        const canonical_root = try realPathAlloc(allocator, io, root_path);
+        const canonical_root = try canonicalWorkspaceRootAlloc(allocator, io, root_path);
         owned_workspace_root = canonical_root;
         break :blk canonical_root;
     };
@@ -120,6 +122,16 @@ pub fn run(
 
 fn realPathAlloc(allocator: Allocator, io: Io, path: []const u8) ![:0]u8 {
     return std.Io.Dir.cwd().realPathFileAlloc(io, path, allocator);
+}
+
+fn canonicalWorkspaceRootAlloc(allocator: Allocator, io: Io, path: []const u8) ![:0]u8 {
+    const canonical_root = realPathAlloc(allocator, io, path) catch return error.InvalidWorkspaceRoot;
+    errdefer allocator.free(canonical_root);
+
+    var dir = std.Io.Dir.cwd().openDir(io, canonical_root, .{}) catch return error.InvalidWorkspaceRoot;
+    dir.close(io);
+
+    return canonical_root;
 }
 
 fn loop(state: *State, stdout: *Writer) !void {
@@ -186,7 +198,13 @@ fn processLine(state: *State, raw_line: []const u8, stdout: *Writer) !void {
         return;
     };
 
-    if (optionalString(object, "workspaceRoot")) |request_root| {
+    if (object.get("workspaceRoot")) |workspace_root_value| {
+        if (workspace_root_value != .string) {
+            try emitError(stdout, id, errorInfo(error.InvalidWorkspaceRoot), elapsedMs(state.io, start));
+            try stdout.flush();
+            return;
+        }
+        const request_root = workspace_root_value.string;
         if (!std.mem.eql(u8, request_root, state.workspace_root)) {
             try emitError(stdout, id, errorInfo(error.WorkspaceRootMismatch), elapsedMs(state.io, start));
             try stdout.flush();
@@ -235,7 +253,10 @@ fn handleRead(state: *State, stdout: *Writer, id: ?[]const u8, start: anytype, f
     const ext = std.fs.path.extension(file_path);
     const lang = bindings.Language.fromExtension(ext) orelse return error.UnsupportedLanguage;
 
-    const real_path = try resolveReadPath(state, file_path);
+    const real_path = resolveReadPath(state, file_path) catch |err| switch (err) {
+        error.FileNotFound, error.NotDir => return error.FileNotFound,
+        else => return err,
+    };
     defer state.allocator.free(real_path);
     workspace.enforce(real_path) catch return error.PathEscapesWorkspace;
 
@@ -305,8 +326,10 @@ fn errorInfo(err: anyerror) ErrorInfo {
         error.InvalidJson => .{ .code = "InvalidJson", .message = "invalid JSON request", .fallback_allowed = false },
         error.MissingMethod => .{ .code = "MissingMethod", .message = "request missing method", .fallback_allowed = false },
         error.InvalidRequest => .{ .code = "InvalidRequest", .message = "invalid request", .fallback_allowed = false },
+        error.InvalidWorkspaceRoot => .{ .code = "InvalidWorkspaceRoot", .message = "invalid workspace root", .fallback_allowed = false },
         error.WorkspaceRootMismatch => .{ .code = "WorkspaceRootMismatch", .message = "request workspaceRoot differs from daemon workspace root", .fallback_allowed = false },
         error.PathEscapesWorkspace => .{ .code = "PathEscapesWorkspace", .message = "path escapes workspace", .fallback_allowed = false },
+        error.FileNotFound => .{ .code = "FileNotFound", .message = "file not found", .fallback_allowed = false },
         error.UnsupportedLanguage => .{ .code = "UnsupportedLanguage", .message = "unsupported language", .fallback_allowed = true },
         error.MutatingMethodRejected => .{ .code = "MutatingMethodRejected", .message = "daemon prototype rejects mutating methods", .fallback_allowed = false },
         error.UnsupportedMethod => .{ .code = "UnsupportedMethod", .message = "unsupported daemon method", .fallback_allowed = false },
