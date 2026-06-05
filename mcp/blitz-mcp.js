@@ -2,7 +2,15 @@
 // @bun
 
 // mcp/blitz-mcp.ts
-import { closeSync, constants as fsConstants, existsSync as existsSync2, fstatSync, openSync, realpathSync, readSync } from "fs";
+import {
+  closeSync,
+  constants as fsConstants,
+  existsSync as existsSync2,
+  fstatSync,
+  openSync,
+  realpathSync,
+  readSync
+} from "fs";
 import { createHash } from "crypto";
 import { dirname as dirname2, isAbsolute, relative, resolve } from "path";
 import { spawnSync } from "child_process";
@@ -55,7 +63,16 @@ var parseEnvInt = (name, fallback, min, max) => {
     throw new Error(`${name} must be an integer from ${min} to ${max}`);
   return value;
 };
-var projectMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "build.zig", "go.mod", "deno.json", "bun.lock"];
+var projectMarkers = [
+  ".git",
+  "package.json",
+  "pyproject.toml",
+  "Cargo.toml",
+  "build.zig",
+  "go.mod",
+  "deno.json",
+  "bun.lock"
+];
 var argValue = (name) => {
   const idx = process.argv.indexOf(name);
   if (idx < 0)
@@ -90,12 +107,91 @@ var warmCache = {
   reads: new Map
 };
 var tools = [
-  { name: "blitz_doctor", description: "Run blitz doctor and return supported languages/commands/cache status.", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
-  { name: "blitz_read", description: "Read a file with blitz AST/source summary.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
-  { name: "blitz_patch", description: "Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.", inputSchema: { type: "object", properties: { file: { type: "string" }, ops: { type: "array", items: { type: "array", items: { anyOf: [{ type: "string" }, { type: "number" }] } }, minItems: 1 }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "ops"], additionalProperties: false } },
-  { name: "blitz_try_catch", description: "Wrap a symbol body in try/catch without repeating the body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, catchBody: { type: "string" }, indent: { type: "number" }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "catchBody"], additionalProperties: false } },
-  { name: "blitz_replace_return", description: "Replace a return expression in a symbol body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, expr: { type: "string" }, occurrence: { anyOf: [{ type: "string" }, { type: "number" }] }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "expr"], additionalProperties: false } },
-  { name: "blitz_undo", description: "Undo the last Blitz mutation for a file.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } }
+  {
+    name: "blitz_doctor",
+    description: "Run blitz doctor and return supported languages/commands/cache status.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_read",
+    description: "Read a file with blitz AST/source summary.",
+    inputSchema: {
+      type: "object",
+      properties: { file: { type: "string" } },
+      required: ["file"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_patch",
+    description: "Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        ops: {
+          type: "array",
+          items: {
+            type: "array",
+            items: { anyOf: [{ type: "string" }, { type: "number" }] }
+          },
+          minItems: 1
+        },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "ops"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_try_catch",
+    description: "Wrap a symbol body in try/catch without repeating the body.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        symbol: { type: "string" },
+        catchBody: { type: "string" },
+        indent: { type: "number" },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "symbol", "catchBody"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_replace_return",
+    description: "Replace a return expression in a symbol body.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        symbol: { type: "string" },
+        expr: { type: "string" },
+        occurrence: { anyOf: [{ type: "string" }, { type: "number" }] },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "symbol", "expr"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_undo",
+    description: "Undo the last Blitz mutation for a file.",
+    inputSchema: {
+      type: "object",
+      properties: { file: { type: "string" } },
+      required: ["file"],
+      additionalProperties: false
+    }
+  }
 ];
 var redact = (text) => {
   let out = text.replaceAll(cwd, "$WORKSPACE");
@@ -104,7 +200,10 @@ var redact = (text) => {
     out = out.replaceAll(home, "$HOME");
   return out;
 };
-var jsonText = (text, isError = false) => ({ content: [{ type: "text", text: redact(text) }], ...isError ? { isError: true } : {} });
+var jsonText = (text, isError = false) => ({
+  content: [{ type: "text", text: redact(text) }],
+  ...isError ? { isError: true } : {}
+});
 var run = (args, stdin) => {
   const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
     cwd,
@@ -203,7 +302,11 @@ var warmRead = (file) => {
   const postFingerprint = fileFingerprint(file);
   const bytes = resultBytes(result);
   if (!result.isError && postFingerprint && fingerprintEquals(postFingerprint, preFingerprint) && bytes <= warmMaxResultBytes) {
-    warmCache.reads.set(file, { fingerprint: postFingerprint, result, resultBytes: bytes });
+    warmCache.reads.set(file, {
+      fingerprint: postFingerprint,
+      result,
+      resultBytes: bytes
+    });
     trimWarmReads();
   }
   return result;
@@ -266,7 +369,12 @@ var callTool = (name, args = {}) => {
       if (!Array.isArray(args.ops) || args.ops.length === 0)
         throw new Error("missing ops array");
       clearWarmFile(file);
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: { ops: args.ops }
+      }));
     }
     case "blitz_try_catch": {
       const file = bindPath(requiredString(args, "file"));
@@ -274,14 +382,33 @@ var callTool = (name, args = {}) => {
       const catchBody = requiredString(args, "catchBody");
       const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
       clearWarmFile(file);
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: { ops: [["try_catch", symbol, catchBody, ...indent]] }
+      }));
     }
     case "blitz_replace_return": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
       clearWarmFile(file);
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...args.occurrence !== undefined ? [args.occurrence] : []]] } }));
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: {
+          ops: [
+            [
+              "replace_return",
+              symbol,
+              expr,
+              ...args.occurrence !== undefined ? [args.occurrence] : []
+            ]
+          ]
+        }
+      }));
     }
     default:
       throw new Error(`unknown tool ${name}`);
@@ -299,7 +426,11 @@ var handle = (msg) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" } });
+      ok(msg.id, {
+        protocolVersion: "2025-06-18",
+        capabilities: { tools: {} },
+        serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" }
+      });
       return;
     }
     if (msg.method === "notifications/initialized")
@@ -330,6 +461,34 @@ var handle = (msg) => {
   }
 };
 var buffer = Buffer.alloc(0);
+var parseHeaderLength = (header) => {
+  let contentLength;
+  for (const line of header.split(`\r
+`)) {
+    if (line.length === 0)
+      continue;
+    const separator = line.indexOf(":");
+    if (separator <= 0)
+      throw new Error("malformed frame header");
+    const name = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name))
+      throw new Error("malformed frame header");
+    if (name.toLowerCase() !== "content-length")
+      continue;
+    if (contentLength !== undefined)
+      throw new Error("duplicate Content-Length");
+    if (!/^\d+$/.test(value))
+      throw new Error("invalid Content-Length");
+    const len = Number(value);
+    if (!Number.isSafeInteger(len) || len > maxFrameBytes)
+      throw new Error("invalid Content-Length");
+    contentLength = len;
+  }
+  if (contentLength === undefined)
+    throw new Error("missing Content-Length");
+  return contentLength;
+};
 var tryReadMessage = () => {
   const headerEnd = buffer.indexOf(`\r
 \r
@@ -339,13 +498,9 @@ var tryReadMessage = () => {
       throw new Error("frame header too large");
     return;
   }
-  const header = buffer.subarray(0, headerEnd).toString("utf8");
-  const match = /^Content-Length:\s*(\d+)$/im.exec(header);
-  if (!match)
-    throw new Error("missing Content-Length");
-  const len = Number(match[1]);
-  if (!Number.isSafeInteger(len) || len < 0 || len > maxFrameBytes)
-    throw new Error("invalid Content-Length");
+  if (headerEnd > maxBufferedBytes - maxFrameBytes)
+    throw new Error("frame header too large");
+  const len = parseHeaderLength(buffer.subarray(0, headerEnd).toString("utf8"));
   const start = headerEnd + 4;
   if (buffer.length < start + len)
     return;

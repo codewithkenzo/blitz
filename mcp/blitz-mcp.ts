@@ -537,6 +537,29 @@ const handle = (msg: JsonRpc) => {
 };
 
 let buffer = Buffer.alloc(0);
+const parseHeaderLength = (header: string): number => {
+	let contentLength: number | undefined;
+	for (const line of header.split("\r\n")) {
+		if (line.length === 0) continue;
+		const separator = line.indexOf(":");
+		if (separator <= 0) throw new Error("malformed frame header");
+		const name = line.slice(0, separator).trim();
+		const value = line.slice(separator + 1).trim();
+		if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name))
+			throw new Error("malformed frame header");
+		if (name.toLowerCase() !== "content-length") continue;
+		if (contentLength !== undefined)
+			throw new Error("duplicate Content-Length");
+		if (!/^\d+$/.test(value)) throw new Error("invalid Content-Length");
+		const len = Number(value);
+		if (!Number.isSafeInteger(len) || len > maxFrameBytes)
+			throw new Error("invalid Content-Length");
+		contentLength = len;
+	}
+	if (contentLength === undefined) throw new Error("missing Content-Length");
+	return contentLength;
+};
+
 const tryReadMessage = (): JsonRpc | undefined => {
 	const headerEnd = buffer.indexOf("\r\n\r\n");
 	if (headerEnd < 0) {
@@ -544,12 +567,9 @@ const tryReadMessage = (): JsonRpc | undefined => {
 			throw new Error("frame header too large");
 		return undefined;
 	}
-	const header = buffer.subarray(0, headerEnd).toString("utf8");
-	const match = /^Content-Length:\s*(\d+)$/im.exec(header);
-	if (!match) throw new Error("missing Content-Length");
-	const len = Number(match[1]);
-	if (!Number.isSafeInteger(len) || len < 0 || len > maxFrameBytes)
-		throw new Error("invalid Content-Length");
+	if (headerEnd > maxBufferedBytes - maxFrameBytes)
+		throw new Error("frame header too large");
+	const len = parseHeaderLength(buffer.subarray(0, headerEnd).toString("utf8"));
 	const start = headerEnd + 4;
 	if (buffer.length < start + len) return undefined;
 	const raw = buffer.subarray(start, start + len).toString("utf8");
