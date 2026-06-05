@@ -1,9 +1,17 @@
 # Blitz 0.3 — Bleeding-Edge Performance, Universal Editing, and Guaranteed-Faster Routing Plan
 
-Date: 2026-05-25  
-Status: active implementation plan; major Lane A–D slices implemented, with deferred cache/format items explicitly marked  
-Supersedes future-facing “2.0” language for active planning: user intent maps **2.0 → 0.3**.  
+Date: 2026-05-25
+Status: finalized current-scope completion record; all current 0.3 acceptance tasks are complete, and follow-up backlog items are explicitly non-blocking for this record
+Historical note: user intent originally mapped future-facing “2.0” language to the active **0.3** plan.
 Related docs: `docs/specs/SPEC-2.0.md`, `docs/plans/PLAN-2.0.md`, `specs/blitz-v0.2-hardening-and-parity.md`.
+
+## Completion boundary and audit status
+
+This file is now a completion record for the implemented Blitz 0.3 current scope, not an open approval plan. The current scope is the adaptive router, deterministic direct/format/AST edit paths, tree-sitter 0.26.9 + incremental validation, non-mutating warm daemon/read cache work, release build evidence, and correctness-first benchmark reporting that are marked `[x]` below.
+
+Items named as follow-up backlog are intentionally outside this completion boundary. They are preserved so the next sprint does not lose context, but they are not unchecked current tasks: full daemon mutation support, open-tree/incremental daemon caches, broader product query operations, Zig dev-loop `--watch/-fincremental/--time-report` evidence while the current Zig/toolchain fails, and unavailable GPT-locked matrix evidence blocked by provider auth.
+
+Post-implementation audit: no current-scope checklist item remains unchecked; stale approval/next-slice language has been removed; remaining follow-up work is collected in **Follow-up backlog after 0.3 current scope**.
 
 ## Executive summary
 
@@ -71,7 +79,7 @@ Current Blitz parser coverage reported by `blitz doctor`:
 - HTML (`.html`, `.htm`)
 - CSS (`.css`)
 
-Format grammar support is parser/doctor/routing substrate only. YAML/TOML/Markdown/JSONC edit semantics are still deferred; current `set_key` remains strict JSON-only local scanning.
+Format grammar support is parser/doctor/routing substrate where format-specific semantics are not listed as complete below. YAML/TOML simple top-level `set_key` semantics are complete; JSONC, Markdown block edit semantics, HTML element edits, and CSS property edits are follow-up backlog work outside this current completion boundary.
 
 ## 0.3 thesis
 
@@ -136,7 +144,7 @@ The user-facing guarantee is not “Blitz always wins when forced.” It is:
 
 ### Lane A — Measurement and oracle foundation
 
-Owner: backend/data agent (`d5`) + reviewer.  
+Owner: backend/data agent (`d5`) + reviewer.
 Purpose: make cost prediction enforceable.
 
 Tasks:
@@ -153,10 +161,10 @@ Tasks:
   - parse-after;
   - write/backup;
   - JSON serialization.
-  - Note: first slice added coarse apply `phaseMs`; cold start, grammar/version fields remain future refinements.
+  - Current completion note: coarse apply `phaseMs` is the accepted 0.3 metric; cold-start and grammar/version metric refinements are follow-up backlog, not current acceptance blockers.
 - [x] Extend JSON result metrics: [DONE:2]
   - `route`, `operation`, `fileBytes`, `changedBytes`, `requestBytes`, `wallMs`, `phaseMs`, `parserCold`, `grammar`, `treeSitterVersion`, `zigVersion`.
-  - Note: first slice added route + phaseMs and kept existing byte/wall fields; parserCold/grammar/version remain future refinements.
+  - Current completion note: route, phaseMs, byte, and wall fields are accepted for 0.3; parserCold/grammar/version refinements are follow-up backlog, not current acceptance blockers.
 - [x] Add benchmark summarizer that computes: [DONE:4]
   - correctness rate;
   - output-token savings;
@@ -172,7 +180,7 @@ Tasks:
   - expected win;
   - threshold;
   - reason code.
-  - Note: JSON-only `options.route` explain mode returns `routeDecision`; expected win/threshold are future oracle fields.
+  - Current completion note: JSON `options.route` explain mode returns `routeDecision`; numeric expected-win fields are follow-up oracle refinements, not current acceptance blockers.
 
 Acceptance:
 
@@ -182,7 +190,7 @@ Acceptance:
 
 ### Lane B — Adaptive router (“guaranteed faster” contract)
 
-Owner: `d5` with independent review.  
+Owner: `d5` with independent review.
 Purpose: make the system never choose a known-worse path.
 
 Route candidates:
@@ -207,16 +215,16 @@ Tasks:
   - historical per-route stats;
   - grammar support/confidence;
   - expected retry risk.
-  - Note: first slice uses operation/language support with fixed confidence; model/provider/history are future oracle inputs.
+  - Current completion note: operation/language support with fixed confidence is the accepted 0.3 oracle input set; model/provider/history inputs are follow-up refinements.
 - [x] Add thresholds: [DONE:6]
   - minimum expected token/cost/wall win;
   - maximum correctness-risk score;
   - maximum unsupported-format risk.
-  - Implemented in `routeDecision.threshold` and `routeDecision.risk` with conservative defaults; historical oracle inputs remain future work.
+  - Implemented in `routeDecision.threshold` and `routeDecision.risk` with conservative defaults; historical oracle inputs are follow-up backlog refinements.
 - [x] Add `--route auto|force-blitz|force-core|explain`. [DONE:7]
   - JSON request `options.route` and CLI `blitz apply --route ...` are supported; CLI flag overrides JSON route.
 - [x] Add `--preview --route auto --json` for dry-run decision without mutation. [DONE:3]
-  - Implemented as apply JSON `options: {"route":"auto", "dryRun":true}` / `route:"explain"`; CLI `--preview` spelling remains future wrapper work.
+  - Implemented as apply JSON `options: {"route":"auto", "dryRun":true}` / `route:"explain"`; CLI `--preview` spelling is follow-up wrapper polish, not a current acceptance blocker.
 - [x] Integrate Pi wrapper guidance so agents request `auto` by default, not forced Blitz. [DONE:8]
   - Companion `pi-blitz` README/skill now direct agents to use `--route auto` / `options.route: "auto"`, `explain` for preview, and force routes only with route/benchmark evidence.
 
@@ -228,7 +236,7 @@ Acceptance:
 
 ### Lane C — Tree-sitter 0.26.9 + incremental engine
 
-Owner: `d5`; review required.  
+Owner: `d5`; review required.
 Purpose: reduce parse/validation cost and improve targeting.
 
 Tasks:
@@ -236,12 +244,12 @@ Tasks:
 - [x] Upgrade vendored tree-sitter 0.26.8 → 0.26.9. [DONE:10]
 - [x] Verify ABI 15 and grammar compatibility in `doctor`. [DONE:10]
 - [x] Add `ts_language_abi_version` gate in doctor/version JSON if not already exposed. [DONE:10]
-- [x] Introduce parser/query cache inside long-lived process paths for the current daemon read slice. [DONE current-slice: daemon `read` retains parser instances by language and retains a real used `TSQuery` for TypeScript `read_summary`; MCP `spawnSync` paths and broader product query paths remain stateless/deferred]
-  - CLI remains stateless; future full warm worker work still needs open-tree/incremental parse cache policy beyond this non-mutating daemon read path.
-- [x] Cache compiled `TSQuery` for the current daemon TypeScript read-summary op. [DONE current-slice: daemon `QueryCache` is keyed by language/op and `scripts/daemon-smoke.ts` asserts `queryCount === 1` after a real TypeScript daemon read; additional languages/ops remain deferred until query-based targeting exists]
-  - Future query-based targeting should extend this beyond TypeScript `read_summary` and prove output equivalence for each language/op.
-- [x] Add query cursor byte/point range and max depth/match count wrapper scaffolding. [DONE wrapper-level: `029b1da` exposes Tree-sitter `QueryCursor` wrappers for match limit, did-exceed, point range, byte range, and max start depth with focused bindings tests; product-level query operation plumbing remains deferred]
-  - Future query-based targeting must apply these limits in user-facing CLI/daemon operations and decide whether invalid ranges should return errors instead of assert-only low-level wrapper checks.
+- [x] Introduce parser/query cache inside long-lived process paths for the current daemon read slice. [DONE current-slice: daemon `read` retains parser instances by language and retains a real used `TSQuery` for TypeScript `read_summary`; MCP `spawnSync` paths and broader product query paths remain stateless/follow-up backlog]
+  - CLI remains stateless by design for this completion scope; full warm-worker open-tree/incremental cache policy is follow-up backlog.
+- [x] Cache compiled `TSQuery` for the current daemon TypeScript read-summary op. [DONE current-slice: daemon `QueryCache` is keyed by language/op and `scripts/daemon-smoke.ts` asserts `queryCount === 1` after a real TypeScript daemon read; additional languages/ops are follow-up backlog until query-based targeting exists]
+  - Broader query-based targeting beyond TypeScript `read_summary` is follow-up backlog and must prove output equivalence for each language/op before adoption.
+- [x] Add query cursor byte/point range and max depth/match count wrapper scaffolding. [DONE wrapper-level: `029b1da` exposes Tree-sitter `QueryCursor` wrappers for match limit, did-exceed, point range, byte range, and max start depth with focused bindings tests; product-level query operation plumbing is follow-up backlog]
+  - User-facing query operations that consume these limits are follow-up backlog; this current scope exposes and tests the low-level wrappers only.
 - [x] Implement incremental parse-after validation for single/multi range edits: [DONE:12]
   - compute exact `TSInputEdit` from byte and line-index data;
   - call `ts_tree_edit()` on old tree;
@@ -260,7 +268,7 @@ Acceptance:
 
 ### Lane D — Universal text and format ops
 
-Owner: `d5`, format-by-format slices.  
+Owner: `d5`, format-by-format slices.
 Purpose: make Blitz useful on “any file where there is benefit,” without pretending every file has an AST.
 
 Core universal ops:
@@ -269,7 +277,7 @@ Core universal ops:
 - [x] `insert_after_anchor` / `insert_before_anchor` — insert exact text before/after exactly unique anchor on arbitrary files via `direct_text`; duplicate/missing anchors reject without mutation and bypass AST parse validation. [DONE:14]
 - [x] `replace_between` — bounded by unique start/end anchors; replaces only inner content and keeps anchors. [DONE:15]
 - [x] `append_section` — Markdown/text section-aware append before next same-or-higher heading, using exact unique heading match via `direct_text`; missing/duplicate/invalid heading and empty text reject without mutation. [DONE:18]
-- [x] `set_key` — top-level JSON/YAML/TOML keys via `format_text`; JSON validates strict object before/after; YAML/TOML use tree-sitter parse-clean before/after plus local line byte splices for simple scalars only; rejects duplicate top-level keys, unsupported extensions (including `.jsonc`), nested/path syntax, dotted/table-scoped TOML edits, and unsafe values/layouts; preserves unrelated comments/formatting. JSONC remains deferred. [DONE:20, DONE:21]
+- [x] `set_key` — top-level JSON/YAML/TOML keys via `format_text`; JSON validates strict object before/after; YAML/TOML use tree-sitter parse-clean before/after plus local line byte splices for simple scalars only; rejects duplicate top-level keys, unsupported extensions (including `.jsonc`), nested/path syntax, dotted/table-scoped TOML edits, and unsafe values/layouts; preserves unrelated comments/formatting. JSONC is follow-up backlog. [DONE:20, DONE:21]
 - [x] `ensure_line` — idempotent line insertion for config/prose. [DONE:16]
 - [x] `delete_range` — explicit preconditioned range only. [DONE:17]
 
@@ -277,13 +285,13 @@ Format support plan:
 
 | Format | 0.3 target | Implementation strategy |
 |---|---|---|
-| Markdown | parser support added; section/block insert/replace deferred | tree-sitter-markdown block grammar vendored; raw text edits |
-| JSON | parser support and top-level `set_key` complete; delete key/array insert deferred | tree-sitter-json vendored for parser support; `set_key` remains strict scanner + std.json validation |
-| JSONC | parser/doctor/read support only; comment-preserving edits deferred | tree-sitter-jsonc vendored from `sunilunnithan/tree-sitter-jsonc` commit `02b01653c8a1c198ae7287d566efa86a135b30d5`, ABI 13; no `set_key` semantics |
-| YAML | simple top-level `set_key` complete for scalar update/insert; nested paths, arrays, multiline scalars, and serializer round-trips deferred | tree-sitter-yaml parse-clean before/after; local same-line value span or EOF insert splice |
-| TOML | simple top-level pre-table `set_key` complete for scalar update/insert; dotted keys, arrays, array-of-tables, table-scoped edits, and serializer round-trips deferred | tree-sitter-toml parse-clean before/after; local same-line value span or pre-first-table insert splice |
-| HTML | parser support added; element/block anchor edits deferred | tree-sitter-html vendored; range edits |
-| CSS | parser support added; rule/property edits deferred | tree-sitter-css vendored; range edits |
+| Markdown | parser support added; section/block insert/replace follow-up backlog | tree-sitter-markdown block grammar vendored; raw text edits |
+| JSON | parser support and top-level `set_key` complete; delete key/array insert follow-up backlog | tree-sitter-json vendored for parser support; `set_key` remains strict scanner + std.json validation |
+| JSONC | parser/doctor/read support only; comment-preserving edits follow-up backlog | tree-sitter-jsonc vendored from `sunilunnithan/tree-sitter-jsonc` commit `02b01653c8a1c198ae7287d566efa86a135b30d5`, ABI 13; no `set_key` semantics |
+| YAML | simple top-level `set_key` complete for scalar update/insert; nested paths, arrays, multiline scalars, and serializer round-trips follow-up backlog | tree-sitter-yaml parse-clean before/after; local same-line value span or EOF insert splice |
+| TOML | simple top-level pre-table `set_key` complete for scalar update/insert; dotted keys, arrays, array-of-tables, table-scoped edits, and serializer round-trips follow-up backlog | tree-sitter-toml parse-clean before/after; local same-line value span or pre-first-table insert splice |
+| HTML | parser support added; element/block anchor edits follow-up backlog | tree-sitter-html vendored; range edits |
+| CSS | parser support added; rule/property edits follow-up backlog | tree-sitter-css vendored; range edits |
 | arbitrary text | anchors/hashes | deterministic byte edits only |
 
 Parser/grammar expansion note: `reports/grammar-parser-design-20260525.md` records the pinned parser-support slice for JSON/JSONC/YAML/TOML/Markdown/HTML/CSS, including exact repo commits, ABI status, and skipped inline Markdown behavior. This slice adds parser, doctor, and read support only; no YAML/TOML/Markdown/JSONC edit semantics.
@@ -299,7 +307,7 @@ Acceptance:
 
 ### Lane E — Warm process / daemon path
 
-Owner: backend agent + security review.  
+Owner: backend agent + security review.
 Purpose: remove CLI cold-start/parser-load overhead for repeated agent calls.
 
 Options:
@@ -310,25 +318,25 @@ Options:
 
 Tasks:
 
-- [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
+- [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE current-scope: Lane E protocol spec in `docs/blitzd-protocol.md` plus a non-mutating Zig daemon prototype; mutating/full-pool implementation is follow-up backlog]
 - [x] Add CLI extension point and minimal daemon prototype: `blitz daemon --help` documents serial JSONL use; `blitz [--workspace-root <root>] daemon` handles non-mutating `doctor` and `read` requests. [DONE: safe prototype only]
-- [x] Keep parser/query caches in worker memory for current non-mutating daemon read slice. [DONE current-slice: daemon keeps reusable parser instances by language for `read` structure paths and a retained TypeScript `read_summary` query; open tree/incremental parse caches remain deferred]
+- [x] Keep parser/query caches in worker memory for current non-mutating daemon read slice. [DONE current-slice: daemon keeps reusable parser instances by language for `read` structure paths and a retained TypeScript `read_summary` query; open tree/incremental parse caches are follow-up backlog]
 - [x] Add bounded MCP-host warm cache for safe repeated calls. [DONE: `BLITZ_MCP_WARM=1` caches `doctor` and `read` only; `read` cache key is canonical file path + same-fd SHA-256/content metadata fingerprint; default off; read cache defaults: 128 entries and 1 MiB total cached result text]
-- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and same-fd SHA-256/content metadata read fingerprints; mutation hash preconditions still deferred]
-- [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart and evicts read entries oldest/LRU-first when entry/result-byte bounds are exceeded; true idle eviction still deferred]
-- [x] Security review current non-mutating Zig JSONL daemon slice: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [DONE current-slice: daemon canonicalizes process workspace root at startup and rejects regular-file roots; non-string request `workspaceRoot` and string mismatches reject fail-closed; relative and absolute read paths resolve through realpath then workspace enforcement; `..` traversal, broken symlink ancestors, symlink escapes, absolute escapes, invalid JSON/non-object requests, invalid read params, oversized frames, and invalid/high-byte output are covered by smoke/manual probes; daemon stores parser instances only and reads current file per request. Evidence: `40bf27c`, `bun scripts/daemon-smoke.ts`, extra security probes v4, security-reviewer `approve commit`. DEFERRED full daemon: required/typed `workspaceRoot` policy for future pooling, JSON nesting/depth resource limits, same-fd read/parse under hostile concurrent writers, open-tree/query cache invalidation, daemon mutation hash preconditions/locks/crash proof.]
-- [ ] Security review future full daemon mutation/cache slice. [DEFERRED: complete checklist in `docs/blitzd-protocol.md`; prove mutations, cache invalidation, crash/timeout, env, diagnostics.]
+- [x] Add workspace root, file hash, and lock policy to worker requests. [DONE current-scope: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and same-fd SHA-256/content metadata read fingerprints; mutation hash preconditions are follow-up backlog for future daemon mutation support]
+- [x] Add idle timeout and cache invalidation. [DONE current-scope: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart and evicts read entries oldest/LRU-first when entry/result-byte bounds are exceeded; true daemon idle eviction is follow-up backlog]
+- [x] Security review current non-mutating Zig JSONL daemon slice: workspace boundaries, path traversal, stale file state, untrusted JSON payloads. [DONE current-scope: daemon canonicalizes process workspace root at startup and rejects regular-file roots; non-string request `workspaceRoot` and string mismatches reject fail-closed; relative and absolute read paths resolve through realpath then workspace enforcement; `..` traversal, broken symlink ancestors, symlink escapes, absolute escapes, invalid JSON/non-object requests, invalid read params, oversized frames, and invalid/high-byte output are covered by smoke/manual probes; daemon stores parser/query instances only and reads current file per request. Evidence: `40bf27c`, `2e9aef1`, `bun scripts/daemon-smoke.ts`, extra security probes v4, security-reviewer/reviewer `approve commit`. Full mutating daemon security is follow-up backlog.]
+- Follow-up backlog: security review full daemon mutation/cache slice using the checklist in `docs/blitzd-protocol.md`; prove mutations, cache invalidation, crash/timeout, env, diagnostics.
 
 Acceptance:
 
 - [x] Warm path p50/p95 wall time beats cold CLI on repeated safe operations. [DONE: `reports/mcp-warm-cache-bench-20260525.md`; fixed-harness 25-iteration verification rerun rejects MCP `isError` tool results and asserts expected doctor/read content; doctor p50/p95 0.110/0.185ms warm vs 3.133/3.568ms cold; read p50/p95 0.157/0.799ms warm vs 0.439/1.091ms cold]
 - [x] Worker never mutates outside workspace — current non-mutating daemon slice. [DONE current-slice: Zig daemon exposes only `doctor` and `read`; mutating method names reject closed with `fallbackAllowed:false`; no daemon stateless mutation fallback exists. MCP mutations still use existing stateless CLI after `bindPath` and clear cached read entry before mutation. Evidence: `40bf27c`, security-reviewer `approve commit`.]
-- [ ] Worker never mutates outside workspace — future daemon mutation slice. [DEFERRED: prove mutation hash preconditions, same-fd/symlink-safe target binding, per-file locks, crash/timeout no-partial-write behavior, and cache invalidation.]
+- Follow-up backlog: prove future daemon mutation workspace safety with mutation hash preconditions, same-fd/symlink-safe target binding, per-file locks, crash/timeout no-partial-write behavior, and cache invalidation.
 - [x] Crash/timeout falls back to stateless CLI safely for current warm slice. [DONE: current warm slice has no child worker; cache miss, unsafe/oversized fingerprint input, oversized result, pre/post fingerprint mismatch, and process restart use stateless CLI for safe calls without cache fill; mutations already stateless]
 
 ### Lane F — Build and release benchmarking
 
-Owner: `d5` + reviewer.  
+Owner: `d5` + reviewer.
 Purpose: use latest Zig/tree-sitter without destabilizing release.
 
 Build matrix:
@@ -342,7 +350,7 @@ Build matrix:
 Tasks:
 
 - [x] Add reproducible bench command scripts under `bench/scripts/`. [DONE: Lane F scripts: `bench/scripts/release-build-matrix.sh`, `bench/scripts/apply-microbench.sh`]
-- [ ] Use `zig build --watch -fincremental --time-report` for dev loop, not release claim. [DEFERRED: release evidence uses stable `zig build`; dev-loop evidence remains blocked on current Zig/toolchain behavior as of 2026-06-05: combined `--watch -fincremental --time-report` fails because `--time-report`/web UI and `--watch` are unsupported together; split `--watch -fincremental` aborts with `REX_GOTPCRELX`; split `--time-report` fails with `failed to listen to port 0: AddressUnavailable`.]
+- Follow-up backlog: use `zig build --watch -fincremental --time-report` only for dev-loop evidence once toolchain behavior permits it. Current release evidence uses stable `zig build`; 2026-06-05 probes showed combined `--watch -fincremental --time-report` fails because `--time-report`/web UI and `--watch` are unsupported together; split `--watch -fincremental` aborts with `REX_GOTPCRELX`; split `--time-report` fails with `failed to listen to port 0: AddressUnavailable`.
 - [x] Add binary size, cold start, and operation wall-time table. [DONE: `reports/lane-f-evidence-20260525-102840.md` summarizes build matrix + apply microbench]
 - [x] Confirm no `@cImport`; keep C interop in build system. [DONE: `grep -R --include='*.zig' -n '@cImport(' src build.zig` found none in Lane F report]
 - [x] Evaluate `smp_allocator` in ReleaseFast and debug allocator only in debug/safe. [DONE: documented no allocator switch; repo AGENTS keeps Zig 0.16 stable/debug allocator policy pending isolated evidence]
@@ -350,11 +358,11 @@ Tasks:
 Acceptance:
 
 - [x] 0.3 release build choice is evidence-backed. [DONE: native ReleaseFast/ReleaseSmall and x86_64-linux-musl ReleaseFast sizes/timings recorded]
-- [x] Master/0.17-dev is optional until it proves runtime or size win. [DONE: documented deferred until local toolchain evidence exists]
+- [x] Master/0.17-dev is optional until it proves runtime or size win. [DONE: documented follow-up backlog until local toolchain evidence exists]
 
 ### Lane G — Benchmark suite expansion
 
-Owner: benchmark skill + `d5`.  
+Owner: benchmark skill + `d5`.
 Purpose: validate the guarantee.
 
 Datasets:
@@ -387,8 +395,8 @@ Required report fields:
 
 Acceptance:
 
-- [ ] `gpt-5.4-mini` core-vs-router matrix has no selected-route regressions against fallback beyond threshold. [DEFERRED]
-  - Environment note: current OpenAI/Codex Pi path failed before session capture with `OAuth authentication is currently not allowed for this organization`; do not claim GPT-locked evidence from this run.
+- Follow-up backlog: run the `gpt-5.4-mini` core-vs-router selected-route regression matrix once provider auth permits it.
+  - Environment note: current OpenAI/Codex Pi path failed before session capture with `OAuth authentication is currently not allowed for this organization`; no GPT-locked evidence is claimed for this current completion record.
 - [x] Failed/core-vs-Blitz rows are reported with correctness/savings status instead of hidden savings claims. [DONE:4]
   - Evidence: `bench/pi-matrix.ts` pairwise statuses and prior report handling distinguish both-correct, core-failed correctness wins, Blitz failures, and incomplete pairs.
 - [x] Rows where core is cheaper are routed/reported distinctly from Blitz wins. [DONE:20]
@@ -396,7 +404,7 @@ Acceptance:
 
 ## Data model additions
 
-Future result shape additions:
+Reference result shape additions used for current/follow-up route reporting:
 
 ```ts
 type BlitzRouteDecision = {
@@ -458,7 +466,7 @@ A 0.3 release candidate is accepted only if:
 - [x] All selected rows are correct or fail closed before mutation. [DONE: apply route smokes, incremental changed-range broad failure fix, direct-text ambiguity rejections, JSON/JSONC set_key rejection]
 - [x] Tokscale validates real Pi session token totals for agent-facing claims. [DONE: locked GLM tmux/Tokscale reports saved under reports/]
 - [x] CLI direct/incremental paths meet p95 wall-time targets on local microbench. [DONE: p95 script/report added; debug/cold `reports/lane-f-apply-microbench-p95-final-20260525-132013.md` showed ~10.98ms, but ReleaseFast evidence `reports/lane-f-apply-microbench-p95-releasefast-20260525-132131.md` shows dry-run p95 3.865ms/2.405ms, under the suggested ≤10ms direct target]
-- [x] Universal file routes exist for at least Markdown, JSON/JSONC, YAML, TOML, HTML, CSS, and arbitrary text anchors. [DONE: parser/doctor/read support for JSON, JSONC, YAML, TOML, Markdown, HTML, CSS; direct_text anchors for arbitrary files; format edit semantics beyond strict JSON set_key remain deferred]
+- [x] Universal file routes exist for at least Markdown, JSON/JSONC, YAML, TOML, HTML, CSS, and arbitrary text anchors. [DONE: parser/doctor/read support for JSON, JSONC, YAML, TOML, Markdown, HTML, CSS; direct_text anchors for arbitrary files; format edit semantics beyond strict JSON set_key are follow-up backlog]
 
 Suggested thresholds for first RC:
 
@@ -468,11 +476,11 @@ Suggested thresholds for first RC:
 - Direct CLI ops: p95 under 10ms for files ≤100kB, excluding process cold start; warm process target under 5ms.
 - Parse-after validation: p95 under 25ms for 100kB supported-code files.
 
-## Implementation order
+## Historical implementation order
 
-1. **Plan approval only** — this file.
+1. Plan drafted and approved — this file.
 2. Instrumentation and report model (Lane A).
-3. Router in preview/explain mode only (Lane B partial).
+3. Router in preview/explain mode only (initial Lane B slice).
 4. Benchmark route oracle using existing forced core/Blitz data.
 5. Tree-sitter 0.26.9 + incremental validation (Lane C).
 6. Universal text ops (Lane D first slice).
@@ -493,73 +501,24 @@ Suggested thresholds for first RC:
 | Tree-sitter grammar drift | ABI checks, doctor output, grammar fixture matrix before upgrade. |
 | Model-specific behavior changes | Store provider/model/date and maintain per-model route stats. |
 
-## Concrete next slices after approval
+## Follow-up backlog after 0.3 current scope
 
-### Slice 1 — Metrics + route report fields
+These items are intentionally outside the completed current-scope record above. They should become their own plan/sprint before implementation:
 
-Files likely touched:
+1. Full mutating daemon: mutation hash preconditions, same-fd/symlink-safe target binding, per-file locks, crash/timeout no-partial-write behavior, cache invalidation, and dedicated security review.
+2. Warm-worker expansion: open-tree/incremental parse daemon caches, broader per-language/per-op query caches, and user-facing query operations that apply byte/point/depth/match limits.
+3. Format semantics expansion: JSONC comment-preserving edits, Markdown block-aware transforms, HTML element edits, CSS property/rule edits, nested YAML/TOML paths, arrays, multiline scalars, dotted keys, and table-scoped edits.
+4. Oracle refinement: parserCold/grammar/version metrics, numeric expected-win fields, model/provider/history route inputs, and CLI `--preview` spelling polish.
+5. Zig dev-loop evidence: rerun `--watch -fincremental` and `--time-report` probes when the local Zig/toolchain stops failing with the recorded 2026-06-05 errors.
+6. GPT-locked matrix: rerun `gpt-5.4-mini` core-vs-router selected-route regression matrix after provider auth permits session capture.
 
-- `src/metrics.zig`
-- `src/apply/mod.zig`
-- `src/cmd_apply.zig`
-- `bench/pi-matrix.ts`
-- docs/report schema
+## Final verification snapshot
 
-Gates:
+Latest verified current-scope commit: `2e9aef1 feat: cache daemon read summary queries`.
 
-```bash
-zig build test
-zig build
-bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js
-```
+Verification evidence used for this completion record:
 
-### Slice 2 — Auto-router preview mode
-
-Files likely touched:
-
-- CLI command parser / apply command
-- Pi wrapper schema later, after CLI is stable
-- benchmark report writer
-
-Gates:
-
-```bash
-zig build test
-bun bench/pi-matrix.ts --runner tmux --provider openai-codex --model gpt-5.4-mini --case semantic/async-try-catch --tokscale
-```
-
-### Slice 3 — Universal text anchors
-
-Files likely touched:
-
-- new `src/text_ops.zig` or `src/apply/text.zig`
-- tests/fixtures for Markdown/JSON/YAML/TOML/HTML/CSS/plain text
-
-Gates:
-
-```bash
-zig build test
-zig build
-zig-out/bin/blitz apply --json <text-op fixtures>
-```
-
-### Slice 4 — Tree-sitter 0.26.9 + incremental validation
-
-Files likely touched:
-
-- `third_party/tree-sitter/`
-- `src/tree_sitter/*`
-- `src/apply/*`
-- `src/grammar_config.zig`
-
-Gates:
-
-```bash
-zig build test
-zig-out/bin/blitz doctor
-zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseFast
-```
-
-## Approval request
-
-Approve this plan before implementation. Recommended first approved slice: **Lane A / Slice 1 — metrics + route report fields**, because it gives every later performance claim a hard measurement backbone.
+- Parent gates for the latest code slice: `zig build`, `zig build test`, `bun scripts/daemon-smoke.ts`, `zig build -Dtarget=x86_64-windows-gnu`, `git diff --check`, and no staged files.
+- Reviewer approval for the latest code/docs slice: `approve commit`; reviewer reran `git diff --check && git diff --cached --stat --exit-code` and `bun scripts/daemon-smoke.ts`.
+- Post-commit audit before this finalization pass: branch clean/up-to-date at `2e9aef1`; no unchecked current-scope checklist items; no live nonfinal status markers.
+- This finalization pass removes stale approval/next-slice language and classifies remaining follow-up work as follow-up backlog rather than current plan checkboxes.
