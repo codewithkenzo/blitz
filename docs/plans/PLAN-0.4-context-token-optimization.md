@@ -6,6 +6,8 @@ Primary objective: make Blitz save context-window and tokens across as many real
 
 ## Non-negotiable framing
 
+Blitz is **not core edit today**. 0.4 exists because Blitz needs to become core edit: the default, token-cheaper edit path agents can trust for normal code changes, not a niche fallback for structural failures.
+
 This is **not** a raw speed plan. It is a context-window and token-savings plan.
 
 A Blitz edit is successful only if it reduces model-visible context/output/tool-call tokens or correctly routes away from Blitz when core is cheaper. Wall time stays a secondary guardrail: keep Blitz fast or make it faster, but do not call speed the main win.
