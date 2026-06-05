@@ -1,5 +1,9 @@
 const std = @import("std");
 
+pub const runtime_version = "v0.26.9";
+pub const language_abi_version: u32 = 15;
+pub const min_compatible_language_abi_version: u32 = 13;
+
 pub const c = struct {
     pub const TSLanguage = opaque {};
     pub const TSParser = opaque {};
@@ -59,6 +63,7 @@ pub const c = struct {
     pub extern fn ts_parser_new() *TSParser;
     pub extern fn ts_parser_delete(self: *TSParser) void;
     pub extern fn ts_parser_set_language(self: *TSParser, language: *const TSLanguage) bool;
+    pub extern fn ts_language_abi_version(self: *const TSLanguage) u32;
     pub extern fn ts_parser_parse_string(
         self: *TSParser,
         old_tree: ?*const TSTree,
@@ -68,6 +73,8 @@ pub const c = struct {
     pub extern fn ts_tree_delete(self: *TSTree) void;
     pub extern fn ts_tree_root_node(self: *const TSTree) TSNode;
     pub extern fn ts_tree_edit(self: *TSTree, edit: *const TSInputEdit) void;
+    pub extern fn ts_tree_get_changed_ranges(old_tree: *const TSTree, new_tree: *const TSTree, length: *u32) ?[*]TSRange;
+    pub extern fn free(ptr: ?*anyopaque) void;
     pub extern fn ts_node_type(self: TSNode) [*:0]const u8;
     pub extern fn ts_node_start_byte(self: TSNode) u32;
     pub extern fn ts_node_start_point(self: TSNode) TSPoint;
@@ -96,7 +103,11 @@ pub const c = struct {
     pub extern fn ts_query_cursor_new() *TSQueryCursor;
     pub extern fn ts_query_cursor_delete(self: *TSQueryCursor) void;
     pub extern fn ts_query_cursor_exec(self: *TSQueryCursor, query: *const TSQuery, node: TSNode) void;
+    pub extern fn ts_query_cursor_did_exceed_match_limit(self: *const TSQueryCursor) bool;
+    pub extern fn ts_query_cursor_set_match_limit(self: *TSQueryCursor, limit: u32) void;
     pub extern fn ts_query_cursor_set_byte_range(self: *TSQueryCursor, start_byte: u32, end_byte: u32) bool;
+    pub extern fn ts_query_cursor_set_point_range(self: *TSQueryCursor, start_point: TSPoint, end_point: TSPoint) bool;
+    pub extern fn ts_query_cursor_set_max_start_depth(self: *TSQueryCursor, max_start_depth: u32) void;
     pub extern fn ts_query_cursor_next_capture(
         self: *TSQueryCursor,
         match: *TSQueryMatch,
@@ -108,6 +119,13 @@ pub const c = struct {
     pub extern fn tree_sitter_tsx() *const TSLanguage;
     pub extern fn tree_sitter_python() *const TSLanguage;
     pub extern fn tree_sitter_go() *const TSLanguage;
+    pub extern fn tree_sitter_json() *const TSLanguage;
+    pub extern fn tree_sitter_jsonc() *const TSLanguage;
+    pub extern fn tree_sitter_yaml() *const TSLanguage;
+    pub extern fn tree_sitter_toml() *const TSLanguage;
+    pub extern fn tree_sitter_markdown() *const TSLanguage;
+    pub extern fn tree_sitter_html() *const TSLanguage;
+    pub extern fn tree_sitter_css() *const TSLanguage;
 };
 
 pub const Language = enum {
@@ -116,6 +134,13 @@ pub const Language = enum {
     tsx,
     python,
     go,
+    json,
+    jsonc,
+    yaml,
+    toml,
+    markdown,
+    html,
+    css,
 
     pub fn raw(self: Language) *const c.TSLanguage {
         return switch (self) {
@@ -124,7 +149,23 @@ pub const Language = enum {
             .tsx => c.tree_sitter_tsx(),
             .python => c.tree_sitter_python(),
             .go => c.tree_sitter_go(),
+            .json => c.tree_sitter_json(),
+            .jsonc => c.tree_sitter_jsonc(),
+            .yaml => c.tree_sitter_yaml(),
+            .toml => c.tree_sitter_toml(),
+            .markdown => c.tree_sitter_markdown(),
+            .html => c.tree_sitter_html(),
+            .css => c.tree_sitter_css(),
         };
+    }
+
+    pub fn abiVersion(self: Language) u32 {
+        return c.ts_language_abi_version(self.raw());
+    }
+
+    pub fn isAbiCompatible(self: Language) bool {
+        const abi = self.abiVersion();
+        return abi >= min_compatible_language_abi_version and abi <= language_abi_version;
     }
 
     pub fn fromExtension(ext: []const u8) ?Language {
@@ -133,6 +174,13 @@ pub const Language = enum {
         if (std.ascii.eqlIgnoreCase(ext, ".tsx")) return .tsx;
         if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
         if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
+        if (std.ascii.eqlIgnoreCase(ext, ".json")) return .json;
+        if (std.ascii.eqlIgnoreCase(ext, ".jsonc")) return .jsonc;
+        if (std.ascii.eqlIgnoreCase(ext, ".yaml") or std.ascii.eqlIgnoreCase(ext, ".yml")) return .yaml;
+        if (std.ascii.eqlIgnoreCase(ext, ".toml")) return .toml;
+        if (std.ascii.eqlIgnoreCase(ext, ".md") or std.ascii.eqlIgnoreCase(ext, ".markdown")) return .markdown;
+        if (std.ascii.eqlIgnoreCase(ext, ".html") or std.ascii.eqlIgnoreCase(ext, ".htm")) return .html;
+        if (std.ascii.eqlIgnoreCase(ext, ".css")) return .css;
         return null;
     }
 };
@@ -179,6 +227,19 @@ pub const Tree = struct {
 
     pub fn edit(self: *Tree, input_edit: c.TSInputEdit) void {
         c.ts_tree_edit(self.raw, &input_edit);
+    }
+
+    pub fn changedRanges(self: *const Tree, allocator: std.mem.Allocator, new_tree: *const Tree) ![]c.TSRange {
+        var len: u32 = 0;
+        const raw_ranges = c.ts_tree_get_changed_ranges(self.raw, new_tree.raw, &len) orelse {
+            if (len == 0) return &[_]c.TSRange{};
+            return error.OutOfMemory;
+        };
+        defer c.free(raw_ranges);
+
+        const ranges = try allocator.alloc(c.TSRange, len);
+        @memcpy(ranges, raw_ranges[0..len]);
+        return ranges;
     }
 };
 
@@ -311,8 +372,24 @@ pub const QueryCursor = struct {
         c.ts_query_cursor_exec(self.raw, query.raw, node.raw);
     }
 
+    pub fn setMatchLimit(self: *QueryCursor, limit: u32) void {
+        c.ts_query_cursor_set_match_limit(self.raw, limit);
+    }
+
+    pub fn didExceedMatchLimit(self: *const QueryCursor) bool {
+        return c.ts_query_cursor_did_exceed_match_limit(self.raw);
+    }
+
     pub fn setByteRange(self: *QueryCursor, start: u32, end: u32) void {
         std.debug.assert(c.ts_query_cursor_set_byte_range(self.raw, start, end));
+    }
+
+    pub fn setPointRange(self: *QueryCursor, start: c.TSPoint, end: c.TSPoint) void {
+        std.debug.assert(c.ts_query_cursor_set_point_range(self.raw, start, end));
+    }
+
+    pub fn setMaxStartDepth(self: *QueryCursor, max_start_depth: u32) void {
+        c.ts_query_cursor_set_max_start_depth(self.raw, max_start_depth);
     }
 
     pub fn nextCapture(self: *QueryCursor) ?CaptureMatch {
@@ -329,6 +406,13 @@ test "Language.fromExtension matches supported extensions" {
     try std.testing.expectEqual(Language.tsx, Language.fromExtension(".tsx").?);
     try std.testing.expectEqual(Language.python, Language.fromExtension(".py").?);
     try std.testing.expectEqual(Language.go, Language.fromExtension(".go").?);
+    try std.testing.expectEqual(Language.json, Language.fromExtension(".json").?);
+    try std.testing.expectEqual(Language.jsonc, Language.fromExtension(".jsonc").?);
+    try std.testing.expectEqual(Language.yaml, Language.fromExtension(".yml").?);
+    try std.testing.expectEqual(Language.toml, Language.fromExtension(".toml").?);
+    try std.testing.expectEqual(Language.markdown, Language.fromExtension(".markdown").?);
+    try std.testing.expectEqual(Language.html, Language.fromExtension(".htm").?);
+    try std.testing.expectEqual(Language.css, Language.fromExtension(".css").?);
     try std.testing.expect(Language.fromExtension(".zig") == null);
 }
 
@@ -343,41 +427,168 @@ fn expectParsedNode(lang: Language, source: []const u8) !void {
 
     const root = tree.rootNode();
     try std.testing.expect(!root.isNull());
+    try std.testing.expect(!root.hasError());
 }
 
 test "Parser parses each supported grammar" {
-    try expectParsedNode(.rust, "x");
+    try expectParsedNode(.rust, "fn main() {}\n");
     try expectParsedNode(.typescript, "x");
     try expectParsedNode(.tsx, "<div />");
     try expectParsedNode(.python, "x = 1\n");
     try expectParsedNode(.go, "package main\nfunc main() {}\n");
+    try expectParsedNode(.json, "{\"ok\": true, \"n\": 1}\n");
+    try expectParsedNode(.jsonc, "{\n  // line comment\n  \"ok\": true,\n  /* block comment */\n  \"n\": 1\n}\n");
+    try expectParsedNode(.yaml, "ok: true\nn: 1\n");
+    try expectParsedNode(.toml, "ok = true\nn = 1\n");
+    try expectParsedNode(.markdown, "# Title\n\nBody text.\n");
+    try expectParsedNode(.html, "<!doctype html><html><body><p>ok</p></body></html>");
+    try expectParsedNode(.css, "body { color: red; }\n");
 }
 
-test "TypeScript query finds identifier capture" {
+test "Tree.changedRanges reports incremental structural edits" {
+    var parser = Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    const before = "function value() { return 1; }";
+    const after = "function value() { const next = 2; return next; }";
+
+    var old_tree = parser.parseString(before) orelse return error.ParseFailed;
+    defer old_tree.deinit();
+
+    var edited_tree = old_tree;
+    const incremental = @import("../incremental.zig");
+    edited_tree.edit(try incremental.makeInputEditBetween(before, after));
+
+    var new_tree = parser.parseStringWithOld(after, &edited_tree) orelse return error.ParseFailed;
+    defer new_tree.deinit();
+
+    const ranges = try edited_tree.changedRanges(std.testing.allocator, &new_tree);
+    defer std.testing.allocator.free(ranges);
+    try std.testing.expect(ranges.len > 0);
+}
+
+fn countIdentifierCaptures(source: []const u8, cursor: *QueryCursor, query: *const Query, root: Node) u32 {
+    cursor.exec(query, root);
+
+    var capture_count: u32 = 0;
+    while (cursor.nextCapture()) |capture| {
+        const node = capture.match.captures[capture.capture_index].node;
+        if (std.mem.eql(u8, std.mem.span(c.ts_node_type(node)), "identifier")) {
+            capture_count += 1;
+            std.debug.assert(c.ts_node_start_byte(node) <= source.len);
+            std.debug.assert(c.ts_node_end_byte(node) <= source.len);
+        }
+    }
+    return capture_count;
+}
+
+fn expectTypeScriptQueryFixtures(source: []const u8) !struct { Tree, Node, Query } {
     var parser = Parser.init();
     defer parser.deinit();
 
     try std.testing.expect(parser.setLanguage(.typescript));
 
-    var tree = parser.parseString("const foo = 1;") orelse return error.ParseFailed;
-    defer tree.deinit();
+    var tree = parser.parseString(source) orelse return error.ParseFailed;
+    errdefer tree.deinit();
 
     const root = tree.rootNode();
     try std.testing.expect(!root.isNull());
 
     var query = try Query.init(.typescript, "(identifier) @id");
+    errdefer query.deinit();
+
+    return .{ tree, root, query };
+}
+
+test "TypeScript query finds identifier capture" {
+    const fixtures = try expectTypeScriptQueryFixtures("const foo = 1;");
+    var tree = fixtures[0];
+    defer tree.deinit();
+    const root = fixtures[1];
+    var query = fixtures[2];
     defer query.deinit();
 
     var cursor = QueryCursor.init();
     defer cursor.deinit();
 
+    try std.testing.expect(countIdentifierCaptures("const foo = 1;", &cursor, &query, root) >= 1);
+}
+
+test "QueryCursor byte range filters identifier captures" {
+    const source = "const alpha = 1;\nconst beta = alpha;\n";
+    const fixtures = try expectTypeScriptQueryFixtures(source);
+    var tree = fixtures[0];
+    defer tree.deinit();
+    const root = fixtures[1];
+    var query = fixtures[2];
+    defer query.deinit();
+
+    const beta_start: u32 = @intCast(std.mem.indexOf(u8, source, "beta") orelse return error.TestExpectedEqual);
+    const beta_end: u32 = beta_start + 4;
+
+    var cursor = QueryCursor.init();
+    defer cursor.deinit();
+    cursor.setByteRange(beta_start, beta_end);
+
+    try std.testing.expectEqual(@as(u32, 1), countIdentifierCaptures(source, &cursor, &query, root));
+}
+
+test "QueryCursor point range filters identifier captures" {
+    const source = "const alpha = 1;\nconst beta = alpha;\n";
+    const fixtures = try expectTypeScriptQueryFixtures(source);
+    var tree = fixtures[0];
+    defer tree.deinit();
+    const root = fixtures[1];
+    var query = fixtures[2];
+    defer query.deinit();
+
+    var cursor = QueryCursor.init();
+    defer cursor.deinit();
+    cursor.setPointRange(.{ .row = 1, .column = 0 }, .{ .row = 1, .column = @intCast("const beta = alpha;".len) });
+
+    const capture_count = countIdentifierCaptures(source, &cursor, &query, root);
+    try std.testing.expect(capture_count >= 2);
+    try std.testing.expect(capture_count < 4);
+}
+
+test "QueryCursor max start depth bounds identifier search" {
+    const source = "const alpha = 1;\nconst beta = alpha;\n";
+    const fixtures = try expectTypeScriptQueryFixtures(source);
+    var tree = fixtures[0];
+    defer tree.deinit();
+    const root = fixtures[1];
+    var query = fixtures[2];
+    defer query.deinit();
+
+    var unbounded = QueryCursor.init();
+    defer unbounded.deinit();
+    try std.testing.expect(countIdentifierCaptures(source, &unbounded, &query, root) >= 3);
+
+    var bounded = QueryCursor.init();
+    defer bounded.deinit();
+    bounded.setMaxStartDepth(0);
+    try std.testing.expectEqual(@as(u32, 0), countIdentifierCaptures(source, &bounded, &query, root));
+}
+
+test "QueryCursor match limit reports exceeded when too small" {
+    const source = "const one = two(three, four, five, six, seven);\n";
+    var parser = Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = parser.parseString(source) orelse return error.ParseFailed;
+    defer tree.deinit();
+    const root = tree.rootNode();
+
+    var query = try Query.init(.typescript, "(lexical_declaration (variable_declarator value: (call_expression arguments: (arguments (identifier) @arg)+)))");
+    defer query.deinit();
+
+    var cursor = QueryCursor.init();
+    defer cursor.deinit();
+    cursor.setMatchLimit(1);
     cursor.exec(&query, root);
 
-    var capture_count: u32 = 0;
-    while (cursor.nextCapture()) |capture| {
-        _ = capture;
-        capture_count += 1;
-    }
-
-    try std.testing.expect(capture_count >= 1);
+    while (cursor.nextCapture()) |_| {}
+    try std.testing.expect(cursor.didExceedMatchLimit());
 }

@@ -1,5 +1,6 @@
 const std = @import("std");
 const bindings = @import("tree_sitter/bindings.zig");
+const line_index = @import("line_index.zig");
 
 pub const EditPoints = struct {
     start: bindings.c.TSPoint,
@@ -17,7 +18,21 @@ pub fn makeInputEdit(
     const start_point = pointAt(source_before, start_byte);
     const old_end_point = pointAt(source_before, old_end_byte);
     const new_end_byte = start_byte + replacement.len;
-    const new_end_point = pointAfterReplacement(start_point, replacement);
+    const new_end_point = try pointAfterReplacementChecked(start_point, replacement);
+    return makeInputEditFromPoints(start_byte, old_end_byte, new_end_byte, start_point, old_end_point, new_end_point);
+}
+
+pub fn makeInputEditWithLineIndex(
+    old_index: line_index.LineIndex,
+    replacement: []const u8,
+    start_byte: usize,
+    old_end_byte: usize,
+) !bindings.c.TSInputEdit {
+    if (start_byte > old_end_byte or old_end_byte > old_index.source_len) return error.InvalidEditRange;
+    const start_point = try old_index.pointAt(start_byte);
+    const old_end_point = try old_index.pointAt(old_end_byte);
+    const new_end_byte = start_byte + replacement.len;
+    const new_end_point = try pointAfterReplacementChecked(start_point, replacement);
     return makeInputEditFromPoints(start_byte, old_end_byte, new_end_byte, start_point, old_end_point, new_end_point);
 }
 
@@ -75,14 +90,18 @@ pub fn pointAt(source: []const u8, byte_offset: usize) bindings.c.TSPoint {
 }
 
 pub fn pointAfterReplacement(start: bindings.c.TSPoint, replacement: []const u8) bindings.c.TSPoint {
+    return pointAfterReplacementChecked(start, replacement) catch unreachable;
+}
+
+pub fn pointAfterReplacementChecked(start: bindings.c.TSPoint, replacement: []const u8) !bindings.c.TSPoint {
     var row = start.row;
     var column = start.column;
     for (replacement) |ch| {
         if (ch == '\n') {
-            row += 1;
+            row = try addU32(row, 1);
             column = 0;
         } else {
-            column += 1;
+            column = try addU32(column, 1);
         }
     }
     return .{ .row = row, .column = column };
@@ -91,6 +110,10 @@ pub fn pointAfterReplacement(start: bindings.c.TSPoint, replacement: []const u8)
 fn toU32(value: usize) !u32 {
     if (value > std.math.maxInt(u32)) return error.EditRangeTooLarge;
     return @intCast(value);
+}
+
+fn addU32(lhs: u32, rhs: u32) !u32 {
+    return std.math.add(u32, lhs, rhs) catch error.PointOutOfRange;
 }
 
 test "pointAt uses byte columns and rows" {

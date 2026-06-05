@@ -1,7 +1,7 @@
 //! blitz build.zig — Zig 0.16 stable.
 //!
 //! Statically links the vendored tree-sitter runtime (third_party/tree-sitter/)
-//! and the five vendored grammars under grammars/tree-sitter-<lang>/.
+//! and the vendored grammars under grammars/tree-sitter-<lang>/.
 
 const std = @import("std");
 
@@ -11,6 +11,13 @@ const grammars = [_]Grammar{
     .{ .name = "tsx", .has_scanner = true },
     .{ .name = "python", .has_scanner = true },
     .{ .name = "go", .has_scanner = false },
+    .{ .name = "json", .has_scanner = false },
+    .{ .name = "jsonc", .has_scanner = false },
+    .{ .name = "yaml", .has_scanner = true },
+    .{ .name = "toml", .has_scanner = true },
+    .{ .name = "markdown", .has_scanner = true },
+    .{ .name = "html", .has_scanner = true },
+    .{ .name = "css", .has_scanner = true },
 };
 
 const Grammar = struct {
@@ -49,8 +56,11 @@ pub fn build(b: *std.Build) void {
     ts_lib.root_module.addIncludePath(b.path("third_party/tree-sitter/lib/src"));
 
     // ---- grammar libs (one translation unit each) ----
-    var grammar_libs: [grammars.len]*std.Build.Step.Compile = undefined;
-    for (grammars, 0..) |g, idx| {
+    var grammar_libs: std.ArrayList(*std.Build.Step.Compile) = .empty;
+    for (grammars) |g| {
+        const src_dir = b.fmt("grammars/tree-sitter-{s}/src", .{g.name});
+        b.build_root.handle.access(b.graph.io, src_dir, .{}) catch continue;
+
         const glib = b.addLibrary(.{
             .name = b.fmt("tree-sitter-{s}", .{g.name}),
             .root_module = b.createModule(.{
@@ -60,7 +70,6 @@ pub fn build(b: *std.Build) void {
             }),
             .linkage = .static,
         });
-        const src_dir = b.fmt("grammars/tree-sitter-{s}/src", .{g.name});
         glib.root_module.addCSourceFile(.{
             .file = b.path(b.fmt("{s}/parser.c", .{src_dir})),
             .flags = &.{
@@ -85,7 +94,7 @@ pub fn build(b: *std.Build) void {
         }
         // Grammar local header (parser.h, alloc.h, array.h) lives in src/tree_sitter.
         glib.root_module.addIncludePath(b.path(src_dir));
-        grammar_libs[idx] = glib;
+        grammar_libs.append(b.allocator, glib) catch @panic("out of memory");
     }
 
     // ---- root module for blitz exe + tests ----
@@ -99,7 +108,7 @@ pub fn build(b: *std.Build) void {
     // through the Zig extern block without @cImport.
     root.addIncludePath(b.path("third_party/tree-sitter/lib/include"));
     root.linkLibrary(ts_lib);
-    for (grammar_libs) |glib| root.linkLibrary(glib);
+    for (grammar_libs.items) |glib| root.linkLibrary(glib);
 
     // ---- exe ----
     const exe = b.addExecutable(.{
@@ -122,7 +131,7 @@ pub fn build(b: *std.Build) void {
     });
     test_root.addIncludePath(b.path("third_party/tree-sitter/lib/include"));
     test_root.linkLibrary(ts_lib);
-    for (grammar_libs) |glib| test_root.linkLibrary(glib);
+    for (grammar_libs.items) |glib| test_root.linkLibrary(glib);
 
     const tests = b.addTest(.{
         .root_module = test_root,

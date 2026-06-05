@@ -13,6 +13,7 @@ const cmd_rename = @import("cmd_rename.zig");
 const cmd_undo = @import("cmd_undo.zig");
 const workspace = @import("workspace.zig");
 const cmd_doctor = @import("cmd_doctor.zig");
+const cmd_daemon = @import("cmd_daemon.zig");
 
 pub const version = "0.1.0-alpha.10";
 const MAX_STDIN_BYTES = 4 * 1024 * 1024;
@@ -84,6 +85,7 @@ pub fn main(init: std.process.Init) !void {
             if (std.mem.eql(u8, next_cmd, "edit")) break :blk try dispatchEdit(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "batch-edit")) break :blk try dispatchBatch(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "apply")) break :blk try dispatchApply(gpa, io, &it, stdout, stderr);
+            if (std.mem.eql(u8, next_cmd, "daemon")) break :blk try cmd_daemon.run(gpa, io, root, stdout, stderr, &it);
             if (std.mem.eql(u8, next_cmd, "rename")) break :blk try dispatchRename(gpa, io, &it, stdout, stderr);
             if (std.mem.eql(u8, next_cmd, "undo")) {
                 const file = it.next() orelse {
@@ -106,6 +108,10 @@ pub fn main(init: std.process.Init) !void {
 
         if (std.mem.eql(u8, cmd, "apply")) {
             break :blk try dispatchApply(gpa, io, &it, stdout, stderr);
+        }
+
+        if (std.mem.eql(u8, cmd, "daemon")) {
+            break :blk try cmd_daemon.run(gpa, io, "", stdout, stderr, &it);
         }
 
         if (std.mem.eql(u8, cmd, "rename")) {
@@ -249,6 +255,7 @@ fn dispatchApply(
     var dry_run = false;
     var diff = false;
     var json_output = false;
+    var cli_route: ?[]const u8 = null;
 
     while (it.next()) |flag| {
         if (std.mem.eql(u8, flag, "--edit")) {
@@ -262,6 +269,16 @@ fn dispatchApply(
             diff = true;
         } else if (std.mem.eql(u8, flag, "--json")) {
             json_output = true;
+        } else if (std.mem.eql(u8, flag, "--route")) {
+            const value = it.next() orelse {
+                try stderr.writeAll("blitz apply: --route expects one of auto|force-blitz|force-core|explain\n");
+                return 1;
+            };
+            if (!isValidApplyRoute(value)) {
+                try stderr.print("blitz apply: invalid --route '{s}' (expected auto|force-blitz|force-core|explain)\n", .{value});
+                return 1;
+            }
+            cli_route = value;
         } else {
             try stderr.print("blitz apply: unknown flag '{s}'\n", .{flag});
             return 1;
@@ -279,7 +296,16 @@ fn dispatchApply(
         try gpa.dupe(u8, request_bytes);
     defer gpa.free(request_data);
 
-    return try cmd_apply.run(gpa, io, request_data, dry_run, diff, json_output, stdout, stderr);
+    // CLI --route wins over JSON options.route so shell callers can force/explain
+    // routing without rewriting request payloads.
+    return try cmd_apply.run(gpa, io, request_data, dry_run, diff, json_output, cli_route, stdout, stderr);
+}
+
+fn isValidApplyRoute(value: []const u8) bool {
+    return std.mem.eql(u8, value, "auto") or
+        std.mem.eql(u8, value, "force-blitz") or
+        std.mem.eql(u8, value, "force-core") or
+        std.mem.eql(u8, value, "explain");
 }
 
 fn dispatchRename(

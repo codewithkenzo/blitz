@@ -6,12 +6,13 @@
 - Origin: https://github.com/tree-sitter/tree-sitter
 - License: MIT (vendored at `third_party/tree-sitter/LICENSE`)
 - Vendored into `third_party/tree-sitter/`
-- Upstream release: **v0.26.8** (recorded in `third_party/tree-sitter/VERSION`)
+- Upstream release: **v0.26.9** (recorded in `third_party/tree-sitter/VERSION`)
 
 ## tree-sitter grammars (vendored into `grammars/`)
 
 All grammars are MIT-licensed. Each vendored copy preserves the upstream
-`LICENSE` file and records its source in `grammars/tree-sitter-<lang>/VERSION`.
+license file (`LICENSE` or upstream spelling) and records its source in
+`grammars/tree-sitter-<lang>/VERSION`.
 
 | Language | Repo | Vendored path |
 |---|---|---|
@@ -20,6 +21,13 @@ All grammars are MIT-licensed. Each vendored copy preserves the upstream
 | TSX | https://github.com/tree-sitter/tree-sitter-typescript (tsx subdir) | `grammars/tree-sitter-tsx/` |
 | Python | https://github.com/tree-sitter/tree-sitter-python | `grammars/tree-sitter-python/` |
 | Go | https://github.com/tree-sitter/tree-sitter-go | `grammars/tree-sitter-go/` |
+| JSON | https://github.com/tree-sitter/tree-sitter-json | `grammars/tree-sitter-json/` |
+| JSONC | https://github.com/sunilunnithan/tree-sitter-jsonc @ `02b01653c8a1c198ae7287d566efa86a135b30d5` | `grammars/tree-sitter-jsonc/` |
+| YAML | https://github.com/tree-sitter-grammars/tree-sitter-yaml | `grammars/tree-sitter-yaml/` |
+| TOML | https://github.com/tree-sitter/tree-sitter-toml | `grammars/tree-sitter-toml/` |
+| Markdown | https://github.com/tree-sitter-grammars/tree-sitter-markdown | `grammars/tree-sitter-markdown/` |
+| HTML | https://github.com/tree-sitter/tree-sitter-html | `grammars/tree-sitter-html/` |
+| CSS | https://github.com/tree-sitter/tree-sitter-css | `grammars/tree-sitter-css/` |
 
 Each grammar directory contains `src/parser.c`, an optional `src/scanner.c`,
 and `src/tree_sitter/*.h` (grammar-local parser header + allocator + array

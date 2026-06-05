@@ -1,13 +1,24 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
+// @bun
+
 // mcp/blitz-mcp.ts
-import { existsSync as existsSync2, realpathSync } from "fs";
+import {
+  closeSync,
+  constants as fsConstants,
+  existsSync as existsSync2,
+  fstatSync,
+  openSync,
+  realpathSync,
+  readSync
+} from "fs";
+import { createHash } from "crypto";
 import { dirname as dirname2, isAbsolute, relative, resolve } from "path";
 import { spawnSync } from "child_process";
 
 // scripts/resolve-platform-bin.js
-import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 var here = dirname(fileURLToPath(import.meta.url));
 var root = dirname(here);
 var platformPackage = () => {
@@ -52,7 +63,16 @@ var parseEnvInt = (name, fallback, min, max) => {
     throw new Error(`${name} must be an integer from ${min} to ${max}`);
   return value;
 };
-var projectMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "build.zig", "go.mod", "deno.json", "bun.lock"];
+var projectMarkers = [
+  ".git",
+  "package.json",
+  "pyproject.toml",
+  "Cargo.toml",
+  "build.zig",
+  "go.mod",
+  "deno.json",
+  "bun.lock"
+];
 var argValue = (name) => {
   const idx = process.argv.indexOf(name);
   if (idx < 0)
@@ -76,15 +96,102 @@ var blitz = findBlitzBinary() ?? "blitz";
 var cwd = resolveWorkspace();
 var timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30000, 1, 600000);
 var maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
+var warmMode = process.env.BLITZ_MCP_WARM === "1";
+var warmMaxHashBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_HASH_BYTES", 1024 * 1024, 1, 16 * 1024 * 1024);
+var warmMaxEntries = parseEnvInt("BLITZ_MCP_WARM_MAX_ENTRIES", 128, 1, 4096);
+var warmMaxResultBytes = parseEnvInt("BLITZ_MCP_WARM_MAX_RESULT_BYTES", 1024 * 1024, 0, 16 * 1024 * 1024);
 var maxBufferedBytes = maxFrameBytes + 4096;
 var initialized = false;
+var warmCache = {
+  doctor: undefined,
+  reads: new Map
+};
 var tools = [
-  { name: "blitz_doctor", description: "Run blitz doctor and return supported languages/commands/cache status.", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
-  { name: "blitz_read", description: "Read a file with blitz AST/source summary.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
-  { name: "blitz_patch", description: "Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.", inputSchema: { type: "object", properties: { file: { type: "string" }, ops: { type: "array", items: { type: "array", items: { anyOf: [{ type: "string" }, { type: "number" }] } }, minItems: 1 }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "ops"], additionalProperties: false } },
-  { name: "blitz_try_catch", description: "Wrap a symbol body in try/catch without repeating the body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, catchBody: { type: "string" }, indent: { type: "number" }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "catchBody"], additionalProperties: false } },
-  { name: "blitz_replace_return", description: "Replace a return expression in a symbol body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, expr: { type: "string" }, occurrence: { anyOf: [{ type: "string" }, { type: "number" }] }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "expr"], additionalProperties: false } },
-  { name: "blitz_undo", description: "Undo the last Blitz mutation for a file.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } }
+  {
+    name: "blitz_doctor",
+    description: "Run blitz doctor and return supported languages/commands/cache status.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_read",
+    description: "Read a file with blitz AST/source summary.",
+    inputSchema: {
+      type: "object",
+      properties: { file: { type: "string" } },
+      required: ["file"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_patch",
+    description: "Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        ops: {
+          type: "array",
+          items: {
+            type: "array",
+            items: { anyOf: [{ type: "string" }, { type: "number" }] }
+          },
+          minItems: 1
+        },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "ops"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_try_catch",
+    description: "Wrap a symbol body in try/catch without repeating the body.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        symbol: { type: "string" },
+        catchBody: { type: "string" },
+        indent: { type: "number" },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "symbol", "catchBody"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_replace_return",
+    description: "Replace a return expression in a symbol body.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file: { type: "string" },
+        symbol: { type: "string" },
+        expr: { type: "string" },
+        occurrence: { anyOf: [{ type: "string" }, { type: "number" }] },
+        dry_run: { type: "boolean" },
+        include_diff: { type: "boolean" }
+      },
+      required: ["file", "symbol", "expr"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "blitz_undo",
+    description: "Undo the last Blitz mutation for a file.",
+    inputSchema: {
+      type: "object",
+      properties: { file: { type: "string" } },
+      required: ["file"],
+      additionalProperties: false
+    }
+  }
 ];
 var redact = (text) => {
   let out = text.replaceAll(cwd, "$WORKSPACE");
@@ -93,7 +200,10 @@ var redact = (text) => {
     out = out.replaceAll(home, "$HOME");
   return out;
 };
-var jsonText = (text, isError = false) => ({ content: [{ type: "text", text: redact(text) }], ...isError ? { isError: true } : {} });
+var jsonText = (text, isError = false) => ({
+  content: [{ type: "text", text: redact(text) }],
+  ...isError ? { isError: true } : {}
+});
 var run = (args, stdin) => {
   const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
     cwd,
@@ -116,6 +226,93 @@ var run = (args, stdin) => {
 ${stderr}` : ""].filter(Boolean).join(`
 `);
   return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
+};
+var resultBytes = (result) => Buffer.byteLength(result.content.map((part) => part.text).join(""), "utf8");
+var touchWarmRead = (file, entry) => {
+  warmCache.reads.delete(file);
+  warmCache.reads.set(file, entry);
+  return entry.result;
+};
+var trimWarmReads = () => {
+  let bytes = 0;
+  for (const entry of warmCache.reads.values())
+    bytes += entry.resultBytes;
+  for (const [file, entry] of warmCache.reads) {
+    if (warmCache.reads.size <= warmMaxEntries && bytes <= warmMaxResultBytes)
+      break;
+    warmCache.reads.delete(file);
+    bytes -= entry.resultBytes;
+  }
+};
+var statFingerprint = (stat, hash) => {
+  const statAny = stat;
+  const size = Number(stat.size);
+  if (!Number.isSafeInteger(size))
+    return;
+  const fingerprint = {
+    hash,
+    size,
+    dev: String(stat.dev),
+    ino: String(stat.ino)
+  };
+  if (statAny.mtimeNs !== undefined && statAny.ctimeNs !== undefined) {
+    fingerprint.mtimeNs = String(statAny.mtimeNs);
+    fingerprint.ctimeNs = String(statAny.ctimeNs);
+  } else {
+    fingerprint.mtimeMs = Number(stat.mtimeMs);
+    fingerprint.ctimeMs = Number(stat.ctimeMs);
+  }
+  return fingerprint;
+};
+var fingerprintEquals = (a, b) => a !== undefined && b !== undefined && a.hash === b.hash && a.size === b.size && a.dev === b.dev && a.ino === b.ino && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs && a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs;
+var fileFingerprint = (file) => {
+  let fd;
+  try {
+    fd = openSync(file, fsConstants.O_RDONLY | fsConstants.O_NONBLOCK | (fsConstants.O_NOFOLLOW ?? 0));
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size > warmMaxHashBytes)
+      return;
+    const bytes = Buffer.allocUnsafe(stat.size);
+    let offset = 0;
+    while (offset < stat.size) {
+      const read = readSync(fd, bytes, offset, stat.size - offset, offset);
+      if (read === 0)
+        return;
+      offset += read;
+    }
+    const after = fstatSync(fd, { bigint: true });
+    if (!after.isFile() || after.size !== BigInt(stat.size))
+      return;
+    return statFingerprint(after, `sha256:${createHash("sha256").update(bytes).digest("hex")}`);
+  } catch {
+    return;
+  } finally {
+    if (fd !== undefined)
+      closeSync(fd);
+  }
+};
+var warmRead = (file) => {
+  const preFingerprint = fileFingerprint(file);
+  if (!preFingerprint)
+    return run(["read", file]);
+  const cached = warmCache.reads.get(file);
+  if (cached && fingerprintEquals(cached.fingerprint, preFingerprint))
+    return touchWarmRead(file, cached);
+  const result = run(["read", file]);
+  const postFingerprint = fileFingerprint(file);
+  const bytes = resultBytes(result);
+  if (!result.isError && postFingerprint && fingerprintEquals(postFingerprint, preFingerprint) && bytes <= warmMaxResultBytes) {
+    warmCache.reads.set(file, {
+      fingerprint: postFingerprint,
+      result,
+      resultBytes: bytes
+    });
+    trimWarmReads();
+  }
+  return result;
+};
+var clearWarmFile = (file) => {
+  warmCache.reads.delete(file);
 };
 var requiredString = (args, key) => {
   const value = args[key];
@@ -152,30 +349,66 @@ var applyArgs = (args) => {
 };
 var callTool = (name, args = {}) => {
   switch (name) {
-    case "blitz_doctor":
-      return run(["doctor"]);
-    case "blitz_read":
-      return run(["read", bindPath(requiredString(args, "file"))]);
-    case "blitz_undo":
-      return run(["undo", bindPath(requiredString(args, "file"))]);
+    case "blitz_doctor": {
+      if (!warmMode)
+        return run(["doctor"]);
+      warmCache.doctor ??= run(["doctor"]);
+      return warmCache.doctor;
+    }
+    case "blitz_read": {
+      const file = bindPath(requiredString(args, "file"));
+      return warmMode ? warmRead(file) : run(["read", file]);
+    }
+    case "blitz_undo": {
+      const file = bindPath(requiredString(args, "file"));
+      clearWarmFile(file);
+      return run(["undo", file]);
+    }
     case "blitz_patch": {
       const file = bindPath(requiredString(args, "file"));
       if (!Array.isArray(args.ops) || args.ops.length === 0)
         throw new Error("missing ops array");
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
+      clearWarmFile(file);
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: { ops: args.ops }
+      }));
     }
     case "blitz_try_catch": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const catchBody = requiredString(args, "catchBody");
       const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
+      clearWarmFile(file);
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: { ops: [["try_catch", symbol, catchBody, ...indent]] }
+      }));
     }
     case "blitz_replace_return": {
       const file = bindPath(requiredString(args, "file"));
       const symbol = requiredString(args, "symbol");
       const expr = requiredString(args, "expr");
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...args.occurrence !== undefined ? [args.occurrence] : []]] } }));
+      clearWarmFile(file);
+      return run(applyArgs(args), JSON.stringify({
+        version: 1,
+        file,
+        operation: "patch",
+        edit: {
+          ops: [
+            [
+              "replace_return",
+              symbol,
+              expr,
+              ...args.occurrence !== undefined ? [args.occurrence] : []
+            ]
+          ]
+        }
+      }));
     }
     default:
       throw new Error(`unknown tool ${name}`);
@@ -193,7 +426,11 @@ var handle = (msg) => {
   try {
     if (msg.method === "initialize") {
       initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" } });
+      ok(msg.id, {
+        protocolVersion: "2025-06-18",
+        capabilities: { tools: {} },
+        serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" }
+      });
       return;
     }
     if (msg.method === "notifications/initialized")
@@ -224,6 +461,34 @@ var handle = (msg) => {
   }
 };
 var buffer = Buffer.alloc(0);
+var parseHeaderLength = (header) => {
+  let contentLength;
+  for (const line of header.split(`\r
+`)) {
+    if (line.length === 0)
+      continue;
+    const separator = line.indexOf(":");
+    if (separator <= 0)
+      throw new Error("malformed frame header");
+    const name = line.slice(0, separator).trim();
+    const value = line.slice(separator + 1).trim();
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name))
+      throw new Error("malformed frame header");
+    if (name.toLowerCase() !== "content-length")
+      continue;
+    if (contentLength !== undefined)
+      throw new Error("duplicate Content-Length");
+    if (!/^\d+$/.test(value))
+      throw new Error("invalid Content-Length");
+    const len = Number(value);
+    if (!Number.isSafeInteger(len) || len > maxFrameBytes)
+      throw new Error("invalid Content-Length");
+    contentLength = len;
+  }
+  if (contentLength === undefined)
+    throw new Error("missing Content-Length");
+  return contentLength;
+};
 var tryReadMessage = () => {
   const headerEnd = buffer.indexOf(`\r
 \r
@@ -233,13 +498,9 @@ var tryReadMessage = () => {
       throw new Error("frame header too large");
     return;
   }
-  const header = buffer.subarray(0, headerEnd).toString("utf8");
-  const match = /^Content-Length:\s*(\d+)$/im.exec(header);
-  if (!match)
-    throw new Error("missing Content-Length");
-  const len = Number(match[1]);
-  if (!Number.isSafeInteger(len) || len < 0 || len > maxFrameBytes)
-    throw new Error("invalid Content-Length");
+  if (headerEnd > maxBufferedBytes - maxFrameBytes)
+    throw new Error("frame header too large");
+  const len = parseHeaderLength(buffer.subarray(0, headerEnd).toString("utf8"));
   const start = headerEnd + 4;
   if (buffer.length < start + len)
     return;

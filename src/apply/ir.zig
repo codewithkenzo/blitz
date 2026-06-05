@@ -20,6 +20,7 @@ pub const ApplyTarget = struct {
 
 pub const ApplyOptions = struct {
     dryRun: ?bool = null,
+    route: ?[]const u8 = null,
     requireParseClean: ?bool = null,
     requireSingleMatch: ?bool = null,
     diffContext: ?usize = null,
@@ -50,6 +51,17 @@ pub const RangesResult = struct {
     editEnd: usize,
 };
 
+pub const PhaseMetricsResult = struct {
+    read: u64,
+    parserInit: u64,
+    parseBefore: u64,
+    targetResolve: u64,
+    plan: u64,
+    parseAfter: u64,
+    write: u64,
+    total: u64,
+};
+
 pub const MetricsResult = struct {
     fileBytesBefore: usize,
     fileBytesAfter: usize,
@@ -57,12 +69,58 @@ pub const MetricsResult = struct {
     changedBytesBefore: usize,
     changedBytesAfter: usize,
     wallMs: u64,
+    phaseMs: PhaseMetricsResult,
+};
+
+pub const RouteExpected = struct {
+    outputTokens: usize,
+    toolArgTokens: usize,
+    costUsd: f64,
+    wallMs: u64,
+};
+
+pub const RouteThreshold = struct {
+    minCostSavingsPct: f32,
+    minWallSavingsPct: f32,
+    maxRisk: f32,
+};
+
+pub const RouteRisk = struct {
+    correctnessRisk: f32,
+    unsupportedFormatRisk: f32,
+    retryRisk: f32,
+};
+
+pub const defaultRouteExpected = RouteExpected{
+    .outputTokens = 0,
+    .toolArgTokens = 0,
+    .costUsd = 0,
+    .wallMs = 0,
+};
+
+pub const defaultRouteThreshold = RouteThreshold{
+    .minCostSavingsPct = 5,
+    .minWallSavingsPct = 10,
+    .maxRisk = 0.15,
+};
+
+pub const RouteDecision = struct {
+    route: []const u8,
+    fallbackRoute: []const u8,
+    confidence: f32,
+    reasonCode: []const u8,
+    expected: RouteExpected = defaultRouteExpected,
+    threshold: RouteThreshold = defaultRouteThreshold,
+    risk: RouteRisk,
 };
 
 pub const ApplyResult = struct {
     status: []const u8,
     command: []const u8 = "apply",
     operation: []const u8,
+    route: []const u8,
+    routeReasonCode: []const u8,
+    routeDecision: RouteDecision,
     file: []const u8,
     symbol: []const u8,
     language: []const u8,
@@ -80,6 +138,9 @@ pub const ApplyFailureResult = struct {
     code: []const u8,
     command: []const u8 = "apply",
     operation: []const u8,
+    route: []const u8,
+    routeReasonCode: []const u8,
+    routeDecision: RouteDecision,
     file: []const u8,
     symbol: []const u8,
     language: []const u8,
@@ -93,6 +154,13 @@ pub const ApplyFailureResult = struct {
 };
 
 pub const ApplyOperation = enum {
+    replace_unique,
+    insert_after_anchor,
+    insert_before_anchor,
+    replace_between,
+    append_section,
+    ensure_line,
+    delete_range,
     replace_body_span,
     insert_body_span,
     wrap_body,
@@ -100,12 +168,20 @@ pub const ApplyOperation = enum {
     compose_body,
     insert_after_symbol,
     set_body,
+    set_key,
     patch,
 };
 
 pub const TargetRange = enum { body, node };
 
 pub fn parseOperation(raw: []const u8) !ApplyOperation {
+    if (std.mem.eql(u8, raw, "replace_unique")) return .replace_unique;
+    if (std.mem.eql(u8, raw, "insert_after_anchor")) return .insert_after_anchor;
+    if (std.mem.eql(u8, raw, "insert_before_anchor")) return .insert_before_anchor;
+    if (std.mem.eql(u8, raw, "replace_between")) return .replace_between;
+    if (std.mem.eql(u8, raw, "append_section")) return .append_section;
+    if (std.mem.eql(u8, raw, "ensure_line")) return .ensure_line;
+    if (std.mem.eql(u8, raw, "delete_range")) return .delete_range;
     if (std.mem.eql(u8, raw, "replace_body_span")) return .replace_body_span;
     if (std.mem.eql(u8, raw, "insert_body_span")) return .insert_body_span;
     if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
@@ -113,6 +189,7 @@ pub fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
     if (std.mem.eql(u8, raw, "set_body")) return .set_body;
+    if (std.mem.eql(u8, raw, "set_key")) return .set_key;
     if (std.mem.eql(u8, raw, "patch") or std.mem.eql(u8, raw, "compact_patch")) return .patch;
     return ApplyError.UnsupportedOperation;
 }
@@ -190,11 +267,28 @@ fn parseTargetField(value: std.json.Value) !ApplyTarget {
 
 fn parseOptionsField(value: std.json.Value) !ApplyOptions {
     const obj = try expectObject(value);
-    return .{ .dryRun = try requireOptionalBool(obj, "dryRun"), .requireParseClean = try requireOptionalBool(obj, "requireParseClean"), .requireSingleMatch = try requireOptionalBool(obj, "requireSingleMatch"), .diffContext = try requireOptionalUsize(obj, "diffContext") };
+    return .{ .dryRun = try requireOptionalBool(obj, "dryRun"), .route = try requireOptionalRoute(obj, "route"), .requireParseClean = try requireOptionalBool(obj, "requireParseClean"), .requireSingleMatch = try requireOptionalBool(obj, "requireSingleMatch"), .diffContext = try requireOptionalUsize(obj, "diffContext") };
+}
+
+fn requireOptionalRoute(object: std.json.ObjectMap, field: []const u8) !?[]const u8 {
+    const value = try requireOptionalString(object, field) orelse return null;
+    if (std.mem.eql(u8, value, "auto") or
+        std.mem.eql(u8, value, "force-blitz") or
+        std.mem.eql(u8, value, "force-core") or
+        std.mem.eql(u8, value, "explain")) return value;
+    return ApplyError.FieldTypeMismatch;
 }
 
 fn requireOptionalUsize(object: std.json.ObjectMap, field: []const u8) !?usize {
     const value = object.get(field) orelse return null;
+    return switch (value) {
+        .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
+        else => return ApplyError.FieldTypeMismatch,
+    };
+}
+
+pub fn requireUsize(object: std.json.ObjectMap, field: []const u8) !usize {
+    const value = object.get(field) orelse return ApplyError.MissingField;
     return switch (value) {
         .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
         else => return ApplyError.FieldTypeMismatch,

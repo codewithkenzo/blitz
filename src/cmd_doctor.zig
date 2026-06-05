@@ -18,9 +18,18 @@ const supported_grammars = [_]GrammarProbe{
     .{ .name = "tsx", .lang = .tsx },
     .{ .name = "python", .lang = .python },
     .{ .name = "go", .lang = .go },
+    .{ .name = "json", .lang = .json },
+    .{ .name = "jsonc", .lang = .jsonc },
+    .{ .name = "yaml", .lang = .yaml },
+    .{ .name = "toml", .lang = .toml },
+    .{ .name = "markdown", .lang = .markdown },
+    .{ .name = "html", .lang = .html },
+    .{ .name = "css", .lang = .css },
 };
 
 fn probeGrammar(lang: bindings.Language) bool {
+    if (!lang.isAbiCompatible()) return false;
+
     var parser = bindings.Parser.init();
     defer parser.deinit();
 
@@ -33,16 +42,20 @@ fn probeGrammar(lang: bindings.Language) bool {
 }
 
 fn writeGrammarLine(w: *Writer) !bool {
-    try w.writeAll("  tree-sitter: linked\n");
+    try w.print(
+        "  tree-sitter: linked (runtime {s}, abi {d}, min-compatible {d})\n",
+        .{ bindings.runtime_version, bindings.language_abi_version, bindings.min_compatible_language_abi_version },
+    );
     try w.writeAll("  grammars:    ");
 
     var all_ok = true;
     for (supported_grammars, 0..) |probe, idx| {
+        const grammar_abi = probe.lang.abiVersion();
         const ok = probeGrammar(probe.lang);
         all_ok = all_ok and ok;
 
         if (idx != 0) try w.writeAll(", ");
-        try w.print("{s} {s}", .{ probe.name, if (ok) "ok" else "FAIL" });
+        try w.print("{s} {s}(abi {d})", .{ probe.name, if (ok) "ok" else "FAIL", grammar_abi });
     }
 
     try w.writeAll("\n");
@@ -99,15 +112,15 @@ pub fn run(
     try writeCacheLine(allocator, io, stdout);
 
     try stdout.writeAll(
-        \\  extensions:  .rs .ts .tsx .py .go
-        \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply
+        \\  extensions:  .rs .ts .tsx .py .go .json .jsonc .yaml .yml .toml .md .markdown .html .htm .css
+        \\  commands:    read, edit, batch-edit, rename, undo, doctor, apply, daemon(prototype)
         \\
     );
 
     return if (grammars_ok) 0 else 1;
 }
 
-test "doctor exits 0 when all five grammars parse" {
+test "doctor exits 0 when all grammars parse" {
     var out: Writer.Allocating = .init(std.testing.allocator);
     defer out.deinit();
 
@@ -123,7 +136,11 @@ test "doctor output contains version and grammars blocks" {
     const text = out.written();
 
     try std.testing.expect(std.mem.indexOf(u8, text, "version:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "tree-sitter: linked (runtime v0.26.9, abi 15") != null);
     try std.testing.expect(std.mem.indexOf(u8, text, "grammars:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "jsonc ok(abi ") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, ".jsonc") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "abi ") != null);
 }
 
 test "doctor cache line uses one of expected forms" {

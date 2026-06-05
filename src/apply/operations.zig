@@ -3,6 +3,13 @@ const bindings = @import("../tree_sitter/bindings.zig");
 const ir = @import("ir.zig");
 
 pub const ApplyOperation = enum {
+    replace_unique,
+    insert_after_anchor,
+    insert_before_anchor,
+    replace_between,
+    append_section,
+    ensure_line,
+    delete_range,
     replace_body_span,
     insert_body_span,
     wrap_body,
@@ -10,6 +17,7 @@ pub const ApplyOperation = enum {
     compose_body,
     insert_after_symbol,
     set_body,
+    set_key,
     patch,
 };
 
@@ -61,6 +69,13 @@ pub const KeepSliceResult = struct {
 };
 
 pub fn parseOperation(raw: []const u8) !ApplyOperation {
+    if (std.mem.eql(u8, raw, "replace_unique")) return .replace_unique;
+    if (std.mem.eql(u8, raw, "insert_after_anchor")) return .insert_after_anchor;
+    if (std.mem.eql(u8, raw, "insert_before_anchor")) return .insert_before_anchor;
+    if (std.mem.eql(u8, raw, "replace_between")) return .replace_between;
+    if (std.mem.eql(u8, raw, "append_section")) return .append_section;
+    if (std.mem.eql(u8, raw, "ensure_line")) return .ensure_line;
+    if (std.mem.eql(u8, raw, "delete_range")) return .delete_range;
     if (std.mem.eql(u8, raw, "replace_body_span")) return .replace_body_span;
     if (std.mem.eql(u8, raw, "insert_body_span")) return .insert_body_span;
     if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
@@ -68,6 +83,7 @@ pub fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
     if (std.mem.eql(u8, raw, "set_body")) return .set_body;
+    if (std.mem.eql(u8, raw, "set_key")) return .set_key;
     if (std.mem.eql(u8, raw, "patch") or std.mem.eql(u8, raw, "compact_patch")) return .patch;
     return error.UnsupportedOperation;
 }

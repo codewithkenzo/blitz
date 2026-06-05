@@ -1,210 +1,595 @@
 #!/usr/bin/env bun
-import { existsSync, realpathSync } from "node:fs";
+import {
+	closeSync,
+	constants as fsConstants,
+	existsSync,
+	fstatSync,
+	openSync,
+	realpathSync,
+	readSync,
+} from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { findBlitzBinary } from "../scripts/resolve-platform-bin.js";
 
-const parseEnvInt = (name: string, fallback: number, min: number, max: number): number => {
-  const raw = process.env[name];
-  if (raw === undefined || raw === "") return fallback;
-  const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < min || value > max) throw new Error(`${name} must be an integer from ${min} to ${max}`);
-  return value;
+const parseEnvInt = (
+	name: string,
+	fallback: number,
+	min: number,
+	max: number,
+): number => {
+	const raw = process.env[name];
+	if (raw === undefined || raw === "") return fallback;
+	const value = Number(raw);
+	if (!Number.isSafeInteger(value) || value < min || value > max)
+		throw new Error(`${name} must be an integer from ${min} to ${max}`);
+	return value;
 };
 
-const projectMarkers = [".git", "package.json", "pyproject.toml", "Cargo.toml", "build.zig", "go.mod", "deno.json", "bun.lock"];
+const projectMarkers = [
+	".git",
+	"package.json",
+	"pyproject.toml",
+	"Cargo.toml",
+	"build.zig",
+	"go.mod",
+	"deno.json",
+	"bun.lock",
+];
 
 const argValue = (name: string): string | undefined => {
-  const idx = process.argv.indexOf(name);
-  if (idx < 0) return undefined;
-  const value = process.argv[idx + 1];
-  if (!value || value.startsWith("--")) throw new Error(`${name} expects a path`);
-  return value;
+	const idx = process.argv.indexOf(name);
+	if (idx < 0) return undefined;
+	const value = process.argv[idx + 1];
+	if (!value || value.startsWith("--"))
+		throw new Error(`${name} expects a path`);
+	return value;
 };
 
-const looksLikeProject = (dir: string): boolean => projectMarkers.some((marker) => existsSync(resolve(dir, marker)));
+const looksLikeProject = (dir: string): boolean =>
+	projectMarkers.some((marker) => existsSync(resolve(dir, marker)));
 
 const resolveWorkspace = (): string => {
-  const explicit = argValue("--workspace") ?? process.env.BLITZ_WORKSPACE;
-  if (explicit) return realpathSync.native(resolve(explicit));
-  const current = realpathSync.native(process.cwd());
-  if (looksLikeProject(current)) return current;
-  throw new Error("Blitz MCP needs a project workspace. Add --workspace /path/to/project, set BLITZ_WORKSPACE, or run from a project root.");
+	const explicit = argValue("--workspace") ?? process.env.BLITZ_WORKSPACE;
+	if (explicit) return realpathSync.native(resolve(explicit));
+	const current = realpathSync.native(process.cwd());
+	if (looksLikeProject(current)) return current;
+	throw new Error(
+		"Blitz MCP needs a project workspace. Add --workspace /path/to/project, set BLITZ_WORKSPACE, or run from a project root.",
+	);
 };
 
 const blitz = findBlitzBinary() ?? "blitz";
 const cwd = resolveWorkspace();
 const timeoutMs = parseEnvInt("BLITZ_MCP_TIMEOUT_MS", 30_000, 1, 600_000);
-const maxFrameBytes = parseEnvInt("BLITZ_MCP_MAX_FRAME_BYTES", 1024 * 1024, 128, 16 * 1024 * 1024);
+const maxFrameBytes = parseEnvInt(
+	"BLITZ_MCP_MAX_FRAME_BYTES",
+	1024 * 1024,
+	128,
+	16 * 1024 * 1024,
+);
+const warmMode = process.env.BLITZ_MCP_WARM === "1";
+const warmMaxHashBytes = parseEnvInt(
+	"BLITZ_MCP_WARM_MAX_HASH_BYTES",
+	1024 * 1024,
+	1,
+	16 * 1024 * 1024,
+);
+const warmMaxEntries = parseEnvInt("BLITZ_MCP_WARM_MAX_ENTRIES", 128, 1, 4096);
+const warmMaxResultBytes = parseEnvInt(
+	"BLITZ_MCP_WARM_MAX_RESULT_BYTES",
+	1024 * 1024,
+	0,
+	16 * 1024 * 1024,
+);
 const maxBufferedBytes = maxFrameBytes + 4096;
 let initialized = false;
 
-type JsonRpc = { jsonrpc?: "2.0"; id?: string | number | null; method?: string; params?: Record<string, unknown> };
-type ToolResult = { content: Array<{ type: "text"; text: string }>; isError?: boolean };
+type FileFingerprint = {
+	hash: string;
+	size: number;
+	dev?: string;
+	ino?: string;
+	mtimeNs?: string;
+	ctimeNs?: string;
+	mtimeMs?: number;
+	ctimeMs?: number;
+};
+
+type WarmCacheEntry = {
+	fingerprint: FileFingerprint;
+	result: ToolResult;
+	resultBytes: number;
+};
+
+const warmCache = {
+	doctor: undefined as ToolResult | undefined,
+	reads: new Map<string, WarmCacheEntry>(),
+};
+
+type JsonRpc = {
+	jsonrpc?: "2.0";
+	id?: string | number | null;
+	method?: string;
+	params?: Record<string, unknown>;
+};
+type ToolResult = {
+	content: Array<{ type: "text"; text: string }>;
+	isError?: boolean;
+};
 
 const tools = [
-  { name: "blitz_doctor", description: "Run blitz doctor and return supported languages/commands/cache status.", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
-  { name: "blitz_read", description: "Read a file with blitz AST/source summary.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
-  { name: "blitz_patch", description: "Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.", inputSchema: { type: "object", properties: { file: { type: "string" }, ops: { type: "array", items: { type: "array", items: { anyOf: [{ type: "string" }, { type: "number" }] } }, minItems: 1 }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "ops"], additionalProperties: false } },
-  { name: "blitz_try_catch", description: "Wrap a symbol body in try/catch without repeating the body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, catchBody: { type: "string" }, indent: { type: "number" }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "catchBody"], additionalProperties: false } },
-  { name: "blitz_replace_return", description: "Replace a return expression in a symbol body.", inputSchema: { type: "object", properties: { file: { type: "string" }, symbol: { type: "string" }, expr: { type: "string" }, occurrence: { anyOf: [{ type: "string" }, { type: "number" }] }, dry_run: { type: "boolean" }, include_diff: { type: "boolean" } }, required: ["file", "symbol", "expr"], additionalProperties: false } },
-  { name: "blitz_undo", description: "Undo the last Blitz mutation for a file.", inputSchema: { type: "object", properties: { file: { type: "string" } }, required: ["file"], additionalProperties: false } },
+	{
+		name: "blitz_doctor",
+		description:
+			"Run blitz doctor and return supported languages/commands/cache status.",
+		inputSchema: {
+			type: "object",
+			properties: {},
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "blitz_read",
+		description: "Read a file with blitz AST/source summary.",
+		inputSchema: {
+			type: "object",
+			properties: { file: { type: "string" } },
+			required: ["file"],
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "blitz_patch",
+		description:
+			"Apply compact Blitz patch tuples to one file. Ops include replace, insert_after, wrap, replace_return, try_catch.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				file: { type: "string" },
+				ops: {
+					type: "array",
+					items: {
+						type: "array",
+						items: { anyOf: [{ type: "string" }, { type: "number" }] },
+					},
+					minItems: 1,
+				},
+				dry_run: { type: "boolean" },
+				include_diff: { type: "boolean" },
+			},
+			required: ["file", "ops"],
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "blitz_try_catch",
+		description: "Wrap a symbol body in try/catch without repeating the body.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				file: { type: "string" },
+				symbol: { type: "string" },
+				catchBody: { type: "string" },
+				indent: { type: "number" },
+				dry_run: { type: "boolean" },
+				include_diff: { type: "boolean" },
+			},
+			required: ["file", "symbol", "catchBody"],
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "blitz_replace_return",
+		description: "Replace a return expression in a symbol body.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				file: { type: "string" },
+				symbol: { type: "string" },
+				expr: { type: "string" },
+				occurrence: { anyOf: [{ type: "string" }, { type: "number" }] },
+				dry_run: { type: "boolean" },
+				include_diff: { type: "boolean" },
+			},
+			required: ["file", "symbol", "expr"],
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "blitz_undo",
+		description: "Undo the last Blitz mutation for a file.",
+		inputSchema: {
+			type: "object",
+			properties: { file: { type: "string" } },
+			required: ["file"],
+			additionalProperties: false,
+		},
+	},
 ] as const;
 
 const redact = (text: string): string => {
-  let out = text.replaceAll(cwd, "$WORKSPACE");
-  const home = process.env.HOME;
-  if (home) out = out.replaceAll(home, "$HOME");
-  return out;
+	let out = text.replaceAll(cwd, "$WORKSPACE");
+	const home = process.env.HOME;
+	if (home) out = out.replaceAll(home, "$HOME");
+	return out;
 };
 
-const jsonText = (text: string, isError = false): ToolResult => ({ content: [{ type: "text", text: redact(text) }], ...(isError ? { isError: true } : {}) });
+const jsonText = (text: string, isError = false): ToolResult => ({
+	content: [{ type: "text", text: redact(text) }],
+	...(isError ? { isError: true } : {}),
+});
 
 const run = (args: string[], stdin?: string): ToolResult => {
-  const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
-    cwd,
-    input: stdin,
-    encoding: "utf8",
-    maxBuffer: 1024 * 1024 * 8,
-    timeout: timeoutMs,
-    env: {
-      HOME: process.env.HOME ?? "",
-      PATH: process.env.PATH ?? "",
-      XDG_CACHE_HOME: process.env.XDG_CACHE_HOME ?? "",
-      BLITZ_NO_UPDATE_CHECK: "1",
-      FASTEDIT_NO_UPDATE_CHECK: "1",
-      BLITZ_WORKSPACE: cwd,
-    },
-  });
-  const stdout = (result.stdout ?? "").trim();
-  const stderr = (result.stderr ?? "").trim();
-  const text = result.status === 0 ? stdout : [stdout, stderr ? `stderr:\n${stderr}` : ""].filter(Boolean).join("\n");
-  return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
+	const result = spawnSync(blitz, ["--workspace-root", cwd, ...args], {
+		cwd,
+		input: stdin,
+		encoding: "utf8",
+		maxBuffer: 1024 * 1024 * 8,
+		timeout: timeoutMs,
+		env: {
+			HOME: process.env.HOME ?? "",
+			PATH: process.env.PATH ?? "",
+			XDG_CACHE_HOME: process.env.XDG_CACHE_HOME ?? "",
+			BLITZ_NO_UPDATE_CHECK: "1",
+			FASTEDIT_NO_UPDATE_CHECK: "1",
+			BLITZ_WORKSPACE: cwd,
+		},
+	});
+	const stdout = (result.stdout ?? "").trim();
+	const stderr = (result.stderr ?? "").trim();
+	const text =
+		result.status === 0
+			? stdout
+			: [stdout, stderr ? `stderr:\n${stderr}` : ""].filter(Boolean).join("\n");
+	return jsonText(text, (result.status ?? 1) !== 0 || Boolean(result.error));
+};
+
+const resultBytes = (result: ToolResult): number =>
+	Buffer.byteLength(result.content.map((part) => part.text).join(""), "utf8");
+
+const touchWarmRead = (file: string, entry: WarmCacheEntry): ToolResult => {
+	warmCache.reads.delete(file);
+	warmCache.reads.set(file, entry);
+	return entry.result;
+};
+
+const trimWarmReads = (): void => {
+	let bytes = 0;
+	for (const entry of warmCache.reads.values()) bytes += entry.resultBytes;
+	for (const [file, entry] of warmCache.reads) {
+		if (warmCache.reads.size <= warmMaxEntries && bytes <= warmMaxResultBytes)
+			break;
+		warmCache.reads.delete(file);
+		bytes -= entry.resultBytes;
+	}
+};
+
+const statFingerprint = (
+	stat: ReturnType<typeof fstatSync>,
+	hash: string,
+): FileFingerprint | undefined => {
+	const statAny = stat as ReturnType<typeof fstatSync> & {
+		mtimeNs?: bigint | number;
+		ctimeNs?: bigint | number;
+	};
+	const size = Number(stat.size);
+	if (!Number.isSafeInteger(size)) return undefined;
+	const fingerprint: FileFingerprint = {
+		hash,
+		size,
+		dev: String(stat.dev),
+		ino: String(stat.ino),
+	};
+	if (statAny.mtimeNs !== undefined && statAny.ctimeNs !== undefined) {
+		fingerprint.mtimeNs = String(statAny.mtimeNs);
+		fingerprint.ctimeNs = String(statAny.ctimeNs);
+	} else {
+		fingerprint.mtimeMs = Number(stat.mtimeMs);
+		fingerprint.ctimeMs = Number(stat.ctimeMs);
+	}
+	return fingerprint;
+};
+
+const fingerprintEquals = (
+	a: FileFingerprint | undefined,
+	b: FileFingerprint | undefined,
+): boolean =>
+	a !== undefined &&
+	b !== undefined &&
+	a.hash === b.hash &&
+	a.size === b.size &&
+	a.dev === b.dev &&
+	a.ino === b.ino &&
+	a.mtimeNs === b.mtimeNs &&
+	a.ctimeNs === b.ctimeNs &&
+	a.mtimeMs === b.mtimeMs &&
+	a.ctimeMs === b.ctimeMs;
+
+const fileFingerprint = (file: string): FileFingerprint | undefined => {
+	let fd: number | undefined;
+	try {
+		fd = openSync(
+			file,
+			fsConstants.O_RDONLY |
+				fsConstants.O_NONBLOCK |
+				(fsConstants.O_NOFOLLOW ?? 0),
+		);
+		const stat = fstatSync(fd);
+		if (!stat.isFile() || stat.size > warmMaxHashBytes) return undefined;
+		const bytes = Buffer.allocUnsafe(stat.size);
+		let offset = 0;
+		while (offset < stat.size) {
+			const read = readSync(fd, bytes, offset, stat.size - offset, offset);
+			if (read === 0) return undefined;
+			offset += read;
+		}
+		const after = fstatSync(fd, { bigint: true });
+		if (!after.isFile() || after.size !== BigInt(stat.size)) return undefined;
+		return statFingerprint(
+			after,
+			`sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+		);
+	} catch {
+		return undefined;
+	} finally {
+		if (fd !== undefined) closeSync(fd);
+	}
+};
+
+const warmRead = (file: string): ToolResult => {
+	const preFingerprint = fileFingerprint(file);
+	if (!preFingerprint) return run(["read", file]);
+	const cached = warmCache.reads.get(file);
+	if (cached && fingerprintEquals(cached.fingerprint, preFingerprint))
+		return touchWarmRead(file, cached);
+	const result = run(["read", file]);
+	const postFingerprint = fileFingerprint(file);
+	const bytes = resultBytes(result);
+	if (
+		!result.isError &&
+		postFingerprint &&
+		fingerprintEquals(postFingerprint, preFingerprint) &&
+		bytes <= warmMaxResultBytes
+	) {
+		warmCache.reads.set(file, {
+			fingerprint: postFingerprint,
+			result,
+			resultBytes: bytes,
+		});
+		trimWarmReads();
+	}
+	return result;
+};
+
+const clearWarmFile = (file: string): void => {
+	warmCache.reads.delete(file);
 };
 
 const requiredString = (args: Record<string, unknown>, key: string): string => {
-  const value = args[key];
-  if (typeof value !== "string" || value.length === 0) throw new Error(`missing string ${key}`);
-  return value;
+	const value = args[key];
+	if (typeof value !== "string" || value.length === 0)
+		throw new Error(`missing string ${key}`);
+	return value;
 };
 
 const existingAncestor = (abs: string): string => {
-  let cur = abs;
-  while (!existsSync(cur)) {
-    const parent = dirname(cur);
-    if (parent === cur) throw new Error(`no existing ancestor for path: ${abs}`);
-    cur = parent;
-  }
-  return cur;
+	let cur = abs;
+	while (!existsSync(cur)) {
+		const parent = dirname(cur);
+		if (parent === cur)
+			throw new Error(`no existing ancestor for path: ${abs}`);
+		cur = parent;
+	}
+	return cur;
 };
 
 const bindPath = (file: string): string => {
-  const abs = resolve(cwd, file);
-  const ancestor = existingAncestor(abs);
-  const real = resolve(realpathSync.native(ancestor), relative(ancestor, abs));
-  const rel = relative(cwd, real);
-  if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) return real;
-  throw new Error(`path escapes workspace: ${file}`);
+	const abs = resolve(cwd, file);
+	const ancestor = existingAncestor(abs);
+	const real = resolve(realpathSync.native(ancestor), relative(ancestor, abs));
+	const rel = relative(cwd, real);
+	if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) return real;
+	throw new Error(`path escapes workspace: ${file}`);
 };
 
 const applyArgs = (args: Record<string, unknown>): string[] => {
-  const argv = ["apply", "--edit", "-", "--json"];
-  if (args.dry_run === true) argv.push("--dry-run");
-  if (args.include_diff === true) argv.push("--diff");
-  return argv;
+	const argv = ["apply", "--edit", "-", "--json"];
+	if (args.dry_run === true) argv.push("--dry-run");
+	if (args.include_diff === true) argv.push("--diff");
+	return argv;
 };
 
-const callTool = (name: string, args: Record<string, unknown> = {}): ToolResult => {
-  switch (name) {
-    case "blitz_doctor": return run(["doctor"]);
-    case "blitz_read": return run(["read", bindPath(requiredString(args, "file"))]);
-    case "blitz_undo": return run(["undo", bindPath(requiredString(args, "file"))]);
-    case "blitz_patch": {
-      const file = bindPath(requiredString(args, "file"));
-      if (!Array.isArray(args.ops) || args.ops.length === 0) throw new Error("missing ops array");
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: args.ops } }));
-    }
-    case "blitz_try_catch": {
-      const file = bindPath(requiredString(args, "file"));
-      const symbol = requiredString(args, "symbol");
-      const catchBody = requiredString(args, "catchBody");
-      const indent = typeof args.indent === "number" && Number.isFinite(args.indent) && args.indent >= 0 ? [args.indent] : [];
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["try_catch", symbol, catchBody, ...indent]] } }));
-    }
-    case "blitz_replace_return": {
-      const file = bindPath(requiredString(args, "file"));
-      const symbol = requiredString(args, "symbol");
-      const expr = requiredString(args, "expr");
-      return run(applyArgs(args), JSON.stringify({ version: 1, file, operation: "patch", edit: { ops: [["replace_return", symbol, expr, ...(args.occurrence !== undefined ? [args.occurrence] : [])]] } }));
-    }
-    default: throw new Error(`unknown tool ${name}`);
-  }
+const callTool = (
+	name: string,
+	args: Record<string, unknown> = {},
+): ToolResult => {
+	switch (name) {
+		case "blitz_doctor": {
+			if (!warmMode) return run(["doctor"]);
+			warmCache.doctor ??= run(["doctor"]);
+			return warmCache.doctor;
+		}
+		case "blitz_read": {
+			const file = bindPath(requiredString(args, "file"));
+			return warmMode ? warmRead(file) : run(["read", file]);
+		}
+		case "blitz_undo": {
+			const file = bindPath(requiredString(args, "file"));
+			clearWarmFile(file);
+			return run(["undo", file]);
+		}
+		case "blitz_patch": {
+			const file = bindPath(requiredString(args, "file"));
+			if (!Array.isArray(args.ops) || args.ops.length === 0)
+				throw new Error("missing ops array");
+			clearWarmFile(file);
+			return run(
+				applyArgs(args),
+				JSON.stringify({
+					version: 1,
+					file,
+					operation: "patch",
+					edit: { ops: args.ops },
+				}),
+			);
+		}
+		case "blitz_try_catch": {
+			const file = bindPath(requiredString(args, "file"));
+			const symbol = requiredString(args, "symbol");
+			const catchBody = requiredString(args, "catchBody");
+			const indent =
+				typeof args.indent === "number" &&
+				Number.isFinite(args.indent) &&
+				args.indent >= 0
+					? [args.indent]
+					: [];
+			clearWarmFile(file);
+			return run(
+				applyArgs(args),
+				JSON.stringify({
+					version: 1,
+					file,
+					operation: "patch",
+					edit: { ops: [["try_catch", symbol, catchBody, ...indent]] },
+				}),
+			);
+		}
+		case "blitz_replace_return": {
+			const file = bindPath(requiredString(args, "file"));
+			const symbol = requiredString(args, "symbol");
+			const expr = requiredString(args, "expr");
+			clearWarmFile(file);
+			return run(
+				applyArgs(args),
+				JSON.stringify({
+					version: 1,
+					file,
+					operation: "patch",
+					edit: {
+						ops: [
+							[
+								"replace_return",
+								symbol,
+								expr,
+								...(args.occurrence !== undefined ? [args.occurrence] : []),
+							],
+						],
+					},
+				}),
+			);
+		}
+		default:
+			throw new Error(`unknown tool ${name}`);
+	}
 };
 
 const respond = (message: Record<string, unknown>) => {
-  const body = JSON.stringify(message);
-  process.stdout.write(`Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n${body}`);
+	const body = JSON.stringify(message);
+	process.stdout.write(
+		`Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n${body}`,
+	);
 };
-const ok = (id: JsonRpc["id"], result: unknown) => respond({ jsonrpc: "2.0", id, result });
-const err = (id: JsonRpc["id"], code: number, message: string) => respond({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
+const ok = (id: JsonRpc["id"], result: unknown) =>
+	respond({ jsonrpc: "2.0", id, result });
+const err = (id: JsonRpc["id"], code: number, message: string) =>
+	respond({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 
 const handle = (msg: JsonRpc) => {
-  try {
-    if (msg.method === "initialize") {
-      initialized = true;
-      ok(msg.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" } });
-      return;
-    }
-    if (msg.method === "notifications/initialized") return;
-    if (!initialized && msg.id !== undefined) { err(msg.id, -32002, "server not initialized"); return; }
-    if (msg.method === "tools/list") { ok(msg.id, { tools }); return; }
-    if (msg.method === "tools/call") {
-      const params = msg.params ?? {};
-      const name = params.name;
-      const args = params.arguments;
-      if (typeof name !== "string") throw new Error("tools/call missing name");
-      if (args !== undefined && (typeof args !== "object" || args === null || Array.isArray(args))) throw new Error("tools/call arguments must be object");
-      ok(msg.id, callTool(name, (args ?? {}) as Record<string, unknown>));
-      return;
-    }
-    if (msg.id !== undefined) err(msg.id, -32601, `method not found: ${msg.method}`);
-  } catch (error) {
-    err(msg.id, -32000, error instanceof Error ? error.message : String(error));
-  }
+	try {
+		if (msg.method === "initialize") {
+			initialized = true;
+			ok(msg.id, {
+				protocolVersion: "2025-06-18",
+				capabilities: { tools: {} },
+				serverInfo: { name: "blitz-mcp", version: "0.1.0-alpha.10" },
+			});
+			return;
+		}
+		if (msg.method === "notifications/initialized") return;
+		if (!initialized && msg.id !== undefined) {
+			err(msg.id, -32002, "server not initialized");
+			return;
+		}
+		if (msg.method === "tools/list") {
+			ok(msg.id, { tools });
+			return;
+		}
+		if (msg.method === "tools/call") {
+			const params = msg.params ?? {};
+			const name = params.name;
+			const args = params.arguments;
+			if (typeof name !== "string") throw new Error("tools/call missing name");
+			if (
+				args !== undefined &&
+				(typeof args !== "object" || args === null || Array.isArray(args))
+			)
+				throw new Error("tools/call arguments must be object");
+			ok(msg.id, callTool(name, (args ?? {}) as Record<string, unknown>));
+			return;
+		}
+		if (msg.id !== undefined)
+			err(msg.id, -32601, `method not found: ${msg.method}`);
+	} catch (error) {
+		err(msg.id, -32000, error instanceof Error ? error.message : String(error));
+	}
 };
 
 let buffer = Buffer.alloc(0);
+const parseHeaderLength = (header: string): number => {
+	let contentLength: number | undefined;
+	for (const line of header.split("\r\n")) {
+		if (line.length === 0) continue;
+		const separator = line.indexOf(":");
+		if (separator <= 0) throw new Error("malformed frame header");
+		const name = line.slice(0, separator).trim();
+		const value = line.slice(separator + 1).trim();
+		if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name))
+			throw new Error("malformed frame header");
+		if (name.toLowerCase() !== "content-length") continue;
+		if (contentLength !== undefined)
+			throw new Error("duplicate Content-Length");
+		if (!/^\d+$/.test(value)) throw new Error("invalid Content-Length");
+		const len = Number(value);
+		if (!Number.isSafeInteger(len) || len > maxFrameBytes)
+			throw new Error("invalid Content-Length");
+		contentLength = len;
+	}
+	if (contentLength === undefined) throw new Error("missing Content-Length");
+	return contentLength;
+};
+
 const tryReadMessage = (): JsonRpc | undefined => {
-  const headerEnd = buffer.indexOf("\r\n\r\n");
-  if (headerEnd < 0) {
-    if (buffer.length > maxBufferedBytes) throw new Error("frame header too large");
-    return undefined;
-  }
-  const header = buffer.subarray(0, headerEnd).toString("utf8");
-  const match = /^Content-Length:\s*(\d+)$/im.exec(header);
-  if (!match) throw new Error("missing Content-Length");
-  const len = Number(match[1]);
-  if (!Number.isSafeInteger(len) || len < 0 || len > maxFrameBytes) throw new Error("invalid Content-Length");
-  const start = headerEnd + 4;
-  if (buffer.length < start + len) return undefined;
-  const raw = buffer.subarray(start, start + len).toString("utf8");
-  buffer = buffer.subarray(start + len);
-  return JSON.parse(raw);
+	const headerEnd = buffer.indexOf("\r\n\r\n");
+	if (headerEnd < 0) {
+		if (buffer.length > maxBufferedBytes)
+			throw new Error("frame header too large");
+		return undefined;
+	}
+	if (headerEnd > maxBufferedBytes - maxFrameBytes)
+		throw new Error("frame header too large");
+	const len = parseHeaderLength(buffer.subarray(0, headerEnd).toString("utf8"));
+	const start = headerEnd + 4;
+	if (buffer.length < start + len) return undefined;
+	const raw = buffer.subarray(start, start + len).toString("utf8");
+	buffer = buffer.subarray(start + len);
+	return JSON.parse(raw);
 };
 
 process.stdin.on("data", (chunk) => {
-  buffer = Buffer.concat([buffer, chunk]);
-  while (true) {
-    try {
-      const msg = tryReadMessage();
-      if (!msg) break;
-      handle(msg);
-    } catch (error) {
-      buffer = Buffer.alloc(0);
-      err(null, -32700, error instanceof Error ? error.message : "parse error");
-      break;
-    }
-  }
+	buffer = Buffer.concat([buffer, chunk]);
+	while (true) {
+		try {
+			const msg = tryReadMessage();
+			if (!msg) break;
+			handle(msg);
+		} catch (error) {
+			buffer = Buffer.alloc(0);
+			err(null, -32700, error instanceof Error ? error.message : "parse error");
+			break;
+		}
+	}
 });
 
 process.stdin.resume();

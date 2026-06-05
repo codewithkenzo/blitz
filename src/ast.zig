@@ -69,6 +69,7 @@ pub fn bodyRangeFor(language: bindings.Language, source: []const u8, target: bin
     return switch (language) {
         .typescript, .tsx, .rust, .go => braceInteriorRange(source, body_start, body_end),
         .python => .{ .start = body_start, .end = body_end },
+        else => null,
     };
 }
 

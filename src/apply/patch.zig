@@ -270,7 +270,7 @@ fn resolveMultiBodyEdits(
         const body_range = target.replacementRangeFor(lang, source, target_node);
 
         switch (op) {
-            .patch, .set_body => return error.UnsupportedMultiEditOperation,
+            .replace_unique, .insert_after_anchor, .insert_before_anchor, .replace_between, .append_section, .ensure_line, .delete_range, .set_key, .patch, .set_body => return error.UnsupportedMultiEditOperation,
             .replace_body_span => {
                 const find = try requireString(edit_obj, "find");
                 const replace = try requireString(edit_obj, "replace");
