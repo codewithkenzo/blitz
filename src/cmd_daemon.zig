@@ -60,14 +60,45 @@ const ParserCache = struct {
     }
 };
 
+const QueryOp = enum { read_summary };
+
+const QuerySlot = struct {
+    lang: bindings.Language,
+    op: QueryOp,
+    query: bindings.Query,
+};
+
+const QueryCache = struct {
+    slots: std.ArrayList(QuerySlot) = .empty,
+
+    fn deinit(self: *QueryCache, allocator: Allocator) void {
+        for (self.slots.items) |*slot| slot.query.deinit();
+        self.slots.deinit(allocator);
+    }
+
+    fn get(self: *QueryCache, allocator: Allocator, lang: bindings.Language, op: QueryOp) !*bindings.Query {
+        for (self.slots.items) |*slot| {
+            if (slot.lang == lang and slot.op == op) return &slot.query;
+        }
+
+        const source = querySource(lang, op) orelse return error.UnsupportedLanguage;
+        var query = try bindings.Query.init(lang, source);
+        errdefer query.deinit();
+        try self.slots.append(allocator, .{ .lang = lang, .op = op, .query = query });
+        return &self.slots.items[self.slots.items.len - 1].query;
+    }
+};
+
 const State = struct {
     allocator: Allocator,
     io: Io,
     workspace_root: []const u8,
     cache_epoch: u64 = 0,
     parsers: ParserCache = .{},
+    queries: QueryCache = .{},
 
     fn deinit(self: *State) void {
+        self.queries.deinit(self.allocator);
         self.parsers.deinit(self.allocator);
     }
 };
@@ -244,7 +275,7 @@ fn handleDoctor(state: *State, stdout: *Writer, id: ?[]const u8, start: anytype)
     try writeJsonString(stdout, out.written());
     try stdout.print(",\"workspaceRoot\":", .{});
     try writeJsonString(stdout, state.workspace_root);
-    try stdout.print(",\"cache\":{{\"parserCount\":{d},\"queryCount\":0,\"openTreeCount\":0,\"epoch\":{d}}}}},\"elapsedMs\":{d},\"worker\":{{\"version\":", .{ state.parsers.slots.items.len, state.cache_epoch, elapsedMs(state.io, start) });
+    try stdout.print(",\"cache\":{{\"parserCount\":{d},\"queryCount\":{d},\"openTreeCount\":0,\"epoch\":{d}}}}},\"elapsedMs\":{d},\"worker\":{{\"version\":", .{ state.parsers.slots.items.len, state.queries.slots.items.len, state.cache_epoch, elapsedMs(state.io, start) });
     try writeJsonString(stdout, main.version);
     try stdout.print(",\"cacheEpoch\":{d}}}}}\n", .{state.cache_epoch});
 }
@@ -279,7 +310,12 @@ fn handleRead(state: *State, stdout: *Writer, id: ?[]const u8, start: anytype, f
         state.cache_epoch += 1;
 
         try out.writer.print("{s} ({s}, {d} lines)\n", .{ file_path, @tagName(lang), line_count });
-        try cmd_read.writeStructureSummary(&out.writer, tree.rootNode(), contents);
+        if (canUseReadSummaryQuery(lang)) {
+            const query = try state.queries.get(state.allocator, lang, .read_summary);
+            try writeStructureSummaryWithQuery(&out.writer, query, tree.rootNode(), contents);
+        } else {
+            try cmd_read.writeStructureSummary(&out.writer, tree.rootNode(), contents);
+        }
     }
 
     try stdout.writeAll("{\"id\":");
@@ -297,6 +333,40 @@ fn handleRead(state: *State, stdout: *Writer, id: ?[]const u8, start: anytype, f
     try stdout.print("}},\"elapsedMs\":{d},\"worker\":{{\"version\":", .{elapsedMs(state.io, start)});
     try writeJsonString(stdout, main.version);
     try stdout.print(",\"cacheEpoch\":{d}}}}}\n", .{state.cache_epoch});
+}
+
+fn canUseReadSummaryQuery(lang: bindings.Language) bool {
+    return switch (lang) {
+        .typescript => true,
+        else => false,
+    };
+}
+
+fn querySource(lang: bindings.Language, op: QueryOp) ?[]const u8 {
+    return switch (op) {
+        .read_summary => switch (lang) {
+            .typescript =>
+            \\(program (import_statement) @summary)
+            \\(program (lexical_declaration) @summary)
+            \\(program (function_declaration) @summary)
+            \\(program (class_declaration) @summary)
+            \\(program (interface_declaration) @summary)
+            \\(program (type_alias_declaration) @summary)
+            ,
+            else => null,
+        },
+    };
+}
+
+fn writeStructureSummaryWithQuery(stdout: *Writer, query: *const bindings.Query, root: bindings.Node, source: []const u8) !void {
+    var cursor = bindings.QueryCursor.init();
+    defer cursor.deinit();
+    cursor.exec(query, root);
+
+    while (cursor.nextCapture()) |capture| {
+        const raw_node = capture.match.captures[capture.capture_index].node;
+        try cmd_read.writeSummaryLine(stdout, .{ .raw = raw_node }, source);
+    }
 }
 
 fn resolveReadPath(state: *State, file_path: []const u8) ![:0]u8 {

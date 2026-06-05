@@ -95,7 +95,11 @@ async function runDaemon(args: string[], input: string, cwd = root) {
 		.map((line) => JSON.parse(line) as DaemonResponse);
 }
 
-async function runDaemonExpectFailure(args: string[], input: string, cwd = root) {
+async function runDaemonExpectFailure(
+	args: string[],
+	input: string,
+	cwd = root,
+) {
 	const proc = Bun.spawn([bin, ...args], {
 		cwd,
 		stdin: "pipe",
@@ -163,7 +167,9 @@ if (relativeResponses.length !== 1 || relativeResponses[0]?.ok !== true) {
 if (!String(relativeResponses[0]?.result?.output).includes("relativeProbe")) {
 	throw new Error("root-relative read output missing file content");
 }
-if (!String(relativeResponses[0]?.result?.realPath).startsWith(`${relativeRoot}/`)) {
+if (
+	!String(relativeResponses[0]?.result?.realPath).startsWith(`${relativeRoot}/`)
+) {
 	throw new Error(
 		`root-relative realPath escaped temp root: ${JSON.stringify(relativeResponses[0])}`,
 	);
@@ -197,6 +203,12 @@ const explicitRequests = [
 		method: "read",
 		workspaceRoot: canonicalRoot,
 		params: { file: largeFile },
+	},
+	{
+		id: "doctor-after-read-1",
+		method: "doctor",
+		workspaceRoot: canonicalRoot,
+		params: { includeCache: true },
 	},
 	{
 		id: "invalid-utf8-1",
@@ -236,6 +248,16 @@ const read = explicitById.get("read-1");
 if (read?.ok !== true) throw new Error("read request failed");
 if (!String(read.result?.output).includes("function_declaration  smokeDaemon"))
 	throw new Error("read output missing structure summary");
+const doctorAfterRead = explicitById.get("doctor-after-read-1");
+if (doctorAfterRead?.ok !== true) throw new Error("doctor after read failed");
+const cache = doctorAfterRead.result?.cache as
+	| Record<string, unknown>
+	| undefined;
+if (cache?.queryCount !== 1) {
+	throw new Error(
+		`daemon read did not retain exactly one used query: ${JSON.stringify(doctorAfterRead)}`,
+	);
+}
 const invalidUtf8Read = explicitById.get("invalid-utf8-1");
 if (invalidUtf8Read?.ok !== true) throw new Error("invalid UTF-8 read failed");
 if (!String(invalidUtf8Read.result?.output).includes('const x = "ÿ";'))
@@ -251,8 +273,11 @@ if (explicitById.get("mismatch-1")?.error?.code !== "WorkspaceRootMismatch")
 
 const numericWorkspaceRootResponses = await runDaemon(
 	["--workspace-root", root, "daemon"],
-	JSON.stringify({ id: "numeric-root-1", method: "doctor", workspaceRoot: 123 }) +
-		"\n",
+	JSON.stringify({
+		id: "numeric-root-1",
+		method: "doctor",
+		workspaceRoot: 123,
+	}) + "\n",
 );
 if (
 	numericWorkspaceRootResponses.length !== 1 ||

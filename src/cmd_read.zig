@@ -113,7 +113,7 @@ fn isSummaryKind(kind: []const u8) bool {
     return false;
 }
 
-fn writeSummaryLine(stdout: *Writer, node: bindings.Node, source: []const u8) !void {
+pub fn writeSummaryLine(stdout: *Writer, node: bindings.Node, source: []const u8) !void {
     const start_row: usize = @as(usize, node.startPoint().row) + 1;
     const end_row: usize = @as(usize, node.endPoint().row) + 1;
 

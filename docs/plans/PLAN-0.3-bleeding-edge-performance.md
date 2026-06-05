@@ -236,11 +236,10 @@ Tasks:
 - [x] Upgrade vendored tree-sitter 0.26.8 → 0.26.9. [DONE:10]
 - [x] Verify ABI 15 and grammar compatibility in `doctor`. [DONE:10]
 - [x] Add `ts_language_abi_version` gate in doctor/version JSON if not already exposed. [DONE:10]
-- [ ] Introduce parser/query cache inside long-lived process paths: [DEFERRED]
-  - MCP server currently shells out via `spawnSync(blitz, ...)` per call, so there is no warm Zig parser process to cache inside yet.
-  - Future `blitzd` / warm worker should keep parsers warm; CLI remains stateless but reports cold-start metrics.
-- [ ] Cache compiled `TSQuery` per language/op. [DEFERRED]
-  - Current targeting path does not use `TSQuery` yet beyond bindings; cache becomes actionable with query-based targeting or warm worker.
+- [x] Introduce parser/query cache inside long-lived process paths for the current daemon read slice. [DONE current-slice: daemon `read` retains parser instances by language and retains a real used `TSQuery` for TypeScript `read_summary`; MCP `spawnSync` paths and broader product query paths remain stateless/deferred]
+  - CLI remains stateless; future full warm worker work still needs open-tree/incremental parse cache policy beyond this non-mutating daemon read path.
+- [x] Cache compiled `TSQuery` for the current daemon TypeScript read-summary op. [DONE current-slice: daemon `QueryCache` is keyed by language/op and `scripts/daemon-smoke.ts` asserts `queryCount === 1` after a real TypeScript daemon read; additional languages/ops remain deferred until query-based targeting exists]
+  - Future query-based targeting should extend this beyond TypeScript `read_summary` and prove output equivalence for each language/op.
 - [x] Add query cursor byte/point range and max depth/match count wrapper scaffolding. [DONE wrapper-level: `029b1da` exposes Tree-sitter `QueryCursor` wrappers for match limit, did-exceed, point range, byte range, and max start depth with focused bindings tests; product-level query operation plumbing remains deferred]
   - Future query-based targeting must apply these limits in user-facing CLI/daemon operations and decide whether invalid ranges should return errors instead of assert-only low-level wrapper checks.
 - [x] Implement incremental parse-after validation for single/multi range edits: [DONE:12]
@@ -313,7 +312,7 @@ Tasks:
 
 - [x] Define `blitzd` protocol or extend MCP wrapper with a warm-worker pool. [DONE: Lane E protocol spec in `docs/blitzd-protocol.md`; implementation deferred]
 - [x] Add CLI extension point and minimal daemon prototype: `blitz daemon --help` documents serial JSONL use; `blitz [--workspace-root <root>] daemon` handles non-mutating `doctor` and `read` requests. [DONE: safe prototype only]
-- [ ] Keep parser/query caches in worker memory. [PARTIAL: daemon keeps reusable parser instances by language for `read` structure paths; query caches and open tree/incremental parse caches remain deferred]
+- [x] Keep parser/query caches in worker memory for current non-mutating daemon read slice. [DONE current-slice: daemon keeps reusable parser instances by language for `read` structure paths and a retained TypeScript `read_summary` query; open tree/incremental parse caches remain deferred]
 - [x] Add bounded MCP-host warm cache for safe repeated calls. [DONE: `BLITZ_MCP_WARM=1` caches `doctor` and `read` only; `read` cache key is canonical file path + same-fd SHA-256/content metadata fingerprint; default off; read cache defaults: 128 entries and 1 MiB total cached result text]
 - [x] Add workspace root, file hash, and lock policy to worker requests. [DONE: policy defined in `docs/blitzd-protocol.md`; MCP cache uses existing workspace binding and same-fd SHA-256/content metadata read fingerprints; mutation hash preconditions still deferred]
 - [x] Add idle timeout and cache invalidation. [DONE: lifecycle policy defined in `docs/blitzd-protocol.md`; MCP cache invalidates read entries on mutation tool calls/process restart and evicts read entries oldest/LRU-first when entry/result-byte bounds are exceeded; true idle eviction still deferred]
