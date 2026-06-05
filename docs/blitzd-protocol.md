@@ -42,7 +42,7 @@ Every response:
   "ok": true,
   "result": {},
   "elapsedMs": 4,
-  "worker": { "pid": 12345, "version": "0.1.0-alpha.10", "cacheEpoch": 7 }
+  "worker": { "version": "0.1.0-alpha.10", "cacheEpoch": 7 }
 }
 ```
 
