@@ -343,7 +343,7 @@ Build matrix:
 Tasks:
 
 - [x] Add reproducible bench command scripts under `bench/scripts/`. [DONE: Lane F scripts: `bench/scripts/release-build-matrix.sh`, `bench/scripts/apply-microbench.sh`]
-- [ ] Use `zig build --watch -fincremental --time-report` for dev loop, not release claim. [DEFERRED: release evidence uses stable `zig build`; master/dev-loop timing still optional]
+- [ ] Use `zig build --watch -fincremental --time-report` for dev loop, not release claim. [DEFERRED: release evidence uses stable `zig build`; dev-loop evidence remains blocked on current Zig/toolchain behavior as of 2026-06-05: combined `--watch -fincremental --time-report` fails because `--time-report`/web UI and `--watch` are unsupported together; split `--watch -fincremental` aborts with `REX_GOTPCRELX`; split `--time-report` fails with `failed to listen to port 0: AddressUnavailable`.]
 - [x] Add binary size, cold start, and operation wall-time table. [DONE: `reports/lane-f-evidence-20260525-102840.md` summarizes build matrix + apply microbench]
 - [x] Confirm no `@cImport`; keep C interop in build system. [DONE: `grep -R --include='*.zig' -n '@cImport(' src build.zig` found none in Lane F report]
 - [x] Evaluate `smp_allocator` in ReleaseFast and debug allocator only in debug/safe. [DONE: documented no allocator switch; repo AGENTS keeps Zig 0.16 stable/debug allocator policy pending isolated evidence]
