@@ -29,6 +29,21 @@ Ship an AST-aware edit CLI that preserves fastedit's **output-token savings** an
 The extension (`@codewithkenzo/pi-blitz`) is a thin Effect v4 wrapper around the binary.
 
 
+## 1.0.1 Token-first 0.4 doctrine
+
+Blitz 0.4 exists to make Blitz the default core-edit replacement by saving coding-agent context, not merely by running fast. The proof standard is real Pi/Tokscale evidence across simple and structural edits.
+
+Non-negotiables for future edit surfaces:
+
+- **No unchanged-code replay.** Models should not repeat old code just to locate edits when AST/symbol/anchor targets can locate it.
+- **Resident overhead is part of cost.** Tool schemas, skill text, prompts, input/cache, tool args, model output, and result payload all count against token/context savings.
+- **Simple edits gate replacement.** Large structural rows already prove Blitz can win; replacing core requires tiny both-correct rows to beat or tie core after overhead.
+- **One tiny default surface.** Prefer one compact resident op/facade (`pi_blitz_op`) plus lazy/discoverable schemas over many always-visible tools.
+- **Token-first router.** If Blitz cannot be cheaper and correct, route to core/apply_patch and record why.
+- **Bench before belief.** Token savings claims require real Pi artifacts, correctness status, and Tokscale/token accounting. Wall time is reported second.
+
+Active execution plan: `docs/plans/PLAN-0.4-context-token-optimization.md`. Next-goal handoff: `docs/plans/START-0.4-context-token-core.md`.
+
 ## 1.1 Structured apply IR
 
 ### Problem
@@ -619,8 +634,8 @@ Reductions vs core attempt (correctness + efficiency, not both-correct savings):
 
 **Scope and caveats:**
 
-- These benchmarks cover specific handled cases. Tiny or one-line edits often favor the core `edit` tool, which has zero spawn overhead.
-- Blitz is most effective for large preserved bodies and structural symbolic edits.
+- These benchmarks cover specific handled cases. Tiny or one-line edits often favor the core `edit` tool today because Blitz/pi-blitz resident overhead is still too high. For 0.4, that is the blocker to remove, not an acceptable final caveat.
+- Blitz is currently most effective for large preserved bodies and structural symbolic edits; 0.4 must extend token wins to simple both-correct rows through smaller schemas, compact IR, lazy profiles, and token-first routing.
 - Claims distinguish: provider `usage.output` tokens, tool-call argument tokens, correctness rate, wall time, and cost.
 - Wall time includes LLM round-trip, not binary-only. Binary-only spawn + parse + write is roughly 12-15 ms median internally.
 - Public claims on additional cases will be gated on correctness parity first.
