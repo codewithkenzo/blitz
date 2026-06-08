@@ -103,6 +103,7 @@ const toolProfile = argFlag(
 	"--tool-profile",
 	process.env.PI_BLITZ_TOOL_PROFILE ?? "full",
 );
+const artifactProfilesArg = argFlag("--artifact-profiles", toolProfile);
 const piBlitzPackage = argFlag(
 	"--pi-blitz-package",
 	process.env.PI_BLITZ_PACKAGE ?? DEFAULT_PI_BLITZ_PACKAGE,
@@ -945,6 +946,46 @@ type ToolSpecArtifact = {
 	serializedToolSpecsBytes: number;
 };
 
+const ALL_TOOL_PROFILES = [
+	"minimal",
+	"semantic",
+	"structural",
+	"admin",
+	"full",
+] as const;
+
+const parseArtifactProfiles = (value: string): string[] => {
+	const requested =
+		value === "all"
+			? [...ALL_TOOL_PROFILES]
+			: value
+					.split(",")
+					.map((profile) => profile.trim())
+					.filter(Boolean);
+	if (!requested.includes(toolProfile)) requested.push(toolProfile);
+	return [...new Set(requested)];
+};
+
+const artifactProfiles = parseArtifactProfiles(artifactProfilesArg);
+
+let selectedVisibleToolNames = new Set<string>();
+
+const assertProfileSupportsTools = (toolsOverride: string | undefined) => {
+	if (!toolsOverride) return;
+	const requested = toolsOverride
+		.split(",")
+		.map((tool) => tool.trim())
+		.filter(Boolean);
+	const unavailable = requested.filter(
+		(tool) => !selectedVisibleToolNames.has(tool),
+	);
+	if (unavailable.length) {
+		throw new Error(
+			`tool profile ${toolProfile} does not expose requested Blitz tools: ${unavailable.join(",")}`,
+		);
+	}
+};
+
 type SkillArtifact = {
 	path: string;
 	snapshotPath: string;
@@ -963,6 +1004,7 @@ type TokenizerMetadata = {
 const captureAccountingArtifacts = async (): Promise<{
 	artifactRoot: string;
 	toolSpec: ToolSpecArtifact | null;
+	toolSpecs: ToolSpecArtifact[];
 	skill: SkillArtifact;
 	tokenizer: TokenizerMetadata;
 	metadataPath: string;
@@ -979,36 +1021,47 @@ const captureAccountingArtifacts = async (): Promise<{
 		() => "",
 	);
 	const skillSnapshotPath = join(artifactRoot, `skill.${toolProfile}.md`);
-	await writeFile(skillSnapshotPath, skillText, "utf8");
+	for (const profile of artifactProfiles) {
+		await writeFile(join(artifactRoot, `skill.${profile}.md`), skillText, "utf8");
+	}
 	let toolSpec: ToolSpecArtifact | null = null;
-	const dump = spawnSync(
-		"bun",
-		[
-			"scripts/dump-tool-specs.ts",
-			"--profile",
-			toolProfile,
-			"--out",
-			join(artifactRoot, `tool-specs.${toolProfile}.json`),
-		],
-		{
-			cwd: piBlitzPackage,
-			env: { ...process.env, PI_BLITZ_TOOL_PROFILE: toolProfile },
-			encoding: "utf8",
-			maxBuffer: 20 * 1024 * 1024,
-		},
-	);
-	if (dump.status === 0) {
+	const toolSpecs: ToolSpecArtifact[] = [];
+	for (const profile of [...new Set(artifactProfiles)]) {
 		const serializedToolSpecsPath = join(
 			artifactRoot,
-			`tool-specs.${toolProfile}.json`,
+			`tool-specs.${profile}.json`,
 		);
+		const dump = spawnSync(
+			"bun",
+			[
+				"scripts/dump-tool-specs.ts",
+				"--profile",
+				profile,
+				"--out",
+				serializedToolSpecsPath,
+			],
+			{
+				cwd: piBlitzPackage,
+				env: { ...process.env, PI_BLITZ_TOOL_PROFILE: profile },
+				encoding: "utf8",
+				maxBuffer: 20 * 1024 * 1024,
+			},
+		);
+		if (dump.status !== 0) {
+			if (tokScaleMode === "required" || profile === toolProfile) {
+				throw new Error(
+					`tool spec dump failed for ${profile}: ${(dump.stderr || dump.stdout).trim()}`,
+				);
+			}
+			continue;
+		}
 		const text = await readFile(serializedToolSpecsPath, "utf8");
 		const parsed = JSON.parse(text) as {
 			profile: string;
 			profileLabel: string;
 			tools: Array<{ name: string }>;
 		};
-		toolSpec = {
+		const artifact = {
 			profile: parsed.profile,
 			profileLabel: parsed.profileLabel,
 			visibleToolNames: parsed.tools.map((tool) => tool.name),
@@ -1016,16 +1069,21 @@ const captureAccountingArtifacts = async (): Promise<{
 			serializedToolSpecsTokens: countTokens(text),
 			serializedToolSpecsBytes: Buffer.byteLength(text, "utf8"),
 		};
-	} else if (tokScaleMode === "required") {
-		throw new Error(
-			`tool spec dump failed: ${(dump.stderr || dump.stdout).trim()}`,
-		);
+		toolSpecs.push(artifact);
+		if (profile === toolProfile) toolSpec = artifact;
 	}
 	const metadataPath = join(artifactRoot, `tokenizer.${toolProfile}.json`);
-	await writeFile(metadataPath, JSON.stringify(tokenizer, null, 2), "utf8");
+	for (const profile of artifactProfiles) {
+		await writeFile(
+			join(artifactRoot, `tokenizer.${profile}.json`),
+			JSON.stringify({ ...tokenizer, profile }, null, 2),
+			"utf8",
+		);
+	}
 	return {
 		artifactRoot,
 		toolSpec,
+		toolSpecs,
 		skill: {
 			path: join(skill, "SKILL.md"),
 			snapshotPath: skillSnapshotPath,
@@ -1247,6 +1305,7 @@ const runLane = async (
 								: fx.id.includes("marker-tail")
 									? "pi_blitz_replace_body_span"
 									: semanticTools[fx.id];
+	assertProfileSupportsTools(toolsOverride);
 	const r =
 		runner === "tmux"
 			? await runPiTmux(lane, prompt, targetDir, fx, iter, toolsOverride)
@@ -1332,8 +1391,12 @@ const main = async () => {
 	console.log(`Skill: ${skill}`);
 	console.log(`Tokscale validation: ${tokScaleMode}`);
 	console.log(`Tool profile: ${toolProfile}`);
+	console.log(`Accounting artifact profiles: ${artifactProfiles.join(",")}`);
 	console.log(`Accounting artifact root: ${artifactRoot}`);
 	const accountingArtifacts = await captureAccountingArtifacts();
+	selectedVisibleToolNames = new Set(
+		accountingArtifacts.toolSpec?.visibleToolNames ?? [],
+	);
 	if (caseFilter) console.log(`Case filter: ${caseFilter}`);
 	if (laneFilter) console.log(`Lane filter: ${laneFilter}`);
 	console.log(
