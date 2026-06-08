@@ -32,6 +32,17 @@ For Blitz 0.4 and later:
 - `kenzo-zig-build` — build.zig, build.zig.zon, cross-compile, C interop
 - `.pi/skills/blitz-benchmarking` — repo-local Pi/tmux/Tokscale benchmark method; load before benchmark reports, token-savings claims, or `bench/pi-matrix.ts` changes
 
+## Nested AGENTS.md map
+
+Read nearest nested `AGENTS.md` before work in these subtrees:
+- `src/` — Zig CLI core, command architecture, tree-sitter bindings, file safety.
+- `src/apply/` — structured edit IR, target resolution, validation, token-facing op behavior.
+- `bench/` — Bun/TypeScript benchmark harness, Pi/tmux/Tokscale artifacts, token accounting.
+- `mcp/` — standalone Blitz MCP server and schema/token-tax guardrails.
+- `packages/` — platform npm package metadata and binary distribution constraints.
+- `grammars/` — vendored tree-sitter grammar guardrails.
+- `third_party/` — vendored tree-sitter C source guardrails.
+
 ## Zig 0.16 rules (verified against stable release)
 
 - **Entry:** `pub fn main(init: std.process.Init) !void { ... }` (Juicy Main). `init.gpa`, `init.arena`, `init.io` are provided. Use `std.process.Init.Minimal` only when bootstrapping runtime state manually.
