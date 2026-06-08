@@ -330,9 +330,9 @@ Long-form tools stay available only in non-default profiles.
 
 ### Tool profiles
 
-Implement real registration profiles in `pi-blitz/index.ts`; unused schemas must not be registered.
+Implement real registration profiles in `pi-blitz/index.ts`; unused schemas must not be registered. `allowed_tools` is not enough if the full schema remains resident in the model context.
 
-Profiles:
+Target profiles after Phase 2:
 
 | Profile | Tools | Use |
 |---|---|---|
@@ -341,6 +341,8 @@ Profiles:
 | `structural` | `pi_blitz_op`, `pi_blitz_read`, `pi_blitz_patch` | complex structural edits |
 | `admin` | read/doctor/undo/rename | diagnostics/manual |
 | `full` | current 15 tools | debugging/backcompat |
+
+Phase 1 profile registration may ship before `pi_blitz_op` exists. In that case `minimal` is a temporary smallest-existing-useful profile and must be labeled in reports as `minimal-v0`; Phase 2 replaces or aliases it to `pi_blitz_op` before any core-replacement claim.
 
 Configuration:
 
@@ -384,15 +386,17 @@ Only include diff/metrics when requested:
 
 ### Token-first router
 
-Route decision must estimate and report:
+Route decision must measure or estimate and report:
 
-- resident tool schema tokens
-- skill tokens
+- resident tool schema tokens from Pi-serialized registered specs
+- skill tokens from the exact resident skill text used by the run
 - user prompt tokens
 - expected arg tokens
 - expected output tokens
 - cache read/write tokens
 - total model-visible context tokens
+
+Runtime integration point must be explicit before core-replacement claims. The router cannot exist only as a benchmark report selector. It must live in one of: Pi extension facade, core-tool wrapper/alias, skill-level route contract with enforced profile selection, or a documented temporary benchmark-only boundary until Phase 6.
 
 Route selection order:
 
@@ -411,25 +415,36 @@ Deliverables:
 
 - Extend `bench/pi-matrix.ts` to record:
   - visible tool names
-  - serialized tool schema token estimate
-  - resident skill token estimate
+  - Pi-serialized registered tool specs per profile
+  - exact token count for serialized registered tool specs, using the same tokenizer/model family selected for the run when available
+  - exact resident skill text snapshot used by the run
+  - exact token count for resident skill text, using the same tokenizer/model family selected for the run when available
   - prompt tokens
   - tool arg tokens
   - model output tokens
   - input/cache tokens from Tokscale
+  - residual analysis reconciling local schema/skill/prompt counts with provider/Tokscale input/cache totals
   - selected route/tool profile
+- Preserve raw accounting artifacts under `reports/` or a linked run artifact directory:
+  - `tool-specs.<profile>.json`
+  - `skill.<profile>.md`
+  - tokenizer/model metadata
+  - Tokscale/session JSON
 - Add profile variants to bench:
   - core
   - current Blitz full/narrow
-  - optimized Blitz minimal
-  - optimized Blitz structural
+  - Phase 1 minimal-v0/semantic/structural profiles
   - apply_patch-style baseline if available
-- Add report table: `schemaTokens`, `skillTokens`, `promptTokens`, `argTokens`, `outputTokens`, `cacheRead`, `cacheWrite`, `totalContextTokens`.
+- Add report table: `schemaTokens`, `skillTokens`, `promptTokens`, `argTokens`, `outputTokens`, `cacheRead`, `cacheWrite`, `residualInputTokens`, `totalContextTokens`.
+
+Do not use chars/4 or rough source-size estimates for acceptance. Rough estimates are allowed only in exploratory notes that are clearly excluded from savings claims.
 
 Acceptance:
 
 - Re-run existing 12 pairs.
 - Report explains exactly why each current simple Blitz row loses.
+- Raw serialized schema/skill artifacts exist for every profile claim.
+- Token counts name tokenizer/model and reconcile with Tokscale/provider input/cache totals, including residuals.
 
 ### Phase 1 — Tool profile registration
 
@@ -442,8 +457,10 @@ Deliverables in `/home/kenzo/dev/pi-blitz`:
 
 Acceptance:
 
-- `minimal` exposes <= 2 tools.
-- Resident schema rough tokens reduced >=70% vs current full registration.
+- `minimal-v0` or `minimal` exposes <= 2 tools.
+- Unused profile tools are not registered and their schemas are absent from serialized tool-spec artifacts.
+- Resident schema tokens, counted from serialized registered specs, are reduced >=70% vs current full registration.
+- No claim is made that Phase 1 is an optimized replacement path until Phase 2/6 prove it.
 
 ### Phase 2 — Compact op tool / alias IR
 
@@ -518,6 +535,11 @@ Deliverables:
   - `argTokensExpected`
   - `outputTokensExpected`
   - `fallbackContextTokensExpected`
+- Define and implement the runtime integration point, not just benchmark-side route selection. Acceptable locations:
+  - Pi extension facade that picks profile/tool before model call,
+  - core-tool wrapper/alias that makes Blitz the familiar default edit path,
+  - skill-level route contract plus enforced profile selection,
+  - or explicit documented boundary that routing is benchmark-only until a named follow-up phase.
 - Router chooses core/apply_patch if Blitz cannot beat token/context threshold.
 - Reports put token/context first; wall time second.
 
@@ -587,7 +609,24 @@ Additional source-backed requirements from `.pi/research/20260605-tool-schema-co
 9. **Morph/apply models are fallback baselines.** Morph Fast Apply and OpenAI `apply_patch` are the right competitors for non-deterministic edits. Blitz should benchmark against core edit **and** apply_patch/Morph-style chunk merge, not only against core.
 10. **Streaming parser is a real optimization path.** Codex has a streaming apply_patch parser. Blitz compact IR should be stream-parseable so invalid ops fail early and UI can show progress while tool payload streams.
 
-Plan impact: Phase 0 must measure schema/skill/prompt tax; Phase 1 must implement profiles/lazy facade; Phase 2 must evaluate both compact JSON and freeform DSL; Phase 5 must include deterministic chunk-local merge; Phase 7 must include apply_patch/Morph/CEDARScript-style baselines.
+Plan impact: Phase 0 must measure schema/skill/prompt tax exactly; Phase 1 must implement profile registration without assuming `pi_blitz_op`; Phase 2 must evaluate both compact JSON and freeform DSL; Phase 5 must include deterministic chunk-local merge; Phase 6 must define runtime route integration; Phase 7 must include apply_patch/Morph/CEDARScript-style baselines.
+
+## Cross-repo execution contract
+
+Blitz 0.4 spans two repositories:
+
+- `/home/kenzo/dev/blitz`: CLI, Zig operations, bench harness, reports, durable specs.
+- `/home/kenzo/dev/pi-blitz`: Pi tool registration, model-facing schemas, resident skill text, profile selection, runtime route/facade behavior.
+
+For companion `pi-blitz` work:
+
+- branch: `feat/blitz-0.4-token-core-profile`
+- allowed scope: tool registration/profile code, schema serialization/debug dump utilities, resident skill text, package tests, benchmark integration needed to select installed/local profile
+- forbidden scope: unrelated UI, unrelated MCP behavior, broad refactors, unmeasured skill rewrites
+- required preflight: read local `AGENTS.md`, `package.json`, tool registration code, skill text, and current benchmark integration before edits
+- required checks: run repo-owned typecheck/test/build commands discovered from `package.json`; if absent, record absence and run smallest meaningful Bun/TS syntax check
+- package/install path: benchmark reports must state whether they used local source, linked package, `npm install -g .`, or published package
+- handoff: final status must list both Blitz and pi-blitz branches/commits/checks when both repos are touched
 
 ## Definition of done
 
@@ -605,9 +644,16 @@ Use `docs/plans/START-0.4-context-token-core.md` as the next goal/new-chat start
 
 ## Immediate next tasks
 
-1. Implement Phase 0 measurement breakdown, including schema/skill/prompt tax and profile-visible tool list.
-2. Implement `PI_BLITZ_TOOL_PROFILE=minimal|semantic|structural|admin|full` in `pi-blitz`; unused schemas must not register.
-3. Add `pi_blitz_op` compact alias tool; benchmark JSON short-key vs freeform DSL if runtime supports custom tools.
-4. Compress resident skill to <=500 tokens and move examples to references.
-5. Add deterministic chunk-local merge spike for symbol-scoped snippets with keep markers.
-6. Re-run 12-pair matrix plus real-world set against core, current Blitz, optimized Blitz, and apply_patch/Morph-style baselines.
+First slice only:
+
+1. Implement Phase 0 measurement breakdown, including exact serialized schema/skill/prompt accounting, profile-visible tool list, raw artifact preservation, tokenizer metadata, and Tokscale residual reconciliation.
+2. Implement `PI_BLITZ_TOOL_PROFILE=minimal|semantic|structural|admin|full` in `pi-blitz`; unused schemas must not register. If `pi_blitz_op` does not exist yet, label the smallest existing useful profile as `minimal-v0` in reports.
+3. Re-run the existing 12-pair matrix against core, current Blitz full/narrow, and Phase 1 profile variants. Do not claim optimized replacement or router-selected savings yet.
+
+After first-slice evidence:
+
+4. Add `pi_blitz_op` compact alias tool; benchmark JSON short-key vs freeform DSL if runtime supports custom tools.
+5. Compress resident skill to <=500 tokens and move examples to references.
+6. Add deterministic chunk-local merge spike for symbol-scoped snippets with keep markers.
+7. Define runtime router integration point, not benchmark-only routing.
+8. Re-run 12-pair matrix plus real-world set against core, current Blitz, optimized Blitz, and apply_patch/Morph-style baselines.
