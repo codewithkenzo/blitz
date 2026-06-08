@@ -6,6 +6,18 @@ Cross-agent shared context for this repository.
 
 `blitz` is a standalone Zig 0.16 CLI for AST-aware code edits. Ships as a single static binary per platform. Used by `@codewithkenzo/pi-blitz` (separate repo) as a subprocess backend.
 
+## Token-savings prime directive
+
+This project exists to save coding-agent context. Token/context savings are product truth, not a side metric.
+
+For Blitz 0.4 and later:
+- Blitz is **not core edit today**; it must become the default core-edit replacement only through measured token wins.
+- Never claim token savings from wall time, byte counts, or intuition. Claims require real Pi artifacts, correctness status, and Tokscale/token accounting.
+- Token metrics come first in plans/reports: resident tool schema, resident skill text, prompt/input/cache, tool args, model output, result payload, total model-visible context. Wall time is secondary.
+- Simple edits matter most. Structural wins are already proven; core replacement requires tiny/simple both-correct rows to beat or tie core after overhead.
+- Any route that loses tokens must either choose core/apply_patch or explain why correctness requires Blitz.
+- Default design bias: fewer resident tools, compact IR, lazy/discoverable schema, tiny success output, deterministic AST targets, no unchanged-code replay.
+
 ## Stack
 
 - Language: **Zig 0.16.0 stable** (released 2026-04-13)
@@ -34,9 +46,10 @@ Cross-agent shared context for this repository.
 
 For non-trivial work:
 1. read `docs/blitz.md` (full spec, mirrored from pi-rig)
-2. check current sprint in the companion `pi-rig` tickets (`d1o-*` ids)
-3. implement the smallest safe diff
-4. `zig build && zig build test` before claiming done
+2. for 0.4/token work, read `docs/plans/PLAN-0.4-context-token-optimization.md`, `docs/plans/START-0.4-context-token-core.md`, and both `.pi/research/20260605-*` reports before planning
+3. check current sprint in the companion `pi-rig` tickets (`d1o-*` ids) when available; this repo may not have local `.tickets`
+4. implement the smallest safe diff
+5. `zig build && zig build test` before claiming done; token claims additionally require the benchmark workflow below
 
 ## Benchmark workflow
 
@@ -67,7 +80,11 @@ zig build -Dtarget=x86_64-windows-gnu
 
 ## Spec
 
-- `docs/blitz.md` — mirrors `pi-rig/docs/architecture/blitz.md` (single source of truth)
+- `docs/blitz.md` — durable product/architecture spec; 0.4 token-first doctrine is authoritative for future edit surfaces
+- `docs/plans/PLAN-0.4-context-token-optimization.md` — active 0.4 plan to make Blitz a core-edit replacement through measured context/token savings
+- `docs/plans/START-0.4-context-token-core.md` — next-goal handoff prompt and acceptance contract
+- `.pi/research/20260605-tool-schema-context-tax.md` — provider/MCP/schema-tax research
+- `.pi/research/20260605-token-efficient-edit-repos.md` — edit-format/repo research
 - `NOTICE.md` — third-party attribution
 
 ## Constraints

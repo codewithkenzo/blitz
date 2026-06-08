@@ -599,6 +599,10 @@ Blitz can be considered a candidate core replacement only when real Pi/tmux/Toks
 4. Reports prove token/context savings first and speed second.
 5. No hidden failed rows, no correctness regressions, no unmeasured savings claims.
 
+## Goal handoff
+
+Use `docs/plans/START-0.4-context-token-core.md` as the next goal/new-chat start prompt. It is the operational contract for turning this plan into implementation: required readings, first slice, acceptance gates, builder routing, branch name, and output artifacts.
+
 ## Immediate next tasks
 
 1. Implement Phase 0 measurement breakdown, including schema/skill/prompt tax and profile-visible tool list.
