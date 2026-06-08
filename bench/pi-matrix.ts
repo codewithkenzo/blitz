@@ -1330,10 +1330,15 @@ const runLane = async (
 		editToolName: null,
 	};
 	if (sessionFile) parsed = await parseSession(sessionFile, lane);
+	const missingSessionAfterFailedRun = !sessionFile && (r.status !== 0 || r.timedOut);
 	const tokScale = sessionFile
 		? await runTokScale(sessionFile, parsed, targetDir)
-		: emptyTokScale("no session jsonl");
-	if (tokScaleMode === "required" && !sessionFile) {
+		: emptyTokScale(
+				missingSessionAfterFailedRun
+					? "no session jsonl (run failed/timed out)"
+					: "no session jsonl",
+			);
+	if (tokScaleMode === "required" && !sessionFile && !missingSessionAfterFailedRun) {
 		throw new Error("tokscale validation required but no session jsonl found");
 	}
 
