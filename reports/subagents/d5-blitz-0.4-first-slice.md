@@ -10,7 +10,7 @@
 
 ## Branches / Commits
 - pi-blitz-token-profile: `feat/blitz-0.4-token-core-profile` @ `094a117` (`origin/feat/blitz-0.4-token-core-profile`)
-- blitz: `feat/blitz-0.4-token-core-profile` @ `ab53aee` (`origin/feat/blitz-0.4-token-core-profile`)
+- blitz: `feat/blitz-0.4-token-core-profile` @ `02c6497` (`origin/feat/blitz-0.4-token-core-profile`)
 
 ## Files Changed
 ### /home/kenzo/dev/pi-blitz-token-profile
@@ -32,7 +32,7 @@
 - `bun install && bun run typecheck && bun test && bun run build` — passed after deps install. Bun reported blocked postinstalls; no package publish/install behavior changed.
 
 ### blitz
-- `bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js` — passed.
+- `bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js` — passed before and after formatting follow-up.
 - `bun bench/pi-matrix.ts --dump-accounting-only --tool-profile minimal --artifact-root reports/pi-accounting-runs/d5-first-slice-smoke3 --no-tokscale` — passed; captured raw accounting artifacts without provider/Pi matrix.
 - `zig build` / `zig build test` not run; Zig/source behavior unchanged.
 
