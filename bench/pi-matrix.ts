@@ -44,8 +44,10 @@ import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
-const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz-token-profile/dist/index.js";
-const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz";
+const DEFAULT_PI_BLITZ_DIST =
+	"/home/kenzo/dev/pi-blitz-token-profile/dist/index.js";
+const DEFAULT_PI_BLITZ_SKILL =
+	"/home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz";
 const DEFAULT_PI_BLITZ_PACKAGE = "/home/kenzo/dev/pi-blitz-token-profile";
 const ALL_BLITZ_EDIT_TOOLS = [
 	"pi_blitz_replace_body_span",
@@ -97,8 +99,14 @@ const skill = argFlag(
 	process.env.PI_BLITZ_SKILL ?? DEFAULT_PI_BLITZ_SKILL,
 );
 const keepTemp = argv.includes("--keep-temp");
-const toolProfile = argFlag("--tool-profile", process.env.PI_BLITZ_TOOL_PROFILE ?? "full");
-const piBlitzPackage = argFlag("--pi-blitz-package", process.env.PI_BLITZ_PACKAGE ?? DEFAULT_PI_BLITZ_PACKAGE);
+const toolProfile = argFlag(
+	"--tool-profile",
+	process.env.PI_BLITZ_TOOL_PROFILE ?? "full",
+);
+const piBlitzPackage = argFlag(
+	"--pi-blitz-package",
+	process.env.PI_BLITZ_PACKAGE ?? DEFAULT_PI_BLITZ_PACKAGE,
+);
 const artifactRootArg = argFlag("--artifact-root", "");
 const runner = argFlag("--runner", "spawn") as "spawn" | "tmux";
 if (runner !== "spawn" && runner !== "tmux") {
@@ -111,7 +119,9 @@ const runRoot =
 		? runRootArg || join(REPO_ROOT, "reports/pi-tmux-runs", runStamp)
 		: runRootArg;
 const tmuxSession = `pi-bench-${runStamp}`;
-const artifactRoot = resolve(artifactRootArg || join(REPO_ROOT, "reports/pi-accounting-runs", runStamp));
+const artifactRoot = resolve(
+	artifactRootArg || join(REPO_ROOT, "reports/pi-accounting-runs", runStamp),
+);
 const tokScaleRequired = argv.includes("--tokscale");
 const tokScaleDisabled = argv.includes("--no-tokscale");
 if (tokScaleRequired && tokScaleDisabled) {
@@ -963,13 +973,21 @@ const captureAccountingArtifacts = async (): Promise<{
 		model,
 		provider,
 	};
-	const skillText = await readFile(join(skill, "SKILL.md"), "utf8").catch(() => "");
+	const skillText = await readFile(join(skill, "SKILL.md"), "utf8").catch(
+		() => "",
+	);
 	const skillSnapshotPath = join(artifactRoot, `skill.${toolProfile}.md`);
 	await writeFile(skillSnapshotPath, skillText, "utf8");
 	let toolSpec: ToolSpecArtifact | null = null;
 	const dump = spawnSync(
 		"bun",
-		["scripts/dump-tool-specs.ts", "--profile", toolProfile, "--out", join(artifactRoot, `tool-specs.${toolProfile}.json`)],
+		[
+			"scripts/dump-tool-specs.ts",
+			"--profile",
+			toolProfile,
+			"--out",
+			join(artifactRoot, `tool-specs.${toolProfile}.json`),
+		],
 		{
 			cwd: piBlitzPackage,
 			env: { ...process.env, PI_BLITZ_TOOL_PROFILE: toolProfile },
@@ -978,9 +996,16 @@ const captureAccountingArtifacts = async (): Promise<{
 		},
 	);
 	if (dump.status === 0) {
-		const serializedToolSpecsPath = join(artifactRoot, `tool-specs.${toolProfile}.json`);
+		const serializedToolSpecsPath = join(
+			artifactRoot,
+			`tool-specs.${toolProfile}.json`,
+		);
 		const text = await readFile(serializedToolSpecsPath, "utf8");
-		const parsed = JSON.parse(text) as { profile: string; profileLabel: string; tools: Array<{ name: string }> };
+		const parsed = JSON.parse(text) as {
+			profile: string;
+			profileLabel: string;
+			tools: Array<{ name: string }>;
+		};
 		toolSpec = {
 			profile: parsed.profile,
 			profileLabel: parsed.profileLabel,
@@ -990,7 +1015,9 @@ const captureAccountingArtifacts = async (): Promise<{
 			serializedToolSpecsBytes: Buffer.byteLength(text, "utf8"),
 		};
 	} else if (tokScaleMode === "required") {
-		throw new Error(`tool spec dump failed: ${(dump.stderr || dump.stdout).trim()}`);
+		throw new Error(
+			`tool spec dump failed: ${(dump.stderr || dump.stdout).trim()}`,
+		);
 	}
 	const metadataPath = join(artifactRoot, `tokenizer.${toolProfile}.json`);
 	await writeFile(metadataPath, JSON.stringify(tokenizer, null, 2), "utf8");
@@ -1308,8 +1335,12 @@ const main = async () => {
 	console.log(
 		`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`,
 	);
-	console.log(`Visible Blitz tools: ${accountingArtifacts.toolSpec?.visibleToolNames.join(",") ?? "unavailable"}`);
-	console.log(`Tool spec tokens: ${accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? "unavailable"}`);
+	console.log(
+		`Visible Blitz tools: ${accountingArtifacts.toolSpec?.visibleToolNames.join(",") ?? "unavailable"}`,
+	);
+	console.log(
+		`Tool spec tokens: ${accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? "unavailable"}`,
+	);
 	console.log(`Skill tokens: ${accountingArtifacts.skill.tokens}`);
 	if (argv.includes("--dump-accounting-only")) {
 		console.log(JSON.stringify(accountingArtifacts, null, 2));
@@ -1426,12 +1457,28 @@ const main = async () => {
 					lane,
 					...routeForLane(lane, fx),
 					iter: i,
-					toolProfile: lane === "blitz" ? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile) : "core",
-					visibleToolNames: lane === "blitz" ? (accountingArtifacts.toolSpec?.visibleToolNames ?? []) : ["edit"],
-					toolSpecTokens: lane === "blitz" ? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null) : null,
+					toolProfile:
+						lane === "blitz"
+							? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile)
+							: "core",
+					visibleToolNames:
+						lane === "blitz"
+							? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
+							: ["edit"],
+					toolSpecTokens:
+						lane === "blitz"
+							? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ??
+								null)
+							: null,
 					skillTokens: lane === "blitz" ? accountingArtifacts.skill.tokens : 0,
 					resultPayloadTokens: countTokens(r.stdout),
-					residualInputTokens: r.session.totalInputTokens - r.session.editToolCallArgsTokens - (lane === "blitz" ? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0) + accountingArtifacts.skill.tokens : 0),
+					residualInputTokens:
+						r.session.totalInputTokens -
+						r.session.editToolCallArgsTokens -
+						(lane === "blitz"
+							? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0) +
+								accountingArtifacts.skill.tokens
+							: 0),
 					toolName: r.session.editToolName,
 					wallMs: r.wallMs,
 					inputTokens: r.session.totalInputTokens,
@@ -1487,14 +1534,31 @@ const main = async () => {
 				recommendedLane: fx.recommendedLane ?? "",
 				lane,
 				...routeForLane(lane, fx),
-				toolProfile: lane === "blitz" ? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile) : "core",
-				visibleToolNames: lane === "blitz" ? (accountingArtifacts.toolSpec?.visibleToolNames ?? []) : ["edit"],
-				toolSpecTokens: lane === "blitz" ? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null) : null,
+				toolProfile:
+					lane === "blitz"
+						? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile)
+						: "core",
+				visibleToolNames:
+					lane === "blitz"
+						? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
+						: ["edit"],
+				toolSpecTokens:
+					lane === "blitz"
+						? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null)
+						: null,
 				skillTokens: lane === "blitz" ? accountingArtifacts.skill.tokens : 0,
 				residualInputTokens: medianNullable(
 					runs.map((r) => {
-						const resident = lane === "blitz" ? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0) + accountingArtifacts.skill.tokens : 0;
-						return r.session.totalInputTokens - r.session.editToolCallArgsTokens - resident;
+						const resident =
+							lane === "blitz"
+								? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ??
+										0) + accountingArtifacts.skill.tokens
+								: 0;
+						return (
+							r.session.totalInputTokens -
+							r.session.editToolCallArgsTokens -
+							resident
+						);
 					}),
 				),
 				toolName: toolNames.join(",") || "",
@@ -1691,12 +1755,16 @@ const main = async () => {
 		accountingArtifacts,
 		phase0Accounting: {
 			visibleTools: accountingArtifacts.toolSpec?.visibleToolNames ?? [],
-			serializedToolSpecsPath: accountingArtifacts.toolSpec?.serializedToolSpecsPath ?? null,
-			serializedToolSpecsTokens: accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null,
+			serializedToolSpecsPath:
+				accountingArtifacts.toolSpec?.serializedToolSpecsPath ?? null,
+			serializedToolSpecsTokens:
+				accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null,
 			residentSkillSnapshotPath: accountingArtifacts.skill.snapshotPath,
 			residentSkillTokens: accountingArtifacts.skill.tokens,
 			tokenizerMetadataPath: accountingArtifacts.metadataPath,
-			tokScaleSessionJsonPaths: runRecords.map((record) => record.sessionDir).filter((path): path is string => Boolean(path)),
+			tokScaleSessionJsonPaths: runRecords
+				.map((record) => record.sessionDir)
+				.filter((path): path is string => Boolean(path)),
 		},
 		tokScaleMode,
 		generatedAt: new Date().toISOString(),
