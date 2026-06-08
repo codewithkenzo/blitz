@@ -907,6 +907,7 @@ type TokScaleValidation = {
 type LaneResult = {
 	lane: Lane;
 	wallMs: number;
+	promptTokens: number;
 	session: ParsedSession;
 	tokScale: TokScaleValidation;
 	correct: boolean;
@@ -916,6 +917,7 @@ type LaneResult = {
 	stdout: string;
 	runDir?: string;
 	sessionDir?: string;
+	sessionFile?: string;
 	commandFile?: string;
 	stdoutLog?: string;
 	stderrLog?: string;
@@ -1285,6 +1287,7 @@ const runLane = async (
 	return {
 		lane,
 		wallMs: r.ms,
+		promptTokens: countTokens(prompt),
 		session: parsed,
 		tokScale,
 		correct,
@@ -1294,6 +1297,7 @@ const runLane = async (
 		stdout: r.stdout,
 		runDir: r.runDir,
 		sessionDir: r.sessionDir,
+		sessionFile: sessionFile || undefined,
 		commandFile: r.commandFile,
 		stdoutLog: r.stdoutLog,
 		stderrLog: r.stderrLog,
@@ -1359,8 +1363,16 @@ const main = async () => {
 		toolProfile: string;
 		visibleToolNames: string[];
 		toolSpecTokens: number | null;
+		schemaTokens: number;
 		skillTokens: number;
+		promptTokens: number;
+		argTokens: number;
+		outputTokens: number;
+		cacheRead: number;
+		cacheWrite: number;
+		resultPayloadTokens: number;
 		residualInputTokens: number | null;
+		totalContextTokens: number;
 		toolName: string;
 		wallMsMedian: number;
 		inputMedian: number;
@@ -1394,13 +1406,19 @@ const main = async () => {
 		toolProfile: string;
 		visibleToolNames: string[];
 		toolSpecTokens: number | null;
+		schemaTokens: number;
 		skillTokens: number;
+		promptTokens: number;
+		argTokens: number;
+		outputTokens: number;
+		cacheRead: number;
+		cacheWrite: number;
 		resultPayloadTokens: number;
 		residualInputTokens: number | null;
+		totalContextTokens: number;
 		toolName: string | null;
 		wallMs: number;
 		inputTokens: number;
-		outputTokens: number;
 		cacheReadTokens: number;
 		cacheWriteTokens: number;
 		toolCallArgTokens: number;
@@ -1421,6 +1439,7 @@ const main = async () => {
 		failure: string;
 		runDir?: string;
 		sessionDir?: string;
+		sessionFile?: string;
 		commandFile?: string;
 		stdoutLog?: string;
 		stderrLog?: string;
@@ -1449,8 +1468,30 @@ const main = async () => {
 	for (const fx of selectedFixtures) {
 		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
+			const schemaTokens =
+				lane === "blitz"
+					? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0)
+					: 0;
+			const skillTokens = lane === "blitz" ? accountingArtifacts.skill.tokens : 0;
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx, i);
+				const argTokens = r.session.editToolCallArgsTokens;
+				const outputTokens = r.session.totalOutputTokens;
+				const cacheRead = r.session.totalCacheRead;
+				const cacheWrite = r.session.totalCacheWrite;
+				const resultPayloadTokens = countTokens(r.stdout);
+				const residualInputTokens =
+					r.session.totalInputTokens - argTokens - schemaTokens - skillTokens;
+				const totalContextTokens =
+					schemaTokens +
+					skillTokens +
+					r.promptTokens +
+					r.session.totalInputTokens +
+					cacheRead +
+					cacheWrite +
+					argTokens +
+					outputTokens +
+					resultPayloadTokens;
 				runs.push(r);
 				runRecords.push({
 					fixture: fx.id,
@@ -1465,27 +1506,23 @@ const main = async () => {
 						lane === "blitz"
 							? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
 							: ["edit"],
-					toolSpecTokens:
-						lane === "blitz"
-							? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ??
-								null)
-							: null,
-					skillTokens: lane === "blitz" ? accountingArtifacts.skill.tokens : 0,
-					resultPayloadTokens: countTokens(r.stdout),
-					residualInputTokens:
-						r.session.totalInputTokens -
-						r.session.editToolCallArgsTokens -
-						(lane === "blitz"
-							? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0) +
-								accountingArtifacts.skill.tokens
-							: 0),
+					toolSpecTokens: schemaTokens,
+					schemaTokens,
+					skillTokens,
+					promptTokens: r.promptTokens,
+					argTokens,
+					outputTokens,
+					cacheRead,
+					cacheWrite,
+					resultPayloadTokens,
+					residualInputTokens,
+					totalContextTokens,
 					toolName: r.session.editToolName,
 					wallMs: r.wallMs,
 					inputTokens: r.session.totalInputTokens,
-					outputTokens: r.session.totalOutputTokens,
-					cacheReadTokens: r.session.totalCacheRead,
-					cacheWriteTokens: r.session.totalCacheWrite,
-					toolCallArgTokens: r.session.editToolCallArgsTokens,
+					cacheReadTokens: cacheRead,
+					cacheWriteTokens: cacheWrite,
+					toolCallArgTokens: argTokens,
 					cost: r.session.totalCost,
 					tokScaleInput: r.tokScale.input,
 					tokScaleOutput: r.tokScale.output,
@@ -1506,6 +1543,7 @@ const main = async () => {
 							: (r.stderr || r.stdout).trim().split("\n").slice(0, 3).join(" "),
 					runDir: r.runDir,
 					sessionDir: r.sessionDir,
+					sessionFile: r.sessionFile,
 					commandFile: r.commandFile,
 					stdoutLog: r.stdoutLog,
 					stderrLog: r.stderrLog,
@@ -1528,6 +1566,26 @@ const main = async () => {
 					runs.map((r) => r.tokScale.details).filter((detail) => detail),
 				),
 			].join("; ");
+			const resultPayloadTokenValues = runs.map((r) => countTokens(r.stdout));
+			const residualInputTokenValues = runs.map(
+				(r) =>
+					r.session.totalInputTokens -
+					r.session.editToolCallArgsTokens -
+					schemaTokens -
+					skillTokens,
+			);
+			const totalContextTokenValues = runs.map(
+				(r, idx) =>
+					schemaTokens +
+					skillTokens +
+					r.promptTokens +
+					r.session.totalInputTokens +
+					r.session.totalCacheRead +
+					r.session.totalCacheWrite +
+					r.session.editToolCallArgsTokens +
+					r.session.totalOutputTokens +
+					resultPayloadTokenValues[idx]!,
+			);
 			rows.push({
 				fixture: fx.id,
 				className: fx.className ?? "",
@@ -1542,25 +1600,17 @@ const main = async () => {
 					lane === "blitz"
 						? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
 						: ["edit"],
-				toolSpecTokens:
-					lane === "blitz"
-						? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null)
-						: null,
-				skillTokens: lane === "blitz" ? accountingArtifacts.skill.tokens : 0,
-				residualInputTokens: medianNullable(
-					runs.map((r) => {
-						const resident =
-							lane === "blitz"
-								? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ??
-										0) + accountingArtifacts.skill.tokens
-								: 0;
-						return (
-							r.session.totalInputTokens -
-							r.session.editToolCallArgsTokens -
-							resident
-						);
-					}),
-				),
+				toolSpecTokens: schemaTokens,
+				schemaTokens,
+				skillTokens,
+				promptTokens: median(runs.map((r) => r.promptTokens)),
+				argTokens: median(runs.map((r) => r.session.editToolCallArgsTokens)),
+				outputTokens: median(runs.map((r) => r.session.totalOutputTokens)),
+				cacheRead: median(runs.map((r) => r.session.totalCacheRead)),
+				cacheWrite: median(runs.map((r) => r.session.totalCacheWrite)),
+				resultPayloadTokens: median(resultPayloadTokenValues),
+				residualInputTokens: medianNullable(residualInputTokenValues),
+				totalContextTokens: median(totalContextTokenValues),
 				toolName: toolNames.join(",") || "",
 				wallMsMedian: median(runs.map((r) => r.wallMs)),
 				inputMedian: median(runs.map((r) => r.session.totalInputTokens)),
@@ -1607,10 +1657,10 @@ const main = async () => {
 
 	const lines: string[] = [];
 	lines.push(
-		"| Fixture | Class | Recommended | Lane | route | profile | visible tools | schema tok | skill tok | residual input tok | tool | wall ms | input tok | output tok | cache read | cache write | edit args tok (cl100k) | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |",
+		"| Fixture | Class | Recommended | Lane | route | profile | visible tools | schema tok | skill tok | prompt tok | arg tok | output tok | cache read | cache write | result payload tok | residual input tok | total context tok | tool | wall ms | input tok | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |",
 	);
 	lines.push(
-		"|---|---|---|---|---|---|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|",
+		"|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|",
 	);
 	for (const r of rows) {
 		const failure = [r.failure, r.tokScaleDetails]
@@ -1618,7 +1668,7 @@ const main = async () => {
 			.join("; ")
 			.replaceAll("|", "\\|");
 		lines.push(
-			`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.route} | ${r.toolProfile} | ${r.visibleToolNames.join(",")} | ${formatNullable(r.toolSpecTokens)} | ${r.skillTokens} | ${formatNullable(r.residualInputTokens)} | ${r.toolName} | ${r.wallMsMedian.toFixed(0)} | ${r.inputMedian} | ${r.outputMedian} | ${r.cacheReadMedian} | ${r.cacheWriteMedian} | ${r.argsTokensMedian} | ${formatNullable(r.tokScaleInputMedian)} | ${formatNullable(r.tokScaleOutputMedian)} | ${formatNullable(r.tokScaleCacheReadMedian)} | ${formatNullable(r.tokScaleCacheWriteMedian)} | ${formatNullable(r.tokScaleMessagesMedian)} | ${formatNullable(r.tokScaleProcessingTimeMsMedian)} | ${r.tokScaleTokenMatchesParser ? "yes" : "no"} | ${pct(r.correctRate * 100)} | ${r.exitCodes.join(",")} | ${failure} | ${r.costSum.toFixed(4)} | ${formatNullable(r.tokScaleCostSum, 4)} |`,
+			`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.route} | ${r.toolProfile} | ${r.visibleToolNames.join(",")} | ${r.schemaTokens} | ${r.skillTokens} | ${r.promptTokens} | ${r.argTokens} | ${r.outputTokens} | ${r.cacheRead} | ${r.cacheWrite} | ${r.resultPayloadTokens} | ${formatNullable(r.residualInputTokens)} | ${r.totalContextTokens} | ${r.toolName} | ${r.wallMsMedian.toFixed(0)} | ${r.inputMedian} | ${formatNullable(r.tokScaleInputMedian)} | ${formatNullable(r.tokScaleOutputMedian)} | ${formatNullable(r.tokScaleCacheReadMedian)} | ${formatNullable(r.tokScaleCacheWriteMedian)} | ${formatNullable(r.tokScaleMessagesMedian)} | ${formatNullable(r.tokScaleProcessingTimeMsMedian)} | ${r.tokScaleTokenMatchesParser ? "yes" : "no"} | ${pct(r.correctRate * 100)} | ${r.exitCodes.join(",")} | ${failure} | ${r.costSum.toFixed(4)} | ${formatNullable(r.tokScaleCostSum, 4)} |`,
 		);
 	}
 
@@ -1763,7 +1813,7 @@ const main = async () => {
 			residentSkillTokens: accountingArtifacts.skill.tokens,
 			tokenizerMetadataPath: accountingArtifacts.metadataPath,
 			tokScaleSessionJsonPaths: runRecords
-				.map((record) => record.sessionDir)
+				.map((record) => record.sessionFile)
 				.filter((path): path is string => Boolean(path)),
 		},
 		tokScaleMode,
