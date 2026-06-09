@@ -334,6 +334,26 @@ pub fn run(
                 .changed_after = compose.contents.len,
             };
         },
+        .merge_body_chunk => blk: {
+            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const edit_obj = try expectObject(req.edit);
+            const snippet = apply_ir.requireString(edit_obj, "snippet") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const merge = mergeBodyChunk(
+                allocator,
+                original[body_range.start..body_range.end],
+                snippet,
+            ) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(merge);
+
+            const new_contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, merge);
+            break :blk OpResult{
+                .contents = new_contents,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = true,
+                .changed_before = body_range.end - body_range.start,
+                .changed_after = merge.len,
+            };
+        },
         .insert_after_symbol => blk: {
             const edit_obj = try expectObject(req.edit);
             const code = apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
@@ -1629,7 +1649,7 @@ fn estimateRouteDecision(operation: ApplyOperation, route_option: []const u8) Ro
             .reasonCode = "core_favored_multi_body",
             .risk = .{ .correctnessRisk = 0.06, .unsupportedFormatRisk = 0, .retryRisk = 0.06 },
         },
-        .wrap_body, .insert_body_span, .compose_body => return .{
+        .wrap_body, .insert_body_span, .compose_body, .merge_body_chunk => return .{
             .route = "ast_narrow",
             .fallbackRoute = "core_edit",
             .confidence = 0.80,
@@ -1868,6 +1888,101 @@ fn composeBody(
         .contents = try out.toOwnedSlice(allocator),
         .single_match = all_single_match,
     };
+}
+
+fn mergeBodyChunk(allocator: Allocator, body: []const u8, snippet: []const u8) ![]u8 {
+    const marker_span = findKeepMarker(snippet) orelse return ApplyError.FieldTypeMismatch;
+
+    const prefix = snippet[0..marker_span.start];
+    const suffix = snippet[marker_span.end..];
+    if (prefix.len == 0 or suffix.len == 0) return ApplyError.FieldTypeMismatch;
+
+    const prefix_anchor = lastNonEmptyLine(prefix) orelse return ApplyError.FieldTypeMismatch;
+    const suffix_anchor = firstNonEmptyLine(suffix) orelse return ApplyError.FieldTypeMismatch;
+    const prefix_match = try selectUniqueLiteral(body, prefix_anchor);
+    const suffix_match = try selectUniqueLiteral(body, suffix_anchor);
+    if (prefix_match.end > suffix_match.start) return ApplyError.InvalidPosition;
+
+    var out = std.ArrayList(u8).empty;
+    defer out.deinit(allocator);
+    try out.appendSlice(allocator, prefix);
+    try out.appendSlice(allocator, body[prefix_match.end..suffix_match.start]);
+    try out.appendSlice(allocator, suffix);
+    return out.toOwnedSlice(allocator);
+}
+
+fn lastNonEmptyLine(text: []const u8) ?[]const u8 {
+    var line_start: usize = 0;
+    var last: ?[]const u8 = null;
+    while (line_start <= text.len) {
+        var line_end = line_start;
+        while (line_end < text.len and text[line_end] != '\n') : (line_end += 1) {}
+        const content_end = if (line_end > line_start and text[line_end - 1] == '\r') line_end - 1 else line_end;
+        if (std.mem.trim(u8, text[line_start..content_end], " \t").len != 0) {
+            const end = if (line_end < text.len) line_end + 1 else line_end;
+            last = text[line_start..end];
+        }
+        if (line_end >= text.len) break;
+        line_start = line_end + 1;
+    }
+    return last;
+}
+
+fn firstNonEmptyLine(text: []const u8) ?[]const u8 {
+    var line_start: usize = 0;
+    while (line_start <= text.len) {
+        var line_end = line_start;
+        while (line_end < text.len and text[line_end] != '\n') : (line_end += 1) {}
+        const content_end = if (line_end > line_start and text[line_end - 1] == '\r') line_end - 1 else line_end;
+        if (std.mem.trim(u8, text[line_start..content_end], " \t").len != 0) {
+            const end = if (line_end < text.len) line_end + 1 else line_end;
+            return text[line_start..end];
+        }
+        if (line_end >= text.len) break;
+        line_start = line_end + 1;
+    }
+    return null;
+}
+
+fn findKeepMarker(snippet: []const u8) ?EditSpan {
+    var found: ?EditSpan = null;
+    var line_start: usize = 0;
+    while (line_start <= snippet.len) {
+        var line_end = line_start;
+        while (line_end < snippet.len and snippet[line_end] != '\n' and snippet[line_end] != '\r') : (line_end += 1) {}
+
+        const line = std.mem.trim(u8, snippet[line_start..line_end], " \t");
+        if (std.mem.eql(u8, line, "//...") or std.mem.eql(u8, line, "#...")) {
+            if (found != null) return null;
+            var marker_end = line_end;
+            if (marker_end < snippet.len and snippet[marker_end] == '\r') marker_end += 1;
+            if (marker_end < snippet.len and snippet[marker_end] == '\n') marker_end += 1;
+            found = .{ .start = line_start, .end = marker_end };
+        } else if (std.mem.indexOf(u8, line, "...") != null) {
+            return null;
+        }
+
+        if (line_end >= snippet.len) break;
+        line_start = line_end;
+        if (line_start < snippet.len and snippet[line_start] == '\r') line_start += 1;
+        if (line_start < snippet.len and snippet[line_start] == '\n') line_start += 1;
+    }
+    return found;
+}
+
+fn selectUniqueLiteral(body: []const u8, literal: []const u8) !EditSpan {
+    if (literal.len == 0) return ApplyError.PatternEmpty;
+    var first: ?EditSpan = null;
+    var total: usize = 0;
+    var cursor: usize = 0;
+    while (std.mem.indexOfPos(u8, body, cursor, literal)) |start| {
+        if (first == null) first = .{ .start = start, .end = start + literal.len };
+        total += 1;
+        cursor = start + 1;
+    }
+    if (total == 0) return ApplyError.NoMatches;
+    if (total > 1) return ApplyError.AmbiguousMatches;
+    return first.?;
 }
 
 fn languageName(lang: bindings.Language) []const u8 {
@@ -2336,6 +2451,114 @@ test "apply compose_body parse failure rejects without mutation" {
     const out = try runApplyTestExpectFailure(allocator, io, req, path);
     defer allocator.free(out);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk preserves deterministic span between anchors" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function mergeable(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"mergeable"},"edit":{"snippet":"\n  const logged = true;\n  const base = value + 1;\n//...\n  return keep;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"merge_body_chunk\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const logged = true;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const base = value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const keep = base * 2;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return keep;") != null);
+}
+
+test "apply merge_body_chunk duplicate anchor rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function duplicateAnchor(value: number): number {
+        \\  const base = value + 1;
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"duplicateAnchor"},"edit":{"snippet":"\n  const base = value + 1;\n//...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk missing anchor rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function missingAnchor(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"missingAnchor"},"edit":{"snippet":"\n  const nope = value;\n//...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "no matching pattern") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk malformed marker rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function malformedMarker(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"malformedMarker"},"edit":{"snippet":"\n  const base = value + 1; //...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);

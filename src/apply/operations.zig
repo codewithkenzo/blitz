@@ -15,6 +15,7 @@ pub const ApplyOperation = enum {
     wrap_body,
     multi_body,
     compose_body,
+    merge_body_chunk,
     insert_after_symbol,
     set_body,
     set_key,
@@ -81,6 +82,7 @@ pub fn parseOperation(raw: []const u8) !ApplyOperation {
     if (std.mem.eql(u8, raw, "wrap_body")) return .wrap_body;
     if (std.mem.eql(u8, raw, "multi_body")) return .multi_body;
     if (std.mem.eql(u8, raw, "compose_body")) return .compose_body;
+    if (std.mem.eql(u8, raw, "merge_body_chunk")) return .merge_body_chunk;
     if (std.mem.eql(u8, raw, "insert_after_symbol")) return .insert_after_symbol;
     if (std.mem.eql(u8, raw, "set_body")) return .set_body;
     if (std.mem.eql(u8, raw, "set_key")) return .set_key;
