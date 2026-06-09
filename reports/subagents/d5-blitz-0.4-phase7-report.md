@@ -163,7 +163,7 @@ This is overhead evidence only, not replacement benchmark proof.
 |---:|---|---|---|---|---|
 | 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | Parser-fix rerun accepted as semantic router smoke: correctness 100%, exit 0, `pi_blitz_route_edit`, arg tok 75, Tokscale match yes; no Phase 7 savings |
 | 2 | tiny exact text replace | `small/wrap-tail` | existing | unsupported by Blitz alias; router guidance says no-write `apply_patch` decline | covered as honest fallback only; no accepted run |
-| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | continuation slice: core baseline accepted (correct 100%, exit 0, Tokscale match yes); router fallback rejected before and after pi-blitz terminal-decline fix (timeout/incorrect despite `pi_blitz_route_edit` observed, Tokscale match yes) |
+| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | supported by narrow TS object-literal `set_key`; router guidance uses compact `sk\tlogLevel\tdebug` | core baseline accepted (correct 100%, exit 0, Tokscale match yes); earlier router fallback/terminal-decline and quoted-value attempts preserved/rejected; current unquoted `sk` router rerun accepted for this case only, but total context exceeded core |
 | 4 | insert logging line | `logging/insert-timer` (`logging.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 5 | wrap function body | `medium-10k/wrap-body` | existing | supported alias `wb` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot rejected: timeout/incorrect |
 | 6 | replace long function body section | `long-section/replace-return` (`long-section.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
@@ -295,7 +295,7 @@ Reasons:
 3. Earlier pilot failures remain preserved: one timeout/incorrect row; one correct file with exit `143` and no parsed tool before parser fix.
 4. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
 5. Companion pi-blitz terminal-decline fix `2dfcf73` did not make unsupported router fallback acceptable: rerun still timed out/incorrect.
-6. Direct `set_key` smoke proves current Blitz rejects this TypeScript config fixture as `UNSUPPORTED_LANGUAGE`; pi-blitz `sk` maps to that unsupported operation.
+6. `config/key-update` blocker is removed and the unquoted `sk` router row is accepted for this case, but router total context exceeded the accepted core baseline by 2172 tokens in this run, so it is not savings evidence.
 7. No token savings counted: full 12-case paired acceptance gates are not met.
 
 ## Next precise work
