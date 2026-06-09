@@ -1,7 +1,7 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. New router pilot produced no accepted token-savings row.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. No Phase 7 token-savings acceptance.
 
 ## Method
 
@@ -51,6 +51,44 @@ bun bench/pi-matrix.ts \
 ```
 Completed with failed/caveated rows preserved. Tokscale token match `yes` for both rows, but no accepted savings row: `wrap-body` timed out/incorrect; `arrow-replace-return` edited correctly but exit was `143` and intended tool was not observed by parser.
 
+Main rerun before parser fix:
+
+```bash
+bun bench/pi-matrix.ts \
+  --runner tmux \
+  --provider zai \
+  --model glm-4.5-air \
+  --case semantic/arrow-replace-return \
+  --lane router \
+  --tool-profile router \
+  --artifact-profiles router,full \
+  --iters 1 \
+  --timeout-ms 180000 \
+  --tokscale \
+  --md-out reports/pi-tmux-phase7-router-semantic-rerun-20260609.md \
+  --json-out reports/pi-tmux-phase7-router-semantic-rerun-20260609.json
+```
+Completed correct/exit 0/Tokscale match `yes`, but report still showed empty tool and `arg tok` 0. Raw session JSONL contains `toolCall` `name: "pi_blitz_route_edit"` with compact args; parser bug was lane filter excluding `router` from `pi_blitz_*` tool-call accounting.
+
+Parser-fix rerun:
+
+```bash
+bun bench/pi-matrix.ts \
+  --runner tmux \
+  --provider zai \
+  --model glm-4.5-air \
+  --case semantic/arrow-replace-return \
+  --lane router \
+  --tool-profile router \
+  --artifact-profiles router,full \
+  --iters 1 \
+  --timeout-ms 180000 \
+  --tokscale \
+  --md-out reports/pi-tmux-phase7-router-semantic-parserfix-20260609.md \
+  --json-out reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json
+```
+Accepted semantic router smoke: correctness 100%, exit 0, intended tool observed `pi_blitz_route_edit`, `arg tok` 75, result payload tok 21, Tokscale token match `yes`. This validates parser/tool evidence for the one semantic row only; it is not a Phase 7 replacement benchmark acceptance or savings claim.
+
 ## Raw artifacts
 
 Previous failed pilot preserved/excluded:
@@ -66,12 +104,27 @@ New D5 pilot:
 - Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T08-54-25-712Z`
 - Tmux session: `pi-bench-2026-06-09T08-54-25-712Z`
 
+Main pre-fix semantic rerun:
+- Markdown report: `reports/pi-tmux-phase7-router-semantic-rerun-20260609.md`
+- JSON report: `reports/pi-tmux-phase7-router-semantic-rerun-20260609.json`
+- Raw tmux run root: `reports/pi-tmux-runs/2026-06-09T09-02-56-974Z`
+- Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T09-02-56-974Z`
+- Tmux session: `pi-bench-2026-06-09T09-02-56-974Z`
+
+Parser-fix semantic rerun:
+- Markdown report: `reports/pi-tmux-phase7-router-semantic-parserfix-20260609.md`
+- JSON report: `reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json`
+- Raw tmux run root: `reports/pi-tmux-runs/2026-06-09T09-07-19-618Z`
+- Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T09-07-19-618Z`
+- Tmux session: `pi-bench-2026-06-09T09-07-19-618Z`
+
 ## New pilot result
 
 | Case | Lane | Route/tool profile | Correct | Exit | Tool observed | Tokscale token match | Result |
 |---|---|---|---:|---:|---|---|---|
 | medium-10k/wrap-body | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | none parsed | yes | rejected; timed out/incorrect |
 | semantic/arrow-replace-return | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 143 | none parsed | yes | rejected; correct file but nonzero exit and intended tool not observed |
+| semantic/arrow-replace-return | router parser-fix rerun | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 0 | `pi_blitz_route_edit`; arg tok 75; result payload tok 21 | yes | accepted semantic router smoke only; no Phase 7 savings claim |
 
 Router overhead from D5 pilot:
 - router schema tokens: 564
@@ -86,7 +139,7 @@ This is overhead evidence only, not replacement benchmark proof.
 
 | # | Required PLAN case | Fixture(s) | Fixture status | Router guidance/status | Evidence/status |
 |---:|---|---|---|---|---|
-| 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot correct but rejected: exit 143, tool not observed; no savings |
+| 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | Parser-fix rerun accepted as semantic router smoke: correctness 100%, exit 0, `pi_blitz_route_edit`, arg tok 75, Tokscale match yes; no Phase 7 savings |
 | 2 | tiny exact text replace | `small/wrap-tail` | existing | unsupported by Blitz alias; router guidance says no-write `apply_patch` decline | covered as honest fallback only; no accepted run |
 | 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 4 | insert logging line | `logging/insert-timer` (`logging.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
@@ -105,9 +158,10 @@ Phase7 acceptance: **NO**.
 
 Reasons:
 1. Full explicit 12-case fixture set is now represented in harness/report, but accepted tmux/Tokscale router rows remain missing.
-2. New pilot has Tokscale token match `yes`, but rows fail acceptance gates: one timeout/incorrect; one correct file but exit `143` and no intended tool observed.
-3. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
-4. No token savings counted: no row met correctness 100% + exit 0 + intended tool observed + Tokscale match yes.
+2. Parser-fix rerun provides one accepted semantic router smoke (correctness 100%, exit 0, intended tool observed, Tokscale match `yes`), but this covers only one required case and no paired core/apply_patch/current Blitz comparison.
+3. Earlier pilot failures remain preserved: one timeout/incorrect row; one correct file with exit `143` and no parsed tool before parser fix.
+4. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
+5. No token savings counted: full 12-case paired acceptance gates are not met.
 
 ## Next precise work
 

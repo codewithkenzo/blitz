@@ -1075,7 +1075,7 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 				if (part?.type === "toolCall") {
 					if (
 						(lane === "core" && part.name === "edit") ||
-						(lane === "blitz" &&
+						((lane === "blitz" || lane === "router") &&
 							typeof part.name === "string" &&
 							part.name.startsWith("pi_blitz_"))
 					) {
