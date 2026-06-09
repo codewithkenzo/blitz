@@ -357,3 +357,54 @@ Reasons:
 ## Token claim caveat
 
 No token savings accepted or counted from Phase 7. Only resident overhead reduction evidence from serialized schema/skill artifacts is valid.
+
+
+## D5 text-anchor compact alias continuation (2026-06-09)
+
+Scope: `small/wrap-tail`, `logging/insert-timer`, `long-section/replace-return`, `rename/function-name`, `markdown/append-section`, `css/small-edit`, `html/small-edit`.
+
+Direct Blitz CLI smokes on copied fixtures:
+- `small/wrap-tail`: `replace_unique` exact return line passed; output matched golden.
+- `logging/insert-timer`: `insert_after_anchor` exact `console.log` anchor + newline timer text passed; output matched golden.
+- `long-section/replace-return`: `replace_unique` exact return line applied; CLI output matched intended file content for fixture goal.
+- `rename/function-name`: `replace_unique` declaration prefix passed; output matched golden.
+- `markdown/append-section`: `insert_after_anchor` after `<!-- append-target -->` is newline-sensitive. First smoke with leading/trailing blank drifted; exact golden needs text `\n## Configuration Reference\n\nSee the \`blitz --help\` command.` with no trailing inserted newline.
+- `css/small-edit`: `replace_unique` exact background line passed; output matched golden.
+- `html/small-edit`: `replace_unique` exact title line passed; output matched golden.
+
+Harness update:
+- Added fixture-specific router guidance for exact compact alias scripts only: `ru` for small/long/rename/css/html and `ia` for logging/markdown.
+- No Zig changes in this slice.
+
+New router artifacts:
+- `reports/pi-tmux-phase7-text-alias-router-20260609-d5.md`
+- `reports/pi-tmux-phase7-text-alias-router-20260609-d5.json`
+- raw run root `reports/pi-tmux-runs/2026-06-09T16-21-17-777Z`
+- accounting `reports/pi-accounting-runs/2026-06-09T16-21-17-777Z`
+- tmux session `pi-bench-2026-06-09T16-21-17-777Z`
+
+Paired core artifacts for accepted router rows:
+- `reports/pi-tmux-phase7-text-alias-core-20260609-d5.md`
+- `reports/pi-tmux-phase7-text-alias-core-20260609-d5.json`
+- raw run root `reports/pi-tmux-runs/2026-06-09T16-29-01-030Z`
+- accounting `reports/pi-accounting-runs/2026-06-09T16-29-01-030Z`
+- tmux session `pi-bench-2026-06-09T16-29-01-030Z`
+
+Accepted/rejected rows:
+
+| Fixture | Compact route | Router status | Core status | Router total context | Core total context | Result |
+|---|---|---|---|---:|---:|---|
+| `small/wrap-tail` | `ru` exact return line | accepted: 100%, exit 0, `pi_blitz_route_edit`, Tokscale match yes | accepted: 100%, exit 0, `edit`, Tokscale match yes | 15,704 | 8,411 | router loses; no savings |
+| `logging/insert-timer` | `ia` exact console.log anchor | rejected: 0%, exit 0, `pi_blitz_route_edit`, Tokscale match yes; newline drift after repeated declines | not run in paired slice because router not accepted | 53,690 | n/a | blocker |
+| `long-section/replace-return` | `ru` exact return line | rejected: 0%, exit 0, `pi_blitz_route_edit`, Tokscale match yes | not run in paired slice because router not accepted | 30,078 | n/a | blocker |
+| `rename/function-name` | `ru` declaration prefix | accepted: 100%, exit 0, `pi_blitz_route_edit`, Tokscale match yes | accepted: 100%, exit 0, `edit`, Tokscale match yes | 10,527 | 8,548 | router loses; no savings |
+| `markdown/append-section` | `ia` marker anchor | rejected: 0%, exit 0, `pi_blitz_route_edit`, Tokscale match yes; lost required newline after marker | not run in paired slice because router not accepted | 52,437 | n/a | blocker |
+| `css/small-edit` | `ru` exact background line | accepted: 100%, exit 0, `pi_blitz_route_edit`, Tokscale match yes | accepted: 100%, exit 0, `edit`, Tokscale match yes | 27,196 | 8,478 | router loses; no savings |
+| `html/small-edit` | `ru` exact title line | accepted: 100%, exit 0, `pi_blitz_route_edit`, Tokscale match yes | accepted: 100%, exit 0, `edit`, Tokscale match yes | 10,571 | 8,492 | router loses; no savings |
+
+Phase 7 acceptance remains **NO**:
+- only 4/7 rows in this narrow text-anchor group accepted through router;
+- accepted router rows lose to paired core total context;
+- `ia` alias rows show newline/tuple handling blockers in real Pi router runs;
+- previous config rows also remain no-savings vs core;
+- no broad Phase 7 START/PLAN gate is fully proved.
