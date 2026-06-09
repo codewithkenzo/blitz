@@ -239,6 +239,67 @@ Goal: under the marker \`<!-- benchmark-smoke-list -->\`, add this bullet before
 Original file contents:
 ${src}`;
 
+const buildConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change logLevel from "info" to "debug". Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildLoggingIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: after the existing console.log line, add a new line: console.time(\`Processing order \${orderId}\`);
+Original file contents:
+${src}`;
+
+const buildLongSectionIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: replace the return statement at the end from \`return \`Invoice \${id} for \${customer}: $0.00\`;\` to \`return \`Invoice \${id} for \${customer}: $\${total.toFixed(2)}\`;\`.
+Original file contents:
+${src}`;
+
+const buildRenameIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: rename the function from computeScore to calculateAverage. Update both the function declaration and all references (there are none except the declaration).
+Original file contents:
+${src}`;
+
+const buildMarkdownAppendIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: under the marker \`<!-- append-target -->\`, add a new section. Append the following lines after that marker:
+\`## Configuration Reference\n\nSee the \`blitz --help\` command.\`
+Original file contents:
+${src}`;
+
+const buildJsonConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change "debug" from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildYamlConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change debug from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildTomlConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change debug from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildCssIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: in the .header rule, change the background color from "#333" to "#222".
+Original file contents:
+${src}`;
+
+const buildHtmlIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change the page title from "Blitz App" to "Blitz CLI".
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
@@ -381,6 +442,88 @@ const FIXTURES: Fixture[] = [
 		recommendedLane: "core",
 		className: "markdown_core_only",
 	},
+	{
+		id: "config/key-update",
+		relPath: "config.ts",
+		intent: (p: string) => buildConfigIntent(p, configSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "config_key_update",
+	},
+	{
+		id: "logging/insert-timer",
+		relPath: "logging.ts",
+		intent: (p: string) => buildLoggingIntent(p, loggingSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "logging_insert_timer",
+	},
+	{
+		id: "long-section/replace-return",
+		relPath: "long-section.ts",
+		intent: (p: string) => buildLongSectionIntent(p, longSectionSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "long_section_replace_return",
+	},
+	{
+		id: "rename/function-name",
+		relPath: "rename.ts",
+		intent: (p: string) => buildRenameIntent(p, renameSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "rename_function_name",
+	},
+	{
+		id: "markdown/append-section",
+		relPath: "markdown-append.md",
+		intent: (p: string) => buildMarkdownAppendIntent(p, markdownAppendSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "markdown_append_section",
+	},
+	{
+		id: "json/config-key",
+		relPath: "config.json",
+		intent: (p: string) => buildJsonConfigIntent(p, jsonConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "json_config_key",
+	},
+	{
+		id: "yaml/config-key",
+		relPath: "config.yaml",
+		intent: (p: string) => buildYamlConfigIntent(p, yamlConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "yaml_config_key",
+	},
+	{
+		id: "toml/config-key",
+		relPath: "config.toml",
+		intent: (p: string) => buildTomlConfigIntent(p, tomlConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "toml_config_key",
+	},
+	{
+		id: "css/small-edit",
+		relPath: "style.css",
+		intent: (p: string) => buildCssIntent(p, cssSrc),
+		expectedFile: "",
+		lanePolicy: "core-only",
+		recommendedLane: "core",
+		className: "css_small_edit",
+	},
+	{
+		id: "html/small-edit",
+		relPath: "index.html",
+		intent: (p: string) => buildHtmlIntent(p, htmlSrc),
+		expectedFile: "",
+		lanePolicy: "core-only",
+		recommendedLane: "core",
+		className: "html_small_edit",
+	},
 ];
 
 const smallSrc = await readFile(join(fixtureDir, "small.ts"), "utf8");
@@ -503,6 +646,48 @@ const readmeExpected = readmeSrc.replace(
 	"<!-- benchmark-smoke-list -->\n- Confirm README smoke path stays cheap.\n",
 );
 
+const configSrc = await readFile(join(fixtureDir, "config.ts"), "utf8");
+const configExpected = configSrc.replace('logLevel: "info"', 'logLevel: "debug"');
+
+const loggingSrc = await readFile(join(fixtureDir, "logging.ts"), "utf8");
+const loggingExpected = loggingSrc.replace(
+	"  console.log(`Processing order ${orderId}`);\n",
+	"  console.log(`Processing order ${orderId}`);\n  console.time(`Processing order ${orderId}`);\n",
+);
+
+const longSectionSrc = await readFile(join(fixtureDir, "long-section.ts"), "utf8");
+const longSectionExpected = longSectionSrc.replace(
+	"  return `Invoice ${id} for ${customer}: $0.00`;",
+	"  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;",
+);
+
+const renameSrc = await readFile(join(fixtureDir, "rename.ts"), "utf8");
+const renameExpected = renameSrc.replace(
+	"export function computeScore",
+	"export function calculateAverage",
+);
+
+const markdownAppendSrc = await readFile(join(fixtureDir, "markdown-append.md"), "utf8");
+const markdownAppendExpected = markdownAppendSrc.replace(
+	"<!-- append-target -->\n",
+	"<!-- append-target -->\n## Configuration Reference\n\nSee the `blitz --help` command.\n",
+);
+
+const jsonConfigSrc = await readFile(join(fixtureDir, "config.json"), "utf8");
+const jsonConfigExpected = jsonConfigSrc.replace('"debug": false', '"debug": true');
+
+const yamlConfigSrc = await readFile(join(fixtureDir, "config.yaml"), "utf8");
+const yamlConfigExpected = yamlConfigSrc.replace("  debug: false", "  debug: true");
+
+const tomlConfigSrc = await readFile(join(fixtureDir, "config.toml"), "utf8");
+const tomlConfigExpected = tomlConfigSrc.replace("debug = false", "debug = true");
+
+const cssSrc = await readFile(join(fixtureDir, "style.css"), "utf8");
+const cssExpected = cssSrc.replace("background: #333;", "background: #222;");
+
+const htmlSrc = await readFile(join(fixtureDir, "index.html"), "utf8");
+const htmlExpected = htmlSrc.replace("<title>Blitz App</title>", "<title>Blitz CLI</title>");
+
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
@@ -517,6 +702,16 @@ FIXTURES[10]!.expectedFile = arrowReturnExpected;
 FIXTURES[11]!.expectedFile = nestedReturnExpected;
 FIXTURES[12]!.expectedFile = componentReturnExpected;
 FIXTURES[13]!.expectedFile = readmeExpected;
+FIXTURES[14]!.expectedFile = configExpected;
+FIXTURES[15]!.expectedFile = loggingExpected;
+FIXTURES[16]!.expectedFile = longSectionExpected;
+FIXTURES[17]!.expectedFile = renameExpected;
+FIXTURES[18]!.expectedFile = markdownAppendExpected;
+FIXTURES[19]!.expectedFile = jsonConfigExpected;
+FIXTURES[20]!.expectedFile = yamlConfigExpected;
+FIXTURES[21]!.expectedFile = tomlConfigExpected;
+FIXTURES[22]!.expectedFile = cssExpected;
+FIXTURES[23]!.expectedFile = htmlExpected;
 
 type Lane = "core" | "blitz" | "router";
 type Route = "core_edit" | "ast_narrow" | "ast_batch" | "token_router";
@@ -961,6 +1156,7 @@ type ToolSpecArtifact = {
 
 const ALL_TOOL_PROFILES = [
 	"minimal",
+	"router",
 	"semantic",
 	"structural",
 	"admin",
@@ -1242,7 +1438,7 @@ const runLane = async (
 	await writeFile(targetPath, original, "utf8");
 
 	let prompt = fx.intent(targetPath);
-	if (lane === "blitz") {
+	if (lane !== "core") {
 		const useRouter = lane === "router";
 		const useCompactOp = toolProfile === "minimal" || useRouter;
 		let guidance = useRouter
@@ -1250,8 +1446,10 @@ const runLane = async (
 			: useCompactOp
 				? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
 				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
-		const routeArgs = (script: string, fallback = 5000) =>
-			JSON.stringify({ f: targetPath, r: "blitz", s: script, fallbackContextTokensExpected: fallback });
+		const compactArgs = (script: string) =>
+			JSON.stringify({ f: targetPath, ops: script.split("\n").map((line) => line.split("\t")) });
+		const routeArgs = (script: string, fallback = 5000, route = "blitz") =>
+			JSON.stringify({ f: targetPath, r: route, s: script, fallbackContextTokensExpected: fallback });
 		if (fx.id.includes("wrap-body")) {
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs("wb\tmediumCompute\t\\n  try {\t  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\t2")}.`
@@ -1265,8 +1463,11 @@ const runLane = async (
 			guidance +=
 				' For this edit, call `pi_blitz_insert_body_span` with symbol `mediumCompute`, anchor `let total = seed;`, position `after`, text `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError("seed must be finite");\\n  }`, occurrence `only`.';
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rb","mediumCompute","return total;","return total + 1;","last"]]}.`
+			const script = "rb\tmediumCompute\treturn total;\treturn total + 1;\tlast";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
 			guidance +=
@@ -1291,27 +1492,46 @@ const runLane = async (
 			guidance +=
 				" For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("semantic/async-try-catch")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["tc","loadUser","console.error(error);\\nthrow error;",2]]}.`
+			const script = "tc\tloadUser\tconsole.error(error);\\nthrow error;\t2";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/class-method-try-catch")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["tc","renderScore","console.error(error);\\nthrow error;",2]]}.`
+			const script = "tc\trenderScore\tconsole.error(error);\\nthrow error;\t2";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/arrow-replace-return")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","pickLabel","\\"unknown\\"","last"]]}.`
+			const script = 'rr\tpickLabel\t"unknown"\tlast';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","classify","\\"other\\"","last"]]}.`
+			const script = 'rr\tclassify\t"other"\tlast';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/tsx-replace-return")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","StatusBadge","<strong className=\\"badge\\">{label.toUpperCase()}</strong>","only"]]}.`
+			const script = 'rr\tStatusBadge\t<strong className="badge">{label.toUpperCase()}</strong>\tonly';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
 		} else if (fx.id.includes("small")) {
-			guidance += " For this edit, route to core oldText/newText.";
+			guidance += useRouter
+				? ` For this unsupported exact-text edit, call \`pi_blitz_route_edit\` once with exact no-write decline args JSON: ${routeArgs("", 500, "apply_patch")}.`
+				: " For this edit, route to core oldText/newText.";
+		} else if (useRouter) {
+			guidance += ` This fixture has no valid compact Blitz alias yet. Be honest: call \`pi_blitz_route_edit\` once with exact no-write decline args JSON: ${routeArgs("", 5000, "apply_patch")}.`;
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
@@ -1650,6 +1870,17 @@ const main = async () => {
 					reductionVsFullPct === null ? null : reductionVsFullPct >= 70,
 			};
 		});
+	const toolSpecForLane = (lane: Lane): ToolSpecArtifact | null => {
+		if (lane === "core") return null;
+		if (lane === "router") {
+			return (
+				accountingArtifacts.toolSpecs.find(
+					(spec) => spec.profileLabel === "router" || spec.profile === "router",
+				) ?? null
+			);
+		}
+		return accountingArtifacts.toolSpec;
+	};
 
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
@@ -1659,9 +1890,10 @@ const main = async () => {
 	for (const fx of selectedFixtures) {
 		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
+			const laneToolSpec = toolSpecForLane(lane);
 			const schemaTokens =
 				lane !== "core"
-					? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0)
+					? (laneToolSpec?.serializedToolSpecsTokens ?? 0)
 					: 0;
 			const skillTokens =
 				lane !== "core" ? accountingArtifacts.skill.tokens : 0;
@@ -1706,13 +1938,13 @@ const main = async () => {
 							? "core"
 							: lane === "router"
 								? "router"
-								: (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile),
+								: (laneToolSpec?.profileLabel ?? toolProfile),
 					visibleToolNames:
 						lane === "core"
 							? ["edit"]
 							: lane === "router"
 								? ["pi_blitz_route_edit"]
-								: (accountingArtifacts.toolSpec?.visibleToolNames ?? []),
+								: (laneToolSpec?.visibleToolNames ?? []),
 					toolSpecTokens: schemaTokens,
 					schemaTokens,
 					skillTokens,
@@ -1805,13 +2037,13 @@ const main = async () => {
 						? "core"
 						: lane === "router"
 							? "router"
-							: (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile),
+							: (laneToolSpec?.profileLabel ?? toolProfile),
 				visibleToolNames:
 					lane === "core"
 						? ["edit"]
 						: lane === "router"
 							? ["pi_blitz_route_edit"]
-							: (accountingArtifacts.toolSpec?.visibleToolNames ?? []),
+							: (laneToolSpec?.visibleToolNames ?? []),
 				toolSpecTokens: schemaTokens,
 				schemaTokens,
 				skillTokens,

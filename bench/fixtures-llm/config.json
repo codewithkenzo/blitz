@@ -1,0 +1,7 @@
+{
+  "appName": "blitz",
+  "version": "0.4.0",
+  "debug": false,
+  "plugins": ["core", "ast", "patch"],
+  "maxFileSize": 1048576
+}

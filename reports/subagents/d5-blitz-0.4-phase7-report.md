@@ -1,20 +1,19 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now has actual `router` lane using `PI_BLITZ_TOOL_PROFILE=router` and visible tool `pi_blitz_route_edit`, but first real tmux/Tokscale router pilot timed out before tool call. No token-savings claim.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. New router pilot produced no accepted token-savings row.
 
 ## Method
 
 Repo branch: `feat/blitz-0.4-token-core-profile`.
-Companion pi-blitz source: `/home/kenzo/dev/pi-blitz`, branch `feat/blitz-0.4-token-core-profile-canonical`, built dist used at `/home/kenzo/dev/pi-blitz/dist/index.js`.
+Companion pi-blitz source: `/home/kenzo/dev/pi-blitz`, clean/pushed at `b23dd65`; built dist used at `/home/kenzo/dev/pi-blitz/dist/index.js`.
 
-Harness change:
-- added lane `router` alongside `core` and `blitz`;
-- router lane sets `PI_BLITZ_TOOL_PROFILE=router` for spawn/tmux commands;
-- router lane exposes only `pi_blitz_route_edit` via `--tools pi_blitz_route_edit`;
-- run records mark route `token_router` and reason `lane_router_facade`;
-- default lane matrix now includes core, current Blitz, router for comparable fixtures;
-- compact router guidance added for supported existing compact op cases (`wrap-body`, `medium-10k/marker-tail`, `semantic/async-try-catch`, `semantic/arrow-replace-return`).
+Reviewed earlier cmd-created work:
+- kept deterministic fixture files under `bench/fixtures-llm/`;
+- fixed harness so router prompts are actually emitted for router lane (old condition only added guidance for `blitz` lane);
+- fixed router accounting/report fields to use router profile/spec even when full profile artifacts are also captured;
+- added `router` to accounting artifact profile list;
+- kept unsupported rows honest as no-write `apply_patch` declines through `pi_blitz_route_edit`, because pi-blitz cannot call core/apply_patch internally.
 
 OpenAI/apply_patch-style baseline: unavailable in this Pi harness as direct API/tool lane. `pi_blitz_route_edit` can decline to `apply_patch`, but cannot invoke OpenAI/apply_patch internally; no fake baseline row produced.
 
@@ -31,43 +30,50 @@ git diff --check
 Passed.
 
 ```bash
-tokscale --version
+bun bench/pi-matrix.ts --dump-accounting-only --tool-profile router --artifact-profiles router,full --no-tokscale
 ```
-Passed: `tokscale 2.1.3`.
+Passed; wrote accounting artifacts under `reports/pi-accounting-runs/2026-06-09T08-54-17-606Z/`.
 
 ```bash
 bun bench/pi-matrix.ts \
   --runner tmux \
   --provider zai \
   --model glm-4.5-air \
-  --case semantic/arrow-replace-return \
+  --case semantic/arrow-replace-return,medium-10k/wrap-body \
   --lane router \
   --tool-profile router \
   --artifact-profiles router,full \
   --iters 1 \
   --timeout-ms 120000 \
   --tokscale \
-  --md-out reports/pi-tmux-phase7-router-20260609.md \
-  --json-out reports/pi-tmux-phase7-router-20260609.json
+  --md-out reports/pi-tmux-phase7-router-pilot-20260609-d5.md \
+  --json-out reports/pi-tmux-phase7-router-pilot-20260609-d5.json
 ```
-Completed harness run with failed row preserved. Tokscale available and token match `yes`, but row timed out and was incorrect (`correct 0.0%`, exit `-1`). No tool call args captured; `stdout.log` empty, `stderr.log` only `[pi-blitz] tool profile router registered`.
+Completed with failed/caveated rows preserved. Tokscale token match `yes` for both rows, but no accepted savings row: `wrap-body` timed out/incorrect; `arrow-replace-return` edited correctly but exit was `143` and intended tool was not observed by parser.
 
 ## Raw artifacts
 
-- Markdown report: `reports/pi-tmux-phase7-router-20260609.md`
-- JSON report: `reports/pi-tmux-phase7-router-20260609.json`
-- Raw tmux run root: `reports/pi-tmux-runs/2026-06-09T03-41-20-621Z`
-- Failed row dir: `reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0`
-- Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T03-41-20-621Z`
-- Tmux session: `pi-bench-2026-06-09T03-41-20-621Z`
+Previous failed pilot preserved/excluded:
+- `reports/pi-tmux-phase7-router-20260609.md`
+- `reports/pi-tmux-phase7-router-20260609.json`
+- `reports/pi-tmux-runs/2026-06-09T03-41-20-621Z`
+- `reports/pi-accounting-runs/2026-06-09T03-41-20-621Z`
 
-## Pilot result
+New D5 pilot:
+- Markdown report: `reports/pi-tmux-phase7-router-pilot-20260609-d5.md`
+- JSON report: `reports/pi-tmux-phase7-router-pilot-20260609-d5.json`
+- Raw tmux run root: `reports/pi-tmux-runs/2026-06-09T08-54-25-712Z`
+- Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T08-54-25-712Z`
+- Tmux session: `pi-bench-2026-06-09T08-54-25-712Z`
 
-| Case | Lane | Route/tool profile | Correct | Exit | Tokscale token match | Result |
-|---|---|---|---:|---:|---|---|
-| semantic/arrow-replace-return | router | `token_router` / router / `pi_blitz_route_edit` visible | 0% | -1 timeout | yes | failed before actual router tool call; no savings counted |
+## New pilot result
 
-Router overhead from artifact dump:
+| Case | Lane | Route/tool profile | Correct | Exit | Tool observed | Tokscale token match | Result |
+|---|---|---|---:|---:|---|---|---|
+| medium-10k/wrap-body | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | none parsed | yes | rejected; timed out/incorrect |
+| semantic/arrow-replace-return | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 143 | none parsed | yes | rejected; correct file but nonzero exit and intended tool not observed |
+
+Router overhead from D5 pilot:
 - router schema tokens: 564
 - resident skill tokens: 563
 - combined: 1127
@@ -78,38 +84,38 @@ This is overhead evidence only, not replacement benchmark proof.
 
 ## Phase 7 coverage table
 
-| # | Required case | Existing fixture / status | Core edit | apply_patch baseline | current Blitz | optimized/minimal | router-selected path | Evidence |
-|---:|---|---|---|---|---|---|---|---|
-| 1 | one-line return expression | `semantic/arrow-replace-return`; router pilot attempted | not run in Phase7 pilot | unavailable/no API | not run in Phase7 pilot | not run in Phase7 pilot | attempted, timed out before tool call | raw run root above |
-| 2 | tiny exact text replace | maps to `small/wrap-tail`; not run | missing | unavailable/no API | fixture is core-only | missing | missing | harness fixture exists, no Phase7 run |
-| 3 | small config key | missing fixture | missing | unavailable/no API | missing | missing | missing | blocker: fixture not added yet |
-| 4 | insert logging line | maps partially to insert-body-span/guard, but not logging | missing | unavailable/no API | missing | missing | missing | blocker: exact logging fixture not added yet |
-| 5 | wrap function body | `medium-10k/wrap-body`; router guidance added | not run | unavailable/no API | not run | not run | not run | harness support only |
-| 6 | replace long function body section | no exact Phase7 fixture; structural large partials exist | missing | unavailable/no API | missing | missing | missing | blocker: exact long-section fixture needed |
-| 7 | multi-hunk same-file edit | `multi/three-body-ops` / `multi/large-structural`; no router guidance yet | not run | unavailable/no API | not run | not run | missing | blocker: router compact multi guidance needed |
-| 8 | rename within file | missing fixture | missing | unavailable/no API | missing | missing | missing | blocker: fixture needed |
-| 9 | Markdown section append | `readme/core-smoke` core-only prepend; append not exact | not run | unavailable/no API | unsupported by current AST lane | unsupported | missing | blocker: exact append fixture and route fallback policy needed |
-| 10 | TSX component prop/body tweak | `semantic/tsx-replace-return`; no router guidance yet | not run | unavailable/no API | not run | not run | missing | blocker: router guidance needed |
-| 11 | JSON/YAML/TOML top-level key update | missing fixture | missing | unavailable/no API | missing | missing | missing | blocker: fixture needed |
-| 12 | HTML/CSS small edit | missing fixture | missing | unavailable/no API | missing | missing | missing | blocker: fixture needed |
+| # | Required PLAN case | Fixture(s) | Fixture status | Router guidance/status | Evidence/status |
+|---:|---|---|---|---|---|
+| 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot correct but rejected: exit 143, tool not observed; no savings |
+| 2 | tiny exact text replace | `small/wrap-tail` | existing | unsupported by Blitz alias; router guidance says no-write `apply_patch` decline | covered as honest fallback only; no accepted run |
+| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 4 | insert logging line | `logging/insert-timer` (`logging.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 5 | wrap function body | `medium-10k/wrap-body` | existing | supported alias `wb` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot rejected: timeout/incorrect |
+| 6 | replace long function body section | `long-section/replace-return` (`long-section.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 7 | multi-hunk same-file edit | `multi/three-body-ops`, `multi/large-structural` | existing | no router multi alias asserted in this slice; no-write fallback where unavailable | covered by existing fixture IDs, no accepted router run |
+| 8 | rename within file | `rename/function-name` (`rename.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 9 | Markdown section append | `markdown/append-section` (`markdown-append.md`) | added deterministic fixture | unsupported by AST alias; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 10 | TSX component prop/body tweak | `semantic/tsx-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | fixture covered, no accepted run |
+| 11 | JSON/YAML/TOML top-level key update | `json/config-key`, `yaml/config-key`, `toml/config-key` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
+| 12 | HTML/CSS small edit | `html/small-edit`, `css/small-edit` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
 
 ## Acceptance
 
 Phase7 acceptance: **NO**.
 
 Reasons:
-1. Real Pi/Tokscale artifacts exist for one router pilot, but row failed/timed out before actual `pi_blitz_route_edit` tool call.
-2. Full 12-case Phase7 set is not covered with evidence; several exact fixtures are missing.
-3. No accepted savings row: correctness not 100%, exit not 0, actual tool call not observed.
-4. apply_patch baseline is unavailable in current Pi harness; must remain explicit blocker unless parent adds/directs API lane.
+1. Full explicit 12-case fixture set is now represented in harness/report, but accepted tmux/Tokscale router rows remain missing.
+2. New pilot has Tokscale token match `yes`, but rows fail acceptance gates: one timeout/incorrect; one correct file but exit `143` and no intended tool observed.
+3. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
+4. No token savings counted: no row met correctness 100% + exit 0 + intended tool observed + Tokscale match yes.
 
 ## Next precise work
 
-1. Add minimal deterministic Phase7 fixture files for config, logging, long section, rename, markdown append, JSON/YAML/TOML, HTML/CSS.
-2. Extend router guidance for each supported compact op; mark no-write fallback rows where router selects `core`/`apply_patch`.
-3. Run bounded tmux/Tokscale matrix case-by-case, starting with one fast simple row and one structural row.
-4. If Zai model continues to timeout before tool call with router-only profile, pilot another provider/model or inspect Pi/router prompt/tool schema from saved prompt/session before broader run.
+1. Inspect `reports/pi-tmux-runs/2026-06-09T08-54-25-712Z/semantic_arrow-replace-return__router__0/sessions/` to learn why parser missed tool call and Pi exited 143 after correct file write.
+2. Pilot `semantic/arrow-replace-return` alone with a shorter timeout or alternate provider/model after parser/exit issue is understood.
+3. Add real compact aliases only in pi-blitz if product chooses to support config/logging/markdown/json/yaml/toml/html/css; otherwise keep router fallback rows excluded from savings claims.
+4. Add real apply_patch/core lane only if parent wants baseline comparison; do not fake via router declines.
 
 ## Token claim caveat
 
-No token savings accepted or counted from this Phase7 run. Only resident overhead reduction evidence from serialized schema/skill artifacts is valid.
+No token savings accepted or counted from Phase 7. Only resident overhead reduction evidence from serialized schema/skill artifacts is valid.
