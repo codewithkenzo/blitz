@@ -524,6 +524,15 @@ type Lane = "core" | "blitz";
 type Route = "core_edit" | "ast_narrow" | "ast_batch";
 type RouteReasonCode = "lane_core_edit" | "lane_blitz_structured_tool";
 
+type TokenRouteDecision = {
+	contextSavingsPct: number | null;
+	schemaTokensExpected: number;
+	argTokensExpected: number;
+	outputTokensExpected: number;
+	fallbackContextTokensExpected: number | null;
+	selectedBecause: string;
+};
+
 const routeForLane = (
 	lane: Lane,
 	fx?: Fixture,
@@ -1539,6 +1548,7 @@ const main = async () => {
 		exitCode: number;
 		timedOut: boolean;
 		failure: string;
+		tokenRouteDecision: TokenRouteDecision;
 		runDir?: string;
 		sessionDir?: string;
 		sessionFile?: string;
@@ -1662,6 +1672,17 @@ const main = async () => {
 					argTokens +
 					outputTokens +
 					resultPayloadTokens;
+				const tokenRouteDecision: TokenRouteDecision = {
+					contextSavingsPct: null,
+					schemaTokensExpected: schemaTokens,
+					argTokensExpected: argTokens,
+					outputTokensExpected: outputTokens,
+					fallbackContextTokensExpected: null,
+					selectedBecause:
+						lane === "core"
+							? "core lane selected as baseline/fallback"
+							: "Blitz lane selected by explicit profile; paired core row required before savings claim",
+				};
 				runs.push(r);
 				runRecords.push({
 					fixture: fx.id,
@@ -1711,6 +1732,7 @@ const main = async () => {
 						r.exitCode === 0
 							? ""
 							: (r.stderr || r.stdout).trim().split("\n").slice(0, 3).join(" "),
+					tokenRouteDecision: tokenRouteDecision,
 					runDir: r.runDir,
 					sessionDir: r.sessionDir,
 					sessionFile: r.sessionFile,
