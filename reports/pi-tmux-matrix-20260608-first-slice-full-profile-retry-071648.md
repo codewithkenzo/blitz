@@ -1,0 +1,67 @@
+# Pi local matrix results
+
+Provider: zai
+Model: glm-4.5-air
+Iterations: 1
+Runner: tmux
+Run root: reports/pi-tmux-runs/20260608-first-slice-full-profile-retry-071648
+Tmux session: pi-bench-2026-06-08T05-16-48-151Z
+Timeout per run: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz binary PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Extension: /home/kenzo/dev/pi-blitz-token-profile/dist/index.js
+Skill: /home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz
+Tool profile: full
+Accounting artifact root: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260608-first-slice-full-profile-retry-071648
+Visible Blitz tools: pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor
+Serialized tool spec tokens: 5517
+Resident skill tokens: 2358
+Tokscale validation: required
+Generated: 2026-06-08T05:31:39.883Z
+
+| Fixture | Class | Recommended | Lane | route | profile | visible tools | schema tok | skill tok | prompt tok | arg tok | output tok | cache read | cache write | result payload tok | residual input tok | total context tok | tool | wall ms | input tok | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |
+|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|
+| small/wrap-tail | tiny_unique_replace | core | core | core_edit | core | edit | 0 | 0 | 137 | 77 | 289 | 7544 | 0 | 8 | 187 | 8319 | edit | 10515 | 264 | 264 | 289 | 7544 | 0 | 2 | 18 | yes | 100.0% | 0 |  | 0.0000 | 0.0006 |
+| medium-10k/marker-tail | medium_tail_replace | core | core | core_edit | core | edit | 0 | 0 | 4620 | 72 | 390 | 12188 | 0 | 54 | 4785 | 22181 | edit | 12602 | 4857 | 4857 | 390 | 12188 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0018 |
+| medium-10k/marker-tail | medium_tail_replace | core | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 4687 | 96 | 1047 | 21959 | 0 | 37 | -2912 | 40760 | pi_blitz_replace_body_span | 31373 | 5059 | 5059 | 1047 | 21959 | 0 | 3 | 13 | yes | 100.0% | 0 |  | 0.0000 | 0.0028 |
+| medium-10k/wrap-body | medium_wrap_body | blitz | core | core_edit | core | edit | 0 | 0 | 4628 | 0 | 0 | 0 | 0 | 0 | 0 | 4628 |  | 120163 | 0 |  |  |  |  |  |  | no | 0.0% | -1 | no session jsonl (run failed/timed out) | 0.0000 |  |
+| medium-10k/wrap-body | medium_wrap_body | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 4773 | 1251 | 3661 | 206976 | 0 | 0 | -19 | 233643 | pi_blitz_wrap_body | 120158 | 9107 | 9107 | 3661 | 206976 | 0 | 20 | 14 | yes | 0.0% | -1 | [pi-blitz] tool profile full registered | 0.0000 | 0.0121 |
+| medium-10k/compose-preserve-islands | compose_preserve_islands | blitz | core | core_edit | core | edit | 0 | 0 | 4643 | 963 | 1523 | 13359 | 0 | 1 | 3871 | 25323 | edit | 48357 | 4834 | 4834 | 1523 | 13359 | 0 | 2 | 14 | yes | 0.0% | 0 |  | 0.0000 | 0.0030 |
+| medium-10k/compose-preserve-islands | compose_preserve_islands | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 4851 | 196 | 815 | 9236 | 0 | 76 | 546 | 31666 | pi_blitz_compose_body | 21006 | 8617 | 8617 | 815 | 9236 | 0 | 2 | 16 | yes | 100.0% | 0 |  | 0.0000 | 0.0029 |
+| medium-10k/insert-body-span | insert_body_span | blitz | core | core_edit | core | edit | 0 | 0 | 4628 | 150 | 432 | 12268 | 0 | 29 | 4709 | 22366 | edit | 15511 | 4859 | 4859 | 432 | 12268 | 0 | 2 | 15 | yes | 0.0% | 0 |  | 0.0000 | 0.0018 |
+| medium-10k/insert-body-span | insert_body_span | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 4722 | 100 | 481 | 8944 | 0 | 27 | 614 | 30738 | pi_blitz_insert_body_span | 15860 | 8589 | 8589 | 481 | 8944 | 0 | 2 | 22 | yes | 0.0% | 0 |  | 0.0000 | 0.0025 |
+| multi/three-body-ops | multi_body_three_ops | blitz | core | core_edit | core | edit | 0 | 0 | 213 | 235 | 777 | 7987 | 0 | 97 | 106 | 9650 | edit | 20722 | 341 | 341 | 777 | 7987 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0012 |
+| multi/three-body-ops | multi_body_three_ops | blitz | blitz | ast_batch | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 427 | 297 | 1148 | 9901 | 0 | 100 | -3914 | 24006 | pi_blitz_multi_body | 32418 | 4258 | 4258 | 1148 | 9901 | 0 | 3 | 15 | yes | 100.0% | 0 |  | 0.0000 | 0.0024 |
+| multi/large-structural | multi_body_large_structural | blitz | core | core_edit | core | edit | 0 | 0 | 4698 | 0 | 0 | 0 | 0 | 0 | 0 | 4698 |  | 120161 | 0 |  |  |  |  |  |  | no | 0.0% | -1 | no session jsonl (run failed/timed out) | 0.0000 |  |
+| multi/large-structural | multi_body_large_structural | blitz | blitz | ast_batch | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 4869 | 175 | 1050 | 18635 | 0 | 114 | 781 | 41549 | pi_blitz_patch | 26610 | 8831 | 8831 | 1050 | 18635 | 0 | 3 | 15 | yes | 100.0% | 0 |  | 0.0000 | 0.0035 |
+| huge-100k/marker-tail | huge_tail_replace | core | core | core_edit | core | edit | 0 | 0 | 46544 | 74 | 355 | 56282 | 0 | 8 | 48859 | 152196 | edit | 25000 | 48933 | 48933 | 355 | 56282 | 0 | 2 | 15 | yes | 100.0% | 0 |  | 0.0000 | 0.0119 |
+| huge-100k/marker-tail | huge_tail_replace | core | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 46612 | 145 | 757 | 109808 | 0 | 39 | 41108 | 214364 | pi_blitz_replace_body_span | 41291 | 49128 | 49128 | 757 | 109808 | 0 | 3 | 15 | yes | 100.0% | 0 |  | 0.0000 | 0.0140 |
+| semantic/async-try-catch | async_try_catch | blitz | core | core_edit | core | edit | 0 | 0 | 274 | 177 | 548 | 7927 | 0 | 42 | 230 | 9375 | edit | 14357 | 407 | 407 | 548 | 7927 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0009 |
+| semantic/async-try-catch | async_try_catch | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 361 | 70 | 569 | 4476 | 0 | 18 | -3940 | 17374 | pi_blitz_try_catch | 16658 | 4005 | 4005 | 569 | 4476 | 0 | 2 | 16 | yes | 100.0% | 0 |  | 0.0000 | 0.0016 |
+| semantic/class-method-try-catch | class_method_try_catch | blitz | core | core_edit | core | edit | 0 | 0 | 269 | 148 | 606 | 7800 | 0 | 224 | 255 | 9450 | edit | 13105 | 403 | 403 | 606 | 7800 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0010 |
+| semantic/class-method-try-catch | class_method_try_catch | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 356 | 71 | 498 | 7849 | 0 | 32 | -7433 | 17194 | pi_blitz_try_catch | 19329 | 513 | 513 | 498 | 7849 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0009 |
+| semantic/arrow-replace-return | arrow_replace_return | blitz | core | core_edit | core | edit | 0 | 0 | 260 | 135 | 671 | 12419 | 0 | 4 | 309 | 13933 | edit | 20015 | 444 | 444 | 671 | 12419 | 0 | 3 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0012 |
+| semantic/arrow-replace-return | arrow_replace_return | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 358 | 64 | 535 | 4436 | 0 | 28 | -3906 | 17329 | pi_blitz_replace_return | 16041 | 4033 | 4033 | 535 | 4436 | 0 | 2 | 17 | yes | 100.0% | 0 |  | 0.0000 | 0.0015 |
+| semantic/nested-return-occurrence | nested_return_occurrence | blitz | core | core_edit | core | edit | 0 | 0 | 260 | 144 | 637 | 12169 | 0 | 40 | 322 | 13716 | edit | 17911 | 466 | 466 | 637 | 12169 | 0 | 3 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0012 |
+| semantic/nested-return-occurrence | nested_return_occurrence | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 358 | 64 | 451 | 7881 | 0 | 21 | -7429 | 17160 | pi_blitz_replace_return | 18110 | 510 | 510 | 451 | 7881 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0008 |
+| semantic/tsx-replace-return | tsx_replace_return | blitz | core | core_edit | core | edit | 0 | 0 | 148 | 140 | 426 | 11704 | 0 | 35 | 157 | 12750 | edit | 22704 | 297 | 297 | 426 | 11704 | 0 | 3 | 15 | yes | 100.0% | 0 |  | 0.0000 | 0.0009 |
+| semantic/tsx-replace-return | tsx_replace_return | blitz | blitz | ast_narrow | full | pi_blitz_read,pi_blitz_edit,pi_blitz_batch,pi_blitz_apply,pi_blitz_replace_body_span,pi_blitz_insert_body_span,pi_blitz_wrap_body,pi_blitz_compose_body,pi_blitz_multi_body,pi_blitz_patch,pi_blitz_try_catch,pi_blitz_replace_return,pi_blitz_rename,pi_blitz_undo,pi_blitz_doctor | 5517 | 2358 | 236 | 77 | 438 | 7785 | 0 | 45 | -7570 | 16838 | pi_blitz_replace_return | 26030 | 382 | 382 | 438 | 7785 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0008 |
+| readme/core-smoke | markdown_core_only | core | core | core_edit | core | edit | 0 | 0 | 153 | 99 | 522 | 7781 | 0 | 39 | 181 | 8874 | edit | 34933 | 280 | 280 | 522 | 7781 | 0 | 2 | 14 | yes | 100.0% | 0 |  | 0.0000 | 0.0009 |
+
+## Pairwise savings (correct rows only)
+medium-10k/marker-tail: lost session output 168.5%, lost tool-call args 33.3%, lost wall time 149.0%, cost unavailable
+medium-10k/wrap-body: Blitz failed; savings not counted (core output 0, blitz output 3661, core args 0, blitz args 1251)
+medium-10k/compose-preserve-islands: correctness win; savings not counted (core output 1523, blitz output 815, core args 963, blitz args 196)
+medium-10k/insert-body-span: Blitz failed; savings not counted (core output 432, blitz output 481, core args 150, blitz args 100)
+multi/three-body-ops: lost session output 47.7%, lost tool-call args 26.4%, lost wall time 56.4%, cost unavailable
+multi/large-structural: correctness win; savings not counted (core output 0, blitz output 1050, core args 0, blitz args 175)
+huge-100k/marker-tail: lost session output 113.2%, lost tool-call args 95.9%, lost wall time 65.2%, cost unavailable
+semantic/async-try-catch: lost session output 3.8%, saved tool-call args 60.5%, lost wall time 16.0%, cost unavailable
+semantic/class-method-try-catch: saved session output 17.8%, saved tool-call args 52.0%, lost wall time 47.5%, cost unavailable
+semantic/arrow-replace-return: saved session output 20.3%, saved tool-call args 52.6%, saved wall time 19.9%, cost unavailable
+semantic/nested-return-occurrence: saved session output 29.2%, saved tool-call args 55.6%, lost wall time 1.1%, cost unavailable
+semantic/tsx-replace-return: lost session output 2.8%, saved tool-call args 45.0%, lost wall time 14.6%, cost unavailable
+
+## Core-only notes
+small/wrap-tail: core-only cost/control smoke; no Blitz structured AST savings claim.
+readme/core-smoke: core-only cost/control smoke; no Blitz structured AST savings claim.

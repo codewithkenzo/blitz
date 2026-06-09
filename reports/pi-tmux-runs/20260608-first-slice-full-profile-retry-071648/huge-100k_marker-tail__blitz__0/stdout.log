@@ -1,0 +1,2 @@
+
+The edit was successful. The final return statement in the `hugeCompute` function has been changed from `return total;` to `return total + 1;` as requested.

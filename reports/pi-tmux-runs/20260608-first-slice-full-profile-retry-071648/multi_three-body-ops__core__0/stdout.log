@@ -1,0 +1,8 @@
+
+I successfully applied all three required edits to the multi.ts file:
+
+1. Modified the `adjust` function to return `base + 1` instead of just `base`
+2. Added `const markerUpper = value.toUpperCase();` in the `emit` function after the `const marker = value;` line
+3. Wrapped the `risky` function body in a try/catch block that rethrows the error
+
+The changes have been applied as specified.
