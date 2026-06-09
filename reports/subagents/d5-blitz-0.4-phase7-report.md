@@ -474,3 +474,36 @@ D5 added benchmark-only route-selected proof artifacts from existing real tmux/T
 Selection rule: accepted rows only (`correctRate === 1`, Tokscale token match yes, no timeout, exit 0 when present), then lowest `totalContextTokens` per fixture. Core-selected rows are benchmark-level route selections from existing core evidence only; no claim that `pi_blitz_route_edit` invokes core/apply_patch.
 
 Result: selected route chooses core for tiny text, config, logging, rename, JSON/YAML/TOML, CSS, and HTML where accepted core is cheaper. Router remains selected for semantic and Markdown only where accepted core baselines are absent. Phase 7/START remains incomplete due missing structural/current Blitz/apply_patch/TSX evidence and unproven runtime fallback.
+
+## 2026-06-09 structural + semantic evidence slice
+
+New real Pi tmux/Tokscale rows added under new report names. Old artifacts preserved.
+
+Artifacts:
+- Structural core: `reports/pi-tmux-phase7-structural-core-20260609-d5.{md,json}`; run root `reports/pi-tmux-runs/2026-06-09T17-20-14-699Z`; tmux `pi-bench-2026-06-09T17-20-14-699Z`.
+- Structural current Blitz/full profile: `reports/pi-tmux-phase7-structural-current-20260609-d5.{md,json}`; run root `reports/pi-tmux-runs/2026-06-09T17-11-08-935Z`; tmux `pi-bench-2026-06-09T17-11-08-935Z`.
+- Structural router/profile: `reports/pi-tmux-phase7-structural-router-20260609-d5.{md,json}`; run root `reports/pi-tmux-runs/2026-06-09T17-13-32-066Z`; tmux `pi-bench-2026-06-09T17-13-32-066Z`.
+- Semantic core: `reports/pi-tmux-phase7-semantic-core-20260609-d5.{md,json}`; run root `reports/pi-tmux-runs/2026-06-09T17-18-18-155Z`; tmux `pi-bench-2026-06-09T17-18-18-155Z`.
+- Semantic router: `reports/pi-tmux-phase7-semantic-router-20260609-d5.{md,json}`; run root `reports/pi-tmux-runs/2026-06-09T17-19-12-655Z`; tmux `pi-bench-2026-06-09T17-19-12-655Z`.
+
+Rows:
+
+| Case | Lane/tool | Correct | Exit | Timed out | Tokscale match | Total context | Accept |
+|---|---|---:|---:|---:|---:|---:|---|
+| `medium-10k/wrap-body` | core/(none) | 0% | -1 | yes | no | 4,639 | rejected |
+| `multi/large-structural` | core/(none) | 0% | -1 | yes | no | 4,709 | rejected |
+| `medium-10k/wrap-body` | blitz/`pi_blitz_wrap_body` | 0% | 0 | no | yes | 176,294 | rejected |
+| `multi/large-structural` | blitz/`pi_blitz_patch` | 100% | 0 | no | yes | 30,913 | accepted |
+| `medium-10k/wrap-body` | router/`pi_blitz_route_edit` | 0% | 0 | no | yes | 98,908 | rejected |
+| `multi/large-structural` | router/`pi_blitz_route_edit` | 0% | -1 | yes | yes | 233,864 | rejected |
+| `semantic/arrow-replace-return` | core/`edit` | 100% | 0 | no | yes | 18,845 | accepted |
+| `semantic/tsx-replace-return` | core/`edit` | 100% | 0 | no | yes | 8,516 | accepted |
+| `semantic/arrow-replace-return` | router/`pi_blitz_route_edit` | 100% | 0 | no | yes | 11,037 | accepted |
+| `semantic/tsx-replace-return` | router/`pi_blitz_route_edit` | 100% | 0 | no | yes | 10,436 | accepted |
+
+Result:
+- Semantic missing slice improved: arrow now has paired accepted current core/router evidence; TSX now has accepted core/router evidence. Benchmark route selects router for arrow and core for TSX.
+- Structural preservation still not fully proven: `multi/large-structural` has accepted current Blitz row, but no accepted core baseline; `medium-10k/wrap-body` remains rejected across core/current/router attempts.
+- Structural savings still not proven for Phase 7 current matrix because required wrap-body row remains red and multi lacks paired accepted baseline.
+- Route selection remains benchmark-only. `pi_blitz_route_edit` still does not invoke product-real core/apply_patch.
+- Phase 7 status remains **NO**.

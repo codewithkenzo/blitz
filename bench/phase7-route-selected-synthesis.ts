@@ -13,6 +13,11 @@ const candidateFiles = [
 	"reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json",
 	"reports/pi-tmux-phase7-router-semantic-rerun-20260609.json",
 	"reports/pi-tmux-phase7-router-pilot-20260609-d5.json",
+	"reports/pi-tmux-phase7-structural-core-20260609-d5.json",
+	"reports/pi-tmux-phase7-structural-current-20260609-d5.json",
+	"reports/pi-tmux-phase7-structural-router-20260609-d5.json",
+	"reports/pi-tmux-phase7-semantic-core-20260609-d5.json",
+	"reports/pi-tmux-phase7-semantic-router-20260609-d5.json",
 ];
 
 const outJson =
@@ -99,7 +104,7 @@ const requiredCases: RequiredCase[] = [
 	{
 		id: "tsx-component-prop-body-tweak",
 		planLabel: "TSX component prop/body tweak",
-		fixtures: ["tsx/component-prop-body"],
+		fixtures: ["semantic/tsx-replace-return"],
 		phase7Required: true,
 	},
 	{
@@ -213,10 +218,10 @@ function serializeRow(row: Row) {
 const gaps = [
 	"Benchmark-level route selection only: selected core rows are proof choices from existing evidence, not product-real pi_blitz_route_edit core/apply_patch interception.",
 	"No direct apply_patch baseline exists in current harness evidence.",
-	"Current Phase 7 structural preservation remains incomplete: multi/large-structural missing; medium-10k/wrap-body has no accepted current row in selected evidence.",
-	"Missing accepted current evidence for TSX component prop/body tweak.",
+	"Current Phase 7 structural preservation remains incomplete: multi/large-structural now has accepted current Blitz evidence, but no accepted core baseline; medium-10k/wrap-body still has no accepted current row across core/Blitz/router attempts.",
+	"TSX semantic row now has accepted core and router rows, but selected benchmark route chooses core; this does not prove product-real core fallback.",
+	"Semantic arrow row now has accepted router and core rows and router is cheaper in selected evidence; current proof is still benchmark evidence, not product runtime replacement.",
 	"Missing accepted router/Blitz evidence for logging/insert-timer and long-section/replace-return; long-section core also failed.",
-	"Semantic row has accepted router evidence but no paired accepted current core row in selected artifacts.",
 	"Markdown append has accepted router evidence but accepted core baseline is absent; core attempts failed.",
 	"HTML router row is accepted but extreme 142,615-token outlier; selected path chooses accepted core row for benchmark proof only.",
 ];

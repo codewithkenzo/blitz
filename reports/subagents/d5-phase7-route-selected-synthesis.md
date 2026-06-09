@@ -56,3 +56,24 @@ Rows without paired accepted evidence remain unproven.
 ## Verification
 
 Pending at time of write; final agent response records commands and commit.
+
+## 2026-06-09 structural + semantic evidence update
+
+Synthesis script now includes:
+- `reports/pi-tmux-phase7-structural-core-20260609-d5.json`
+- `reports/pi-tmux-phase7-structural-current-20260609-d5.json`
+- `reports/pi-tmux-phase7-structural-router-20260609-d5.json`
+- `reports/pi-tmux-phase7-semantic-core-20260609-d5.json`
+- `reports/pi-tmux-phase7-semantic-router-20260609-d5.json`
+
+Regenerated artifacts:
+- `reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.md`
+- `reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json`
+
+Changed selected outcome:
+- `semantic/arrow-replace-return`: selected router/`pi_blitz_route_edit`, total context 10,821, core baseline 18,845, accepted as benchmark row.
+- `semantic/tsx-replace-return`: selected core/`edit`, total context 8,516, router accepted at 10,436 but loses to core.
+- `multi/large-structural`: selected current Blitz/`pi_blitz_patch`, total context 30,913, accepted; no accepted core baseline.
+- `medium-10k/wrap-body`: still incomplete; core timed out/Tokscale mismatch, current Blitz incorrect, router incorrect/timeout in selected evidence.
+
+Status remains benchmark-only. Core-selected rows are evidence selection, not runtime core/apply_patch interception by `pi_blitz_route_edit`. Phase 7 remains **NO** because structural preservation is incomplete, direct apply_patch baseline is absent, and product-real routing fallback remains unproven.
