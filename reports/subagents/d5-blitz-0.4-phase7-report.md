@@ -1,7 +1,7 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. No Phase 7 token-savings acceptance.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. No Phase 7 token-savings acceptance.
 
 ## Method
 
@@ -118,6 +118,18 @@ Parser-fix semantic rerun:
 - Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T09-07-19-618Z`
 - Tmux session: `pi-bench-2026-06-09T09-07-19-618Z`
 
+D5 continuation paired config proof slice:
+- Core Markdown report: `reports/pi-tmux-phase7-config-core-20260609-d5.md`
+- Core JSON report: `reports/pi-tmux-phase7-config-core-20260609-d5.json`
+- Core raw tmux run root: `reports/pi-tmux-runs/2026-06-09T15-29-56-978Z`
+- Core accounting artifacts: `reports/pi-accounting-runs/2026-06-09T15-29-56-978Z`
+- Core tmux session: `pi-bench-2026-06-09T15-29-56-978Z`
+- Router fallback Markdown report: `reports/pi-tmux-phase7-config-router-fallback-20260609-d5.md`
+- Router fallback JSON report: `reports/pi-tmux-phase7-config-router-fallback-20260609-d5.json`
+- Router fallback raw tmux run root: `reports/pi-tmux-runs/2026-06-09T15-30-17-425Z`
+- Router fallback accounting artifacts: `reports/pi-accounting-runs/2026-06-09T15-30-17-425Z`
+- Router fallback tmux session: `pi-bench-2026-06-09T15-30-17-425Z`
+
 ## New pilot result
 
 | Case | Lane | Route/tool profile | Correct | Exit | Tool observed | Tokscale token match | Result |
@@ -125,6 +137,8 @@ Parser-fix semantic rerun:
 | medium-10k/wrap-body | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | none parsed | yes | rejected; timed out/incorrect |
 | semantic/arrow-replace-return | router | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 143 | none parsed | yes | rejected; correct file but nonzero exit and intended tool not observed |
 | semantic/arrow-replace-return | router parser-fix rerun | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 0 | `pi_blitz_route_edit`; arg tok 75; result payload tok 21 | yes | accepted semantic router smoke only; no Phase 7 savings claim |
+| config/key-update | core continuation slice | `core_edit` / `core` / `edit` visible | 100% | 0 | `edit`; arg tok 73; result payload tok 3 | yes | accepted core baseline for this required case only; no paired savings |
+| config/key-update | router fallback continuation slice | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | `pi_blitz_route_edit`; arg tok 1341; result payload tok 0 | yes | rejected; intended no-write fallback path timed out and file stayed unmodified |
 
 Router overhead from D5 pilot:
 - router schema tokens: 564
@@ -141,7 +155,7 @@ This is overhead evidence only, not replacement benchmark proof.
 |---:|---|---|---|---|---|
 | 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | Parser-fix rerun accepted as semantic router smoke: correctness 100%, exit 0, `pi_blitz_route_edit`, arg tok 75, Tokscale match yes; no Phase 7 savings |
 | 2 | tiny exact text replace | `small/wrap-tail` | existing | unsupported by Blitz alias; router guidance says no-write `apply_patch` decline | covered as honest fallback only; no accepted run |
-| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
+| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | continuation slice: core baseline accepted (correct 100%, exit 0, Tokscale match yes); router fallback rejected (timeout/incorrect despite `pi_blitz_route_edit` observed, Tokscale match yes) |
 | 4 | insert logging line | `logging/insert-timer` (`logging.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 5 | wrap function body | `medium-10k/wrap-body` | existing | supported alias `wb` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot rejected: timeout/incorrect |
 | 6 | replace long function body section | `long-section/replace-return` (`long-section.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
@@ -151,6 +165,51 @@ This is overhead evidence only, not replacement benchmark proof.
 | 10 | TSX component prop/body tweak | `semantic/tsx-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | fixture covered, no accepted run |
 | 11 | JSON/YAML/TOML top-level key update | `json/config-key`, `yaml/config-key`, `toml/config-key` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
 | 12 | HTML/CSS small edit | `html/small-edit`, `css/small-edit` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
+
+## D5 continuation audit/proof step (2026-06-09)
+
+Harness audit:
+- Current lanes: `core`, `blitz`, `router`; no direct OpenAI/apply_patch baseline lane.
+- Current 12-case Phase 7 fixture representation exists across `small/wrap-tail`, `config/key-update`, `logging/insert-timer`, `medium-10k/wrap-body`, `long-section/replace-return`, `multi/*`, `rename/function-name`, `markdown/append-section`, `semantic/tsx-replace-return`, `json|yaml|toml/config-key`, `html|css/small-edit`.
+- Current router facade rows are distinguishable as lane/profile `router` with visible tool `pi_blitz_route_edit`.
+- Benchmark-level router-selected fallback is only represented as a no-write `pi_blitz_route_edit` decline with `r: "apply_patch"`; it is not a real core/apply_patch invocation and must stay excluded from savings claims.
+- No-write decline rows are still compared to changed golden files, so they are rejected correctness rows by design unless a separate decline/unsupported expected outcome is added.
+
+New commands:
+
+```bash
+bun bench/pi-matrix.ts \
+  --runner tmux \
+  --provider zai \
+  --model glm-4.5-air \
+  --case config/key-update \
+  --lane core \
+  --iters 1 \
+  --timeout-ms 120000 \
+  --tokscale \
+  --md-out reports/pi-tmux-phase7-config-core-20260609-d5.md \
+  --json-out reports/pi-tmux-phase7-config-core-20260609-d5.json
+```
+Passed. Accepted core baseline for `config/key-update`: correct 100%, exit 0, tool `edit`, arg tok 73, output tok 220, result payload tok 3, total context tok 8263, Tokscale token match yes.
+
+```bash
+bun bench/pi-matrix.ts \
+  --runner tmux \
+  --provider zai \
+  --model glm-4.5-air \
+  --case config/key-update \
+  --lane router \
+  --tool-profile router \
+  --artifact-profiles router,full \
+  --iters 1 \
+  --timeout-ms 120000 \
+  --tokscale \
+  --md-out reports/pi-tmux-phase7-config-router-fallback-20260609-d5.md \
+  --json-out reports/pi-tmux-phase7-config-router-fallback-20260609-d5.json
+```
+Completed with rejected row preserved. Router fallback/no-write path observed intended tool `pi_blitz_route_edit`, arg tok 1341, output tok 4410, Tokscale token match yes, but correctness 0%, exit -1 timeout. Excluded from savings and acceptance.
+
+Conclusion from proof step: harness can identify real core success and router-fallback failure separately. Phase 7 remains blocked because unsupported fallback handling is not product-real core/apply_patch and current no-write decline behavior can still consume many tokens/time out.
 
 ## Acceptance
 
