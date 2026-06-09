@@ -461,3 +461,16 @@ Accepted router rows require correctness 100%, exit 0, no timeout, Tokscale matc
 ## Phase 7 status
 
 Escape fix improved router correctness vs prior 4/7 to 5/7 accepted router rows (`small/wrap-tail`, `rename/function-name`, `markdown/append-section`, `css/small-edit`, `html/small-edit`). `logging/insert-timer` and `long-section/replace-return` still fail correctness. Of rows with accepted router and accepted core pairs, router loses total context in 4/4. `markdown/append-section` has accepted router evidence but no accepted core baseline after two new core attempts, so excluded from savings. Phase 7 acceptance remains **NO**. No router replacement/core-intercept claim; `pi_blitz_route_edit` remains runtime facade and unsupported fallback remains no-write decline.
+
+## 2026-06-09 route-selected synthesis
+
+D5 added benchmark-only route-selected proof artifacts from existing real tmux/Tokscale Phase 7 rows:
+
+- Script: `bench/phase7-route-selected-synthesis.ts`
+- Markdown: `reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.md`
+- JSON: `reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json`
+- Subagent summary: `reports/subagents/d5-phase7-route-selected-synthesis.md`
+
+Selection rule: accepted rows only (`correctRate === 1`, Tokscale token match yes, no timeout, exit 0 when present), then lowest `totalContextTokens` per fixture. Core-selected rows are benchmark-level route selections from existing core evidence only; no claim that `pi_blitz_route_edit` invokes core/apply_patch.
+
+Result: selected route chooses core for tiny text, config, logging, rename, JSON/YAML/TOML, CSS, and HTML where accepted core is cheaper. Router remains selected for semantic and Markdown only where accepted core baselines are absent. Phase 7/START remains incomplete due missing structural/current Blitz/apply_patch/TSX evidence and unproven runtime fallback.

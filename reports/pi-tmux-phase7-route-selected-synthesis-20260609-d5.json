@@ -1,0 +1,1120 @@
+{
+  "generatedAt": "2026-06-09",
+  "status": "benchmark-only route-selected synthesis; not Phase 7 completion; not product-real core interception",
+  "sourceFiles": [
+    "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json",
+    "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json",
+    "reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json",
+    "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json",
+    "reports/pi-tmux-phase7-format-config-core-20260609-d5.json",
+    "reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json",
+    "reports/pi-tmux-phase7-config-core-20260609-d5.json",
+    "reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json",
+    "reports/pi-tmux-phase7-router-semantic-rerun-20260609.json",
+    "reports/pi-tmux-phase7-router-pilot-20260609-d5.json"
+  ],
+  "method": {
+    "acceptedRule": "correctRate === 1, Tokscale token match true, not timed out, exit codes all 0 when present",
+    "selectionRule": "per fixture, choose lowest totalContextTokens among accepted real tmux/Tokscale rows from sourceFiles",
+    "baselineRule": "baseline core total is lowest accepted core row for same fixture when present"
+  },
+  "selections": [
+    {
+      "id": "one-line-return-expression",
+      "planLabel": "one-line return expression",
+      "fixtures": [
+        {
+          "fixture": "semantic/arrow-replace-return",
+          "status": "accepted",
+          "selected": {
+            "fixture": "semantic/arrow-replace-return",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10821,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json"
+          },
+          "coreBaseline": null,
+          "routerBaseline": {
+            "fixture": "semantic/arrow-replace-return",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10821,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "semantic/arrow-replace-return",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10821,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json"
+            },
+            {
+              "fixture": "semantic/arrow-replace-return",
+              "lane": "router",
+              "toolName": "",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10940,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-router-semantic-rerun-20260609.json"
+            }
+          ],
+          "rejectedCandidates": [
+            {
+              "fixture": "semantic/arrow-replace-return",
+              "lane": "router",
+              "toolName": "",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 6108,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                143
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-router-pilot-20260609-d5.json"
+            }
+          ],
+          "gate": "accepted-router-no-core-baseline"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "tiny-exact-text-replace",
+      "planLabel": "tiny exact text replace",
+      "fixtures": [
+        {
+          "fixture": "small/wrap-tail",
+          "status": "accepted",
+          "selected": {
+            "fixture": "small/wrap-tail",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8574,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "small/wrap-tail",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8574,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "small/wrap-tail",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10554,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "small/wrap-tail",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8574,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "small/wrap-tail",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10554,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "small-config-key",
+      "planLabel": "small config key",
+      "fixtures": [
+        {
+          "fixture": "config/key-update",
+          "status": "accepted",
+          "selected": {
+            "fixture": "config/key-update",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8263,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-config-core-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "config/key-update",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8263,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-config-core-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "config/key-update",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10435,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "config/key-update",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8263,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-config-core-20260609-d5.json"
+            },
+            {
+              "fixture": "config/key-update",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10435,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "insert-logging-line",
+      "planLabel": "insert logging line",
+      "fixtures": [
+        {
+          "fixture": "logging/insert-timer",
+          "status": "accepted",
+          "selected": {
+            "fixture": "logging/insert-timer",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8785,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "logging/insert-timer",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8785,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "routerBaseline": null,
+          "acceptedCandidates": [
+            {
+              "fixture": "logging/insert-timer",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8785,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [
+            {
+              "fixture": "logging/insert-timer",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 47314,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "wrap-function-body",
+      "planLabel": "wrap function body",
+      "fixtures": [
+        {
+          "fixture": "medium-10k/wrap-body",
+          "status": "incomplete",
+          "selected": null,
+          "coreBaseline": null,
+          "routerBaseline": null,
+          "acceptedCandidates": [],
+          "rejectedCandidates": [
+            {
+              "fixture": "medium-10k/wrap-body",
+              "lane": "router",
+              "toolName": "",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 24425,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                -1
+              ],
+              "timedOut": true,
+              "sourceFile": "reports/pi-tmux-phase7-router-pilot-20260609-d5.json"
+            }
+          ],
+          "gate": "not-proven"
+        }
+      ],
+      "phase7Required": true,
+      "status": "incomplete"
+    },
+    {
+      "id": "replace-long-function-body-section",
+      "planLabel": "replace long function body section",
+      "fixtures": [
+        {
+          "fixture": "long-section/replace-return",
+          "status": "incomplete",
+          "selected": null,
+          "coreBaseline": null,
+          "routerBaseline": null,
+          "acceptedCandidates": [],
+          "rejectedCandidates": [
+            {
+              "fixture": "long-section/replace-return",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 11238,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "long-section/replace-return",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 9164,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            }
+          ],
+          "gate": "not-proven"
+        }
+      ],
+      "phase7Required": true,
+      "status": "incomplete"
+    },
+    {
+      "id": "multi-hunk-same-file-edit",
+      "planLabel": "multi-hunk same-file edit",
+      "fixtures": [
+        {
+          "fixture": "multi/large-structural",
+          "status": "missing",
+          "selected": null,
+          "coreBaseline": null,
+          "routerBaseline": null,
+          "acceptedCandidates": [],
+          "rejectedCandidates": [],
+          "gate": "not-proven"
+        }
+      ],
+      "phase7Required": true,
+      "status": "missing"
+    },
+    {
+      "id": "rename-within-file",
+      "planLabel": "rename within file",
+      "fixtures": [
+        {
+          "fixture": "rename/function-name",
+          "status": "accepted",
+          "selected": {
+            "fixture": "rename/function-name",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8598,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "rename/function-name",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8598,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "rename/function-name",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10515,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "rename/function-name",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8598,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "rename/function-name",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10515,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "markdown-section-append",
+      "planLabel": "Markdown section append",
+      "fixtures": [
+        {
+          "fixture": "markdown/append-section",
+          "status": "accepted",
+          "selected": {
+            "fixture": "markdown/append-section",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10556,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "coreBaseline": null,
+          "routerBaseline": {
+            "fixture": "markdown/append-section",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10556,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "markdown/append-section",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10556,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [
+            {
+              "fixture": "markdown/append-section",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8849,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "markdown/append-section",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 13779,
+              "correctRate": 0,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json"
+            }
+          ],
+          "gate": "accepted-router-no-core-baseline"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "tsx-component-prop-body-tweak",
+      "planLabel": "TSX component prop/body tweak",
+      "fixtures": [
+        {
+          "fixture": "tsx/component-prop-body",
+          "status": "missing",
+          "selected": null,
+          "coreBaseline": null,
+          "routerBaseline": null,
+          "acceptedCandidates": [],
+          "rejectedCandidates": [],
+          "gate": "not-proven"
+        }
+      ],
+      "phase7Required": true,
+      "status": "missing"
+    },
+    {
+      "id": "json-yaml-toml-top-level-key-update",
+      "planLabel": "JSON/YAML/TOML top-level key update",
+      "fixtures": [
+        {
+          "fixture": "json/config-key",
+          "status": "accepted",
+          "selected": {
+            "fixture": "json/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8484,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "json/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8484,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "json/config-key",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10447,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "json/config-key",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8484,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+            },
+            {
+              "fixture": "json/config-key",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10447,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        },
+        {
+          "fixture": "yaml/config-key",
+          "status": "accepted",
+          "selected": {
+            "fixture": "yaml/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8696,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "yaml/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8696,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "yaml/config-key",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10484,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "yaml/config-key",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8696,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+            },
+            {
+              "fixture": "yaml/config-key",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10484,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        },
+        {
+          "fixture": "toml/config-key",
+          "status": "accepted",
+          "selected": {
+            "fixture": "toml/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8329,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "toml/config-key",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8329,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "toml/config-key",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10485,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "toml/config-key",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8329,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-core-20260609-d5.json"
+            },
+            {
+              "fixture": "toml/config-key",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10485,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    },
+    {
+      "id": "html-css-small-edit",
+      "planLabel": "HTML/CSS small edit",
+      "fixtures": [
+        {
+          "fixture": "html/small-edit",
+          "status": "accepted",
+          "selected": {
+            "fixture": "html/small-edit",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8336,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "html/small-edit",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8336,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "html/small-edit",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 142615,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "html/small-edit",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8336,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "html/small-edit",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 142615,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        },
+        {
+          "fixture": "css/small-edit",
+          "status": "accepted",
+          "selected": {
+            "fixture": "css/small-edit",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8559,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "coreBaseline": {
+            "fixture": "css/small-edit",
+            "lane": "core",
+            "toolName": "edit",
+            "route": "core_edit",
+            "routeReasonCode": "lane_core_edit",
+            "totalContextTokens": 8559,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+          },
+          "routerBaseline": {
+            "fixture": "css/small-edit",
+            "lane": "router",
+            "toolName": "pi_blitz_route_edit",
+            "route": "token_router",
+            "routeReasonCode": "lane_router_facade",
+            "totalContextTokens": 10466,
+            "correctRate": 1,
+            "tokScaleTokenMatchesParser": true,
+            "exitCodes": [
+              0
+            ],
+            "timedOut": false,
+            "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+          },
+          "acceptedCandidates": [
+            {
+              "fixture": "css/small-edit",
+              "lane": "core",
+              "toolName": "edit",
+              "route": "core_edit",
+              "routeReasonCode": "lane_core_edit",
+              "totalContextTokens": 8559,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json"
+            },
+            {
+              "fixture": "css/small-edit",
+              "lane": "router",
+              "toolName": "pi_blitz_route_edit",
+              "route": "token_router",
+              "routeReasonCode": "lane_router_facade",
+              "totalContextTokens": 10466,
+              "correctRate": 1,
+              "tokScaleTokenMatchesParser": true,
+              "exitCodes": [
+                0
+              ],
+              "timedOut": false,
+              "sourceFile": "reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json"
+            }
+          ],
+          "rejectedCandidates": [],
+          "gate": "route-selected-core-cheapest"
+        }
+      ],
+      "phase7Required": true,
+      "status": "accepted"
+    }
+  ],
+  "gaps": [
+    "Benchmark-level route selection only: selected core rows are proof choices from existing evidence, not product-real pi_blitz_route_edit core/apply_patch interception.",
+    "No direct apply_patch baseline exists in current harness evidence.",
+    "Current Phase 7 structural preservation remains incomplete: multi/large-structural missing; medium-10k/wrap-body has no accepted current row in selected evidence.",
+    "Missing accepted current evidence for TSX component prop/body tweak.",
+    "Missing accepted router/Blitz evidence for logging/insert-timer and long-section/replace-return; long-section core also failed.",
+    "Semantic row has accepted router evidence but no paired accepted current core row in selected artifacts.",
+    "Markdown append has accepted router evidence but accepted core baseline is absent; core attempts failed.",
+    "HTML router row is accepted but extreme 142,615-token outlier; selected path chooses accepted core row for benchmark proof only."
+  ]
+}
