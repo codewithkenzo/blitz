@@ -44,10 +44,8 @@ import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
-const DEFAULT_PI_BLITZ_DIST =
-	"/home/kenzo/dev/pi-blitz/dist/index.js";
-const DEFAULT_PI_BLITZ_SKILL =
-	"/home/kenzo/dev/pi-blitz/skills/pi-blitz";
+const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
+const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 const DEFAULT_PI_BLITZ_PACKAGE = "/home/kenzo/dev/pi-blitz";
 const ALL_BLITZ_EDIT_TOOLS = [
 	"pi_blitz_op",
@@ -1318,18 +1316,18 @@ const runLane = async (
 			: toolProfile === "minimal"
 				? "pi_blitz_op"
 				: fx.id.includes("multi/large-structural")
-				? "pi_blitz_patch"
-				: fx.id.includes("multi/three-body-ops")
-					? "pi_blitz_multi_body"
-					: fx.id.includes("insert-body-span")
-						? "pi_blitz_insert_body_span"
-						: fx.id.includes("compose-preserve-islands")
-							? "pi_blitz_compose_body"
-							: fx.id.includes("wrap-body")
-								? "pi_blitz_wrap_body"
-								: fx.id.includes("marker-tail")
-									? "pi_blitz_replace_body_span"
-									: semanticTools[fx.id];
+					? "pi_blitz_patch"
+					: fx.id.includes("multi/three-body-ops")
+						? "pi_blitz_multi_body"
+						: fx.id.includes("insert-body-span")
+							? "pi_blitz_insert_body_span"
+							: fx.id.includes("compose-preserve-islands")
+								? "pi_blitz_compose_body"
+								: fx.id.includes("wrap-body")
+									? "pi_blitz_wrap_body"
+									: fx.id.includes("marker-tail")
+										? "pi_blitz_replace_body_span"
+										: semanticTools[fx.id];
 	assertProfileSupportsTools(toolsOverride);
 	const r =
 		runner === "tmux"
@@ -1620,8 +1618,8 @@ const main = async () => {
 	const fullCombinedResidentTokens = fullSpec
 		? fullSpec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens
 		: null;
-	const overheadComparisons: OverheadComparison[] = accountingArtifacts.toolSpecs.map(
-		(spec) => {
+	const overheadComparisons: OverheadComparison[] =
+		accountingArtifacts.toolSpecs.map((spec) => {
 			const combinedResidentTokens =
 				spec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens;
 			const reductionVsFullPct = fullCombinedResidentTokens
@@ -1636,8 +1634,7 @@ const main = async () => {
 				meetsCommonLaneTarget:
 					reductionVsFullPct === null ? null : reductionVsFullPct >= 70,
 			};
-		},
-	);
+		});
 
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
