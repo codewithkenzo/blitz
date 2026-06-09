@@ -1586,35 +1586,40 @@ const runLane = async (
 					? ` For this TOML config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this TOML config fixture only, set explicit table key `app.debug` to boolean `true`.";
 		} else if (fx.id === "small/wrap-tail") {
-			const script = 'ru\t  return "hi " + name;\t  return "hello " + name.toUpperCase();';
+			const script =
+				'ru\t  return "hi " + name;\t  return "hello " + name.toUpperCase();';
 			guidance += useRouter
 				? ` For this exact unique return-line edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this exact unique return-line edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this edit, route to core oldText/newText.";
 		} else if (fx.id === "logging/insert-timer") {
-			const script = "ia\t  console.log(`Processing order ${orderId}`);\t\\n  console.time(`Processing order ${orderId}`);";
+			const script =
+				"ia\t  console.log(`Processing order ${orderId}`);\t\\n  console.time(`Processing order ${orderId}`);";
 			guidance += useRouter
 				? ` For this exact anchor insert, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this exact anchor insert, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this edit, route to core oldText/newText.";
 		} else if (fx.id === "long-section/replace-return") {
-			const script = "ru\t  return `Invoice ${id} for ${customer}: $0.00`;\t  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;";
+			const script =
+				"ru\t  return `Invoice ${id} for ${customer}: $0.00`;\t  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;";
 			guidance += useRouter
 				? ` For this exact unique return-line edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this exact unique return-line edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this edit, route to core oldText/newText.";
 		} else if (fx.id === "rename/function-name") {
-			const script = "ru\texport function computeScore\texport function calculateAverage";
+			const script =
+				"ru\texport function computeScore\texport function calculateAverage";
 			guidance += useRouter
 				? ` For this declaration-only rename, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this declaration-only rename, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this edit, route to core oldText/newText.";
 		} else if (fx.id === "markdown/append-section") {
-			const script = "ia\t<!-- append-target -->\t\\n## Configuration Reference\\n\\nSee the `blitz --help` command.";
+			const script =
+				"ia\t<!-- append-target -->\t\\n## Configuration Reference\\n\\nSee the `blitz --help` command.";
 			guidance += useRouter
 				? ` For this Markdown marker append, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
@@ -1628,7 +1633,8 @@ const runLane = async (
 					? ` For this exact CSS value edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: " For this edit, route to core oldText/newText.";
 		} else if (fx.id === "html/small-edit") {
-			const script = "ru\t  <title>Blitz App</title>\t  <title>Blitz CLI</title>";
+			const script =
+				"ru\t  <title>Blitz App</title>\t  <title>Blitz CLI</title>";
 			guidance += useRouter
 				? ` For this exact HTML title edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
