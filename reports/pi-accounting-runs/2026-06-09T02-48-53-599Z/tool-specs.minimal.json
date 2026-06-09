@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-06-09T02:48:53.694Z",
+  "profile": "minimal",
+  "profileLabel": "minimal-v0",
+  "tools": [
+    {
+      "name": "pi_blitz_op",
+      "label": "blitz op",
+      "description": "Compact alias edit. Args: {f,ops,p?,d?}. Aliases rr rb ib wb tc ru ia bt as ek dk sk.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "f",
+          "ops"
+        ],
+        "properties": {
+          "f": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Alias tuples: rr/rb/ib/wb/tc/ru/ia/bt/as/ek/dk/sk.",
+            "type": "array",
+            "items": {
+              "minItems": 2,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "description": "Compact op tuple item.",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          },
+          "p": {
+            "description": "Preview/dry-run.",
+            "type": "boolean"
+          },
+          "d": {
+            "description": "Include compact diff summary.",
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  ]
+}
