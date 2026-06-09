@@ -1,12 +1,12 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. No Phase 7 token-savings acceptance.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect, so this remains blocker evidence only. No Phase 7 token-savings acceptance.
 
 ## Method
 
 Repo branch: `feat/blitz-0.4-token-core-profile`.
-Companion pi-blitz source: `/home/kenzo/dev/pi-blitz`, clean/pushed at `b23dd65`; built dist used at `/home/kenzo/dev/pi-blitz/dist/index.js`.
+Companion pi-blitz source: `/home/kenzo/dev/pi-blitz`; earlier Phase 7 rows used clean/pushed `b23dd65`, while the terminal-decline rerun used clean/pushed `2dfcf73 fix(router): make fallback declines terminal`; built dist used at `/home/kenzo/dev/pi-blitz/dist/index.js`.
 
 Reviewed earlier cmd-created work:
 - kept deterministic fixture files under `bench/fixtures-llm/`;
@@ -130,6 +130,13 @@ D5 continuation paired config proof slice:
 - Router fallback accounting artifacts: `reports/pi-accounting-runs/2026-06-09T15-30-17-425Z`
 - Router fallback tmux session: `pi-bench-2026-06-09T15-30-17-425Z`
 
+Companion pi-blitz terminal-decline rerun after `2dfcf73`:
+- Markdown report: `reports/pi-tmux-phase7-config-router-terminal-20260609.md`
+- JSON report: `reports/pi-tmux-phase7-config-router-terminal-20260609.json`
+- Raw tmux run root: `reports/pi-tmux-runs/2026-06-09T15-39-51-071Z`
+- Accounting artifacts: `reports/pi-accounting-runs/2026-06-09T15-39-51-071Z`
+- Tmux session: `pi-bench-2026-06-09T15-39-51-071Z`
+
 ## New pilot result
 
 | Case | Lane | Route/tool profile | Correct | Exit | Tool observed | Tokscale token match | Result |
@@ -139,6 +146,7 @@ D5 continuation paired config proof slice:
 | semantic/arrow-replace-return | router parser-fix rerun | `token_router` / `router` / `pi_blitz_route_edit` visible | 100% | 0 | `pi_blitz_route_edit`; arg tok 75; result payload tok 21 | yes | accepted semantic router smoke only; no Phase 7 savings claim |
 | config/key-update | core continuation slice | `core_edit` / `core` / `edit` visible | 100% | 0 | `edit`; arg tok 73; result payload tok 3 | yes | accepted core baseline for this required case only; no paired savings |
 | config/key-update | router fallback continuation slice | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | `pi_blitz_route_edit`; arg tok 1341; result payload tok 0 | yes | rejected; intended no-write fallback path timed out and file stayed unmodified |
+| config/key-update | router terminal-decline rerun after pi-blitz `2dfcf73` | `token_router` / `router` / `pi_blitz_route_edit` visible | 0% | -1 timeout | `pi_blitz_route_edit`; arg tok 1146; result payload tok 0 | yes | rejected; terminal decline text reduced output/context somewhat but still timed out and file stayed unmodified |
 
 Router overhead from D5 pilot:
 - router schema tokens: 564
@@ -155,7 +163,7 @@ This is overhead evidence only, not replacement benchmark proof.
 |---:|---|---|---|---|---|
 | 1 | one-line return expression | `semantic/arrow-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | Parser-fix rerun accepted as semantic router smoke: correctness 100%, exit 0, `pi_blitz_route_edit`, arg tok 75, Tokscale match yes; no Phase 7 savings |
 | 2 | tiny exact text replace | `small/wrap-tail` | existing | unsupported by Blitz alias; router guidance says no-write `apply_patch` decline | covered as honest fallback only; no accepted run |
-| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | continuation slice: core baseline accepted (correct 100%, exit 0, Tokscale match yes); router fallback rejected (timeout/incorrect despite `pi_blitz_route_edit` observed, Tokscale match yes) |
+| 3 | small config key | `config/key-update` (`config.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | continuation slice: core baseline accepted (correct 100%, exit 0, Tokscale match yes); router fallback rejected before and after pi-blitz terminal-decline fix (timeout/incorrect despite `pi_blitz_route_edit` observed, Tokscale match yes) |
 | 4 | insert logging line | `logging/insert-timer` (`logging.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 5 | wrap function body | `medium-10k/wrap-body` | existing | supported alias `wb` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | D5 pilot rejected: timeout/incorrect |
 | 6 | replace long function body section | `long-section/replace-return` (`long-section.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
@@ -211,6 +219,25 @@ Completed with rejected row preserved. Router fallback/no-write path observed in
 
 Conclusion from proof step: harness can identify real core success and router-fallback failure separately. Phase 7 remains blocked because unsupported fallback handling is not product-real core/apply_patch and current no-write decline behavior can still consume many tokens/time out.
 
+Companion pi-blitz rerun after terminal-decline fix `2dfcf73`:
+
+```bash
+bun bench/pi-matrix.ts \
+  --runner tmux \
+  --provider zai \
+  --model glm-4.5-air \
+  --case config/key-update \
+  --lane router \
+  --tool-profile router \
+  --artifact-profiles router,full \
+  --iters 1 \
+  --timeout-ms 120000 \
+  --tokscale \
+  --md-out reports/pi-tmux-phase7-config-router-terminal-20260609.md \
+  --json-out reports/pi-tmux-phase7-config-router-terminal-20260609.json
+```
+Completed with rejected row preserved. It observed `pi_blitz_route_edit`, arg tok 1146, output tok 3383, total context tok 98483, Tokscale token match yes, but correctness 0%, exit -1 timeout, and file stayed unmodified. This shows the terminal-decline result shape alone did not make the model stop cheaply enough; `config/key-update` needs a real compact Blitz route (for example an `sk`/`set_key` router path) or a genuine external core/apply_patch lane.
+
 ## Acceptance
 
 Phase7 acceptance: **NO**.
@@ -220,14 +247,16 @@ Reasons:
 2. Parser-fix rerun provides one accepted semantic router smoke (correctness 100%, exit 0, intended tool observed, Tokscale match `yes`), but this covers only one required case and no paired core/apply_patch/current Blitz comparison.
 3. Earlier pilot failures remain preserved: one timeout/incorrect row; one correct file with exit `143` and no parsed tool before parser fix.
 4. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
-5. No token savings counted: full 12-case paired acceptance gates are not met.
+5. Companion pi-blitz terminal-decline fix `2dfcf73` did not make unsupported router fallback acceptable: rerun still timed out/incorrect.
+6. No token savings counted: full 12-case paired acceptance gates are not met.
 
 ## Next precise work
 
-1. Inspect `reports/pi-tmux-runs/2026-06-09T08-54-25-712Z/semantic_arrow-replace-return__router__0/sessions/` to learn why parser missed tool call and Pi exited 143 after correct file write.
-2. Pilot `semantic/arrow-replace-return` alone with a shorter timeout or alternate provider/model after parser/exit issue is understood.
-3. Add real compact aliases only in pi-blitz if product chooses to support config/logging/markdown/json/yaml/toml/html/css; otherwise keep router fallback rows excluded from savings claims.
+1. Add a real compact config route for `config/key-update` instead of no-write decline (likely router guidance to `sk`/`set_key` if Blitz CLI support is sufficient, otherwise a Blitz-side fix).
+2. Rerun `config/key-update` router after the real route exists and compare against the accepted core baseline; preserve the failed terminal-decline artifacts.
+3. Extend real compact aliases or genuine fallback lanes for logging/markdown/json/yaml/toml/html/css before claiming 12-case Phase 7 acceptance.
 4. Add real apply_patch/core lane only if parent wants baseline comparison; do not fake via router declines.
+5. Full Phase 7 still requires paired core/current Blitz/optimized router evidence across all required cases plus structural savings preservation.
 
 ## Token claim caveat
 
