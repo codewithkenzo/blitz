@@ -1,7 +1,7 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect, so this remains blocker evidence only. No Phase 7 token-savings acceptance.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect. Direct Blitz CLI smoke shows existing `set_key` rejects the TypeScript `config.ts` fixture with `UNSUPPORTED_LANGUAGE`; pi-blitz `sk` maps to `set_key`, so current `sk` cannot satisfy this Phase 7 fixture. No Phase 7 token-savings acceptance.
 
 ## Method
 
@@ -236,7 +236,16 @@ bun bench/pi-matrix.ts \
   --md-out reports/pi-tmux-phase7-config-router-terminal-20260609.md \
   --json-out reports/pi-tmux-phase7-config-router-terminal-20260609.json
 ```
-Completed with rejected row preserved. It observed `pi_blitz_route_edit`, arg tok 1146, output tok 3383, total context tok 98483, Tokscale token match yes, but correctness 0%, exit -1 timeout, and file stayed unmodified. This shows the terminal-decline result shape alone did not make the model stop cheaply enough; `config/key-update` needs a real compact Blitz route (for example an `sk`/`set_key` router path) or a genuine external core/apply_patch lane.
+Completed with rejected row preserved. It observed `pi_blitz_route_edit`, arg tok 1146, output tok 3383, total context tok 98483, Tokscale token match yes, but correctness 0%, exit -1 timeout, and file stayed unmodified. This shows the terminal-decline result shape alone did not make the model stop cheaply enough; `config/key-update` needs a real compact Blitz route or a genuine external core/apply_patch lane.
+
+Direct `set_key` support check on the exact Phase 7 fixture:
+
+```bash
+# steering-override: ztk-for-noisy-file-output — need exact CLI stdout for set_key smoke
+tmp=$(mktemp -d); cp bench/fixtures-llm/config.ts "$tmp/config.ts"; python3 -c 'import sys,json; p=sys.argv[1]; print(json.dumps({"version":1,"file":p,"operation":"set_key","edit":{"key":"logLevel","value":"debug"},"options":{"requireParseClean":True,"requireSingleMatch":True}}))' "$tmp/config.ts" | ./zig-out/bin/blitz apply --edit - --json; status=$?; echo status=$status; cat "$tmp/config.ts"
+```
+
+Result: rejected with `code: "UNSUPPORTED_LANGUAGE"`, `operation: "set_key"`, `status=1`; file stayed `logLevel: "info"`. Existing pi-blitz `sk` alias translates directly to Blitz `set_key` (`edit: { key, value }`), so `sk` cannot perform the TypeScript `config/key-update` fixture today. No router-sk tmux/Tokscale rerun was produced because route support is absent; failed terminal-decline artifacts remain preserved.
 
 ## Acceptance
 
@@ -248,11 +257,12 @@ Reasons:
 3. Earlier pilot failures remain preserved: one timeout/incorrect row; one correct file with exit `143` and no parsed tool before parser fix.
 4. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
 5. Companion pi-blitz terminal-decline fix `2dfcf73` did not make unsupported router fallback acceptable: rerun still timed out/incorrect.
-6. No token savings counted: full 12-case paired acceptance gates are not met.
+6. Direct `set_key` smoke proves current Blitz rejects this TypeScript config fixture as `UNSUPPORTED_LANGUAGE`; pi-blitz `sk` maps to that unsupported operation.
+7. No token savings counted: full 12-case paired acceptance gates are not met.
 
 ## Next precise work
 
-1. Add a real compact config route for `config/key-update` instead of no-write decline (likely router guidance to `sk`/`set_key` if Blitz CLI support is sufficient, otherwise a Blitz-side fix).
+1. Add Blitz-side support for this TypeScript object-literal key update, or define another accepted compact route for `config/key-update`; current `sk`/`set_key` only supports JSON/YAML/TOML-style `set_key` and rejects `config.ts` as `UNSUPPORTED_LANGUAGE`.
 2. Rerun `config/key-update` router after the real route exists and compare against the accepted core baseline; preserve the failed terminal-decline artifacts.
 3. Extend real compact aliases or genuine fallback lanes for logging/markdown/json/yaml/toml/html/css before claiming 12-case Phase 7 acceptance.
 4. Add real apply_patch/core lane only if parent wants baseline comparison; do not fake via router declines.
