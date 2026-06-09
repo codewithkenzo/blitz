@@ -1022,7 +1022,11 @@ const captureAccountingArtifacts = async (): Promise<{
 	);
 	const skillSnapshotPath = join(artifactRoot, `skill.${toolProfile}.md`);
 	for (const profile of artifactProfiles) {
-		await writeFile(join(artifactRoot, `skill.${profile}.md`), skillText, "utf8");
+		await writeFile(
+			join(artifactRoot, `skill.${profile}.md`),
+			skillText,
+			"utf8",
+		);
 	}
 	let toolSpec: ToolSpecArtifact | null = null;
 	const toolSpecs: ToolSpecArtifact[] = [];
@@ -1330,7 +1334,8 @@ const runLane = async (
 		editToolName: null,
 	};
 	if (sessionFile) parsed = await parseSession(sessionFile, lane);
-	const missingSessionAfterFailedRun = !sessionFile && (r.status !== 0 || r.timedOut);
+	const missingSessionAfterFailedRun =
+		!sessionFile && (r.status !== 0 || r.timedOut);
 	const tokScale = sessionFile
 		? await runTokScale(sessionFile, parsed, targetDir)
 		: emptyTokScale(
@@ -1338,7 +1343,11 @@ const runLane = async (
 					? "no session jsonl (run failed/timed out)"
 					: "no session jsonl",
 			);
-	if (tokScaleMode === "required" && !sessionFile && !missingSessionAfterFailedRun) {
+	if (
+		tokScaleMode === "required" &&
+		!sessionFile &&
+		!missingSessionAfterFailedRun
+	) {
 		throw new Error("tokscale validation required but no session jsonl found");
 	}
 
@@ -1465,6 +1474,19 @@ const main = async () => {
 		failure: string;
 	};
 	const rows: Row[] = [];
+	type ProfileCoverage = {
+		profile: string;
+		supportedFixtures: string[];
+		skippedFixtures: { fixture: string; reason: string }[];
+	};
+	type OverheadComparison = {
+		profile: string;
+		schemaTokens: number;
+		skillTokens: number;
+		combinedResidentTokens: number;
+		reductionVsFullPct: number | null;
+		meetsCommonLaneTarget: boolean | null;
+	};
 	type RunRecord = {
 		fixture: string;
 		lane: Lane;
@@ -1528,6 +1550,73 @@ const main = async () => {
 	if (selectedFixtures.length === 0)
 		throw new Error(`no fixtures match --case ${caseFilter}`);
 
+	const profileSupportsFixture = (profile: string, fx: Fixture): boolean => {
+		if (fx.lanePolicy === "core-only") return false;
+		if (profile === "full") return true;
+		if (profile === "minimal" || profile === "minimal-v0") {
+			return fx.id === "multi/large-structural";
+		}
+		if (profile === "semantic") return fx.id.startsWith("semantic/");
+		if (profile === "structural") {
+			return (
+				fx.id.startsWith("multi/") ||
+				fx.className === "medium_wrap_body" ||
+				fx.className === "insert_body_span" ||
+				fx.className === "compose_preserve_islands"
+			);
+		}
+		if (profile === "admin") return false;
+		return false;
+	};
+
+	const artifactProfileLabels = new Set<string>(
+		accountingArtifacts.toolSpecs.map((spec) => spec.profileLabel),
+	);
+	if (accountingArtifacts.toolSpec?.profileLabel) {
+		artifactProfileLabels.add(accountingArtifacts.toolSpec.profileLabel);
+	}
+	const profileCoverage: ProfileCoverage[] = [...artifactProfileLabels].map(
+		(profile) => {
+			const supportedFixtures = selectedFixtures
+				.filter((fx) => profileSupportsFixture(profile, fx))
+				.map((fx) => fx.id);
+			const skippedFixtures = selectedFixtures
+				.filter((fx) => !profileSupportsFixture(profile, fx))
+				.map((fx) => ({
+					fixture: fx.id,
+					reason:
+						fx.lanePolicy === "core-only"
+							? "core-only fixture"
+							: `unsupported by ${profile} registered tool profile`,
+				}));
+			return { profile, supportedFixtures, skippedFixtures };
+		},
+	);
+	const fullSpec = accountingArtifacts.toolSpecs.find(
+		(spec) => spec.profileLabel === "full" || spec.profile === "full",
+	);
+	const fullCombinedResidentTokens = fullSpec
+		? fullSpec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens
+		: null;
+	const overheadComparisons: OverheadComparison[] = accountingArtifacts.toolSpecs.map(
+		(spec) => {
+			const combinedResidentTokens =
+				spec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens;
+			const reductionVsFullPct = fullCombinedResidentTokens
+				? 100 * (1 - combinedResidentTokens / fullCombinedResidentTokens)
+				: null;
+			return {
+				profile: spec.profileLabel,
+				schemaTokens: spec.serializedToolSpecsTokens,
+				skillTokens: accountingArtifacts.skill.tokens,
+				combinedResidentTokens,
+				reductionVsFullPct,
+				meetsCommonLaneTarget:
+					reductionVsFullPct === null ? null : reductionVsFullPct >= 70,
+			};
+		},
+	);
+
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
 		if (fx.lanePolicy === "core-only") return ["core"];
@@ -1540,7 +1629,8 @@ const main = async () => {
 				lane === "blitz"
 					? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0)
 					: 0;
-			const skillTokens = lane === "blitz" ? accountingArtifacts.skill.tokens : 0;
+			const skillTokens =
+				lane === "blitz" ? accountingArtifacts.skill.tokens : 0;
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx, i);
 				const argTokens = r.session.editToolCallArgsTokens;
@@ -1748,14 +1838,20 @@ const main = async () => {
 			| "core_failed_blitz_correct"
 			| "blitz_failed"
 			| "incomplete";
+		acceptedRoute?: "core" | "blitz" | "none";
+		routeDecisionReason?: string;
+		savingsCounted: boolean;
 		outputSavingsPct?: number;
 		argsSavingsPct?: number;
+		totalContextSavingsPct?: number;
 		wallSavingsPct?: number;
 		costSavingsPct?: number;
 		coreOutputTokens?: number;
 		blitzOutputTokens?: number;
 		coreArgsTokens?: number;
 		blitzArgsTokens?: number;
+		coreTotalContextTokens?: number;
+		blitzTotalContextTokens?: number;
 		coreWallMs?: number;
 		blitzWallMs?: number;
 		coreCost?: number;
@@ -1783,7 +1879,13 @@ const main = async () => {
 			const core = rows.find((r) => r.fixture === fx.id && r.lane === "core");
 			const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz");
 			if (!core || !blitz) {
-				pairwise.push({ fixture: fx.id, status: "incomplete" });
+				pairwise.push({
+					fixture: fx.id,
+					status: "incomplete",
+					acceptedRoute: "none",
+					routeDecisionReason: "Pair missing lane; savings not counted",
+					savingsCounted: false,
+				});
 				continue;
 			}
 
@@ -1791,10 +1893,13 @@ const main = async () => {
 			const blitzCorrect = rowSucceeded(blitz);
 			const basePair = {
 				fixture: fx.id,
+				savingsCounted: false,
 				coreOutputTokens: core.outputMedian,
 				blitzOutputTokens: blitz.outputMedian,
 				coreArgsTokens: core.argsTokensMedian,
 				blitzArgsTokens: blitz.argsTokensMedian,
+				coreTotalContextTokens: core.totalContextTokens,
+				blitzTotalContextTokens: blitz.totalContextTokens,
 				coreWallMs: core.wallMsMedian,
 				blitzWallMs: blitz.wallMsMedian,
 				coreCost: core.costSum,
@@ -1814,20 +1919,37 @@ const main = async () => {
 					core.wallMsMedian,
 					blitz.wallMsMedian,
 				);
+				const totalContextSavingsPct = savingsPct(
+					core.totalContextTokens,
+					blitz.totalContextTokens,
+				);
 				const costSavingsPct = savingsPct(core.costSum, blitz.costSum);
+				const blitzWinsOrTiesContext =
+					blitz.totalContextTokens <= core.totalContextTokens;
 				pairwise.push({
 					...basePair,
 					status: "both_correct",
+					acceptedRoute: blitzWinsOrTiesContext ? "blitz" : "core",
+					routeDecisionReason: blitzWinsOrTiesContext
+						? `Blitz total context ${blitz.totalContextTokens} <= core ${core.totalContextTokens}`
+						: `core/apply_patch fallback: Blitz total context ${blitz.totalContextTokens} > core ${core.totalContextTokens}`,
+					savingsCounted: blitzWinsOrTiesContext,
 					outputSavingsPct,
 					argsSavingsPct,
+					totalContextSavingsPct,
 					wallSavingsPct,
 					costSavingsPct,
 				});
 				summaryLines.push(
-					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}`,
+					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("total context", totalContextSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}; route=${blitzWinsOrTiesContext ? "blitz" : "core/apply_patch fallback"}; savings ${blitzWinsOrTiesContext ? "counted" : "not counted"}`,
 				);
 			} else if (!blitzCorrect) {
-				pairwise.push({ ...basePair, status: "blitz_failed" });
+				pairwise.push({
+					...basePair,
+					status: "blitz_failed",
+					acceptedRoute: coreCorrect ? "core" : "none",
+					routeDecisionReason: "Blitz failed; savings not counted",
+				});
 				summaryLines.push(
 					`${fx.id}: Blitz failed; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
 				);
@@ -1835,12 +1957,20 @@ const main = async () => {
 				pairwise.push({
 					...basePair,
 					status: "core_failed_blitz_correct",
+					acceptedRoute: "blitz",
+					routeDecisionReason:
+						"Blitz correctness win; token savings not counted because core row failed",
 				});
 				summaryLines.push(
 					`${fx.id}: correctness win; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
 				);
 			} else {
-				pairwise.push({ ...basePair, status: "incomplete" });
+				pairwise.push({
+					...basePair,
+					status: "incomplete",
+					acceptedRoute: "none",
+					routeDecisionReason: "Incomplete pair; savings not counted",
+				});
 				summaryLines.push(`${fx.id}: incomplete; savings not counted`);
 			}
 		}
@@ -1855,6 +1985,34 @@ const main = async () => {
 	if (coreOnlyNotes.length) {
 		summaryLines.push("", "## Core-only notes", ...coreOnlyNotes);
 	}
+
+	const coverageLines = [
+		"",
+		"## Profile coverage / skipped rows",
+		...profileCoverage.map(
+			(coverage) =>
+				`${coverage.profile}: supported ${coverage.supportedFixtures.length}/${selectedFixtures.length}; skipped ${coverage.skippedFixtures.length}${coverage.skippedFixtures.length ? ` (${coverage.skippedFixtures.map((row) => `${row.fixture}: ${row.reason}`).join("; ")})` : ""}`,
+		),
+	];
+	const overheadLines = [
+		"",
+		"## Resident overhead comparison",
+		...overheadComparisons.map((row) => {
+			const reduction =
+				row.reductionVsFullPct === null
+					? "unavailable"
+					: pct(row.reductionVsFullPct);
+			const target =
+				row.meetsCommonLaneTarget === null
+					? "unknown"
+					: row.meetsCommonLaneTarget
+						? "meets >=70% combined target"
+						: "below >=70% combined target";
+			return `${row.profile}: schema ${row.schemaTokens}, skill ${row.skillTokens}, combined ${row.combinedResidentTokens}, reduction vs full ${reduction}; ${target}`;
+		}),
+	];
+
+	console.log([...coverageLines, ...overheadLines].join("\n"));
 
 	console.log(summaryLines.join("\n"));
 	const payload = {
@@ -1884,6 +2042,8 @@ const main = async () => {
 				.map((record) => record.sessionFile)
 				.filter((path): path is string => Boolean(path)),
 		},
+		profileCoverage,
+		overheadComparisons,
 		tokScaleMode,
 		generatedAt: new Date().toISOString(),
 		rows,
@@ -1918,6 +2078,8 @@ const main = async () => {
 				`Generated: ${payload.generatedAt}`,
 				``,
 				lines.join("\n"),
+				coverageLines.join("\n"),
+				overheadLines.join("\n"),
 				summaryLines.join("\n"),
 			].join("\n"),
 		);

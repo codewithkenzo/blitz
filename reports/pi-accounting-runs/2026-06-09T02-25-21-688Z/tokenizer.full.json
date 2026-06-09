@@ -1,0 +1,8 @@
+{
+  "toolSpecTokenizer": "cl100k_base via tiktoken",
+  "skillTokenizer": "cl100k_base via tiktoken",
+  "toolCallArgTokenizer": "cl100k_base via tiktoken",
+  "model": "gpt-5.5",
+  "provider": "openai-codex",
+  "profile": "full"
+}
