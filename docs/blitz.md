@@ -83,6 +83,7 @@ type BlitzApplyRequest = {
     | "insert_body_span"
     | "wrap_body"
     | "compose_body"
+    | "merge_body_chunk"
     | "insert_after_symbol"
     | "set_body"
     | "multi_body"
@@ -133,6 +134,14 @@ type ComposeBody = {
   >;
 };
 
+type MergeBodyChunk = {
+  // Experimental deterministic body-scoped chunk merge.
+  // Snippet must contain exactly one standalone keep marker line: `//...` or `#...`.
+  // Last non-empty line before marker and first non-empty line after marker
+  // must each match exactly one complete line slice in target body.
+  snippet: string;
+};
+
 type InsertAfterSymbol = { code: string };
 type SetBody = { body: string; indentation?: "preserve" | "normalize" };
 ```
@@ -160,6 +169,18 @@ Examples that must stay tiny:
     "keep": "body",
     "after": "\n} catch (error) {\n  console.error(error);\n  throw error;\n}",
     "indentKeptBodyBy": 2
+  }
+}
+```
+
+```json
+{
+  "version": 1,
+  "file": "medium.ts",
+  "operation": "merge_body_chunk",
+  "target": { "symbol": "mediumCompute", "range": "body" },
+  "edit": {
+    "snippet": "\n  const logged = true;\n  const base = value + 1;\n//...\n  return keep;\n"
   }
 }
 ```
