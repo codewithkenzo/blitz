@@ -1905,9 +1905,11 @@ fn mergeBodyChunk(allocator: Allocator, body: []const u8, snippet: []const u8) !
 
     var out = std.ArrayList(u8).empty;
     defer out.deinit(allocator);
+    try out.appendSlice(allocator, body[0..prefix_match.start]);
     try out.appendSlice(allocator, prefix);
     try out.appendSlice(allocator, body[prefix_match.end..suffix_match.start]);
     try out.appendSlice(allocator, suffix);
+    try out.appendSlice(allocator, body[suffix_match.end..]);
     return out.toOwnedSlice(allocator);
 }
 
@@ -2483,6 +2485,38 @@ test "apply merge_body_chunk preserves deterministic span between anchors" {
     try std.testing.expect(std.mem.indexOf(u8, post, "const base = value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "const keep = base * 2;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return keep;") != null);
+}
+
+test "apply merge_body_chunk preserves outer body around chunk anchors" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function outer(value: number): number {
+        \\  const before = value - 1;
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\  const after = value + 99;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"outer"},"edit":{"snippet":"\n  const logged = true;\n  const base = value + 1;\n//...\n  return keep;\n  const done = true;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"merge_body_chunk\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const before = value - 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const logged = true;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const keep = base * 2;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const done = true;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const after = value + 99;") != null);
 }
 
 test "apply merge_body_chunk duplicate anchor rejects without mutation" {

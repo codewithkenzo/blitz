@@ -24,13 +24,14 @@ Rules:
 - snippet must contain exactly one standalone keep marker line: `//...` or `#...`.
 - Blitz picks last non-empty snippet line before marker and first non-empty snippet line after marker as literal anchors.
 - Both anchors must occur exactly once in the resolved body.
-- Output is `prefix + preserved old body span between anchors + suffix`.
+- Output preserves text outside the matched chunk: `body before prefix anchor + prefix + preserved old body span between anchors + suffix + body after suffix anchor`.
 - No fuzzy matching, no model fallback, no cross-file merge.
 
 ## Tests added
 
 Focused Zig tests in `src/apply/mod.zig`:
 - success: preserves deterministic old span between anchors and applies changed surrounding snippet text.
+- outer-body preservation: preserves body text before prefix anchor and after suffix anchor while merging local chunk.
 - duplicate/ambiguous anchor fail: rejects and leaves file unchanged.
 - missing anchor fail: rejects and leaves file unchanged.
 - malformed marker fail: rejects and leaves file unchanged.
