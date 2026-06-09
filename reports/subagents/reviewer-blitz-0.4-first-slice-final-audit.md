@@ -55,6 +55,19 @@ Not blockers for this first slice:
 - Core-replacement readiness is not proven and must wait for Phase 2 compact op/IR plus Phase 6 runtime routing.
 - Publishable savings claims require repeated green rows and no failed-row inclusion.
 
+## Auditor Rejection Follow-up
+
+After the first goal audit was rejected, additional evidence and one profile fix were added:
+
+- `pi-blitz` commit `990095c refine structural Blitz profile` reduces `structural` to `pi_blitz_replace_body_span`, `pi_blitz_multi_body`, and `pi_blitz_patch`.
+- Reduced structural schema is now `1344` tokens versus full `5517`, a `75.6%` reduction.
+- GPT/OpenAI-family full matrix was added: `reports/pi-tmux-matrix-20260609-gpt-full-profile-035706.{json,md}` using `openai-codex` / `gpt-5.5`, 26 rows, 10 clean/correct, 16 caveated, 0 Tokscale token-match mismatches, 26 session JSONL paths.
+- GPT profile-supported comparison artifacts were added: `reports/pi-tmux-matrix-20260609-gpt-profile-supported-035842-{semantic,structural,minimal}.{json,md}`.
+- ZAI reduced-structural rerun was added: `reports/pi-tmux-matrix-20260609-zai-structural-reduced-040405.{json,md}`, 8 rows, 7 clean/correct, structural schema `1344`, and the large structural Blitz patch row succeeded while core timed out.
+- Follow-up report: `reports/subagents/main-blitz-0.4-first-slice-auditor-rejection-followup.md`.
+
+Caveat: GPT/Codex row correctness was poor. These GPT rows are measurement/Tokscale/profile evidence only; no savings are claimed from failed/caveated rows.
+
 ## Final Decision
 
-APPROVE for marking the active goal complete as Phase 0/1 evidence only.
+APPROVE for marking the active goal complete as Phase 0/1 evidence only. Remaining core-replacement readiness belongs to later phases.
