@@ -45,11 +45,12 @@ const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST =
-	"/home/kenzo/dev/pi-blitz-token-profile/dist/index.js";
+	"/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL =
-	"/home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz";
-const DEFAULT_PI_BLITZ_PACKAGE = "/home/kenzo/dev/pi-blitz-token-profile";
+	"/home/kenzo/dev/pi-blitz/skills/pi-blitz";
+const DEFAULT_PI_BLITZ_PACKAGE = "/home/kenzo/dev/pi-blitz";
 const ALL_BLITZ_EDIT_TOOLS = [
+	"pi_blitz_op",
 	"pi_blitz_replace_body_span",
 	"pi_blitz_insert_body_span",
 	"pi_blitz_wrap_body",
@@ -1242,8 +1243,9 @@ const runLane = async (
 			guidance +=
 				' For this edit, call `pi_blitz_insert_body_span` with symbol `mediumCompute`, anchor `let total = seed;`, position `after`, text `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError("seed must be finite");\\n  }`, occurrence `only`.';
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			guidance +=
-				" For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rb","mediumCompute","return total;","return total + 1;","last"]]}.`
+				: " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
 			guidance +=
 				' For this edit, call `pi_blitz_multi_body`. Exact tool args JSON: {"edits":[{"symbol":"adjust","op":"replace_body_span","find":"return base;","replace":"return base + 1;","occurrence":"only"},{"symbol":"emit","op":"insert_body_span","anchor":"const marker = value;","position":"after","text":"\\n  const markerUpper = value.toUpperCase();","occurrence":"only"},{"symbol":"risky","op":"wrap_body","before":"\\n  try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}]}. JSON escapes must decode to newline characters; do not pass literal backslash-n text. Emit insert text starts with newline escape `\\n`; risky `after` MUST end with newline escape `\\n`.';
@@ -1296,7 +1298,9 @@ const runLane = async (
 	const toolsOverride =
 		lane !== "blitz"
 			? undefined
-			: fx.id.includes("multi/large-structural")
+			: toolProfile === "minimal"
+				? "pi_blitz_op"
+				: fx.id.includes("multi/large-structural")
 				? "pi_blitz_patch"
 				: fx.id.includes("multi/three-body-ops")
 					? "pi_blitz_multi_body"
