@@ -1564,6 +1564,27 @@ const runLane = async (
 				: useCompactOp
 					? ` For this TypeScript config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 					: ' For this TypeScript config fixture only, update top-level object-literal key `logLevel` to string literal `"debug"`.';
+		} else if (fx.id === "json/config-key") {
+			const script = "sk\tdebug\ttrue";
+			guidance += useRouter
+				? ` For this JSON config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this JSON config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this JSON config fixture only, set top-level key `debug` to boolean `true`.";
+		} else if (fx.id === "yaml/config-key") {
+			const script = "sk\tapp.debug\ttrue";
+			guidance += useRouter
+				? ` For this YAML config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this YAML config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this YAML config fixture only, set explicit mapping key `app.debug` to boolean `true`.";
+		} else if (fx.id === "toml/config-key") {
+			const script = "sk\tapp.debug\ttrue";
+			guidance += useRouter
+				? ` For this TOML config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this TOML config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this TOML config fixture only, set explicit table key `app.debug` to boolean `true`.";
 		} else if (fx.id.includes("small")) {
 			guidance += useRouter
 				? ` For this unsupported exact-text edit, call \`pi_blitz_route_edit\` once with exact no-write decline args JSON: ${routeArgs("", 500, "apply_patch")}.`

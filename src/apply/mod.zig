@@ -1247,8 +1247,9 @@ fn findJsonTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
     return ApplyError.ParseFailedBefore;
 }
 
-fn validateSetKeyName(key: []const u8) !void {
-    if (key.len == 0 or std.mem.indexOfAny(u8, key, ".[]/") != null) return ApplyError.InvalidPosition;
+fn validateSetKeyName(key: []const u8, allow_dot: bool) !void {
+    if (key.len == 0 or std.mem.indexOfAny(u8, key, "[]/") != null) return ApplyError.InvalidPosition;
+    if (!allow_dot and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
 }
 
 fn canonicalJsonValue(allocator: Allocator, value: std.json.Value) ![]u8 {
@@ -1302,6 +1303,18 @@ const FormatSetKeyPlan = struct {
     reason_code: []const u8,
     single_match: bool,
 };
+
+const OneLevelPath = struct {
+    parent: []const u8,
+    child: []const u8,
+};
+
+fn splitOneLevelPath(key: []const u8) ?OneLevelPath {
+    const dot = std.mem.indexOfScalar(u8, key, '.') orelse return null;
+    if (dot == 0 or dot + 1 >= key.len) return null;
+    if (std.mem.indexOfScalarPos(u8, key, dot + 1, '.') != null) return null;
+    return .{ .parent = key[0..dot], .child = key[dot + 1 ..] };
+}
 
 fn parseTreeClean(lang: bindings.Language, source: []const u8) bool {
     var parser = bindings.Parser.init();
@@ -1391,6 +1404,60 @@ fn findYamlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
     return result;
 }
 
+fn findYamlOneLevelKey(allocator: Allocator, source: []const u8, path: OneLevelPath) !FormatKeyMatch {
+    var parent_seen = false;
+    var child_seen = std.StringHashMap(void).init(allocator);
+    defer child_seen.deinit();
+    var result = FormatKeyMatch{};
+    var in_parent = false;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#') {
+            const comment_at = findLineCommentStart(line);
+            const body = line[0..comment_at];
+            if (line.len != 0 and line[0] != ' ' and line[0] != '\t') {
+                in_parent = false;
+                if (std.mem.indexOfScalar(u8, body, ':')) |colon| {
+                    const key = trimAscii(body[0..colon]);
+                    if (std.mem.eql(u8, key, path.parent)) {
+                        if (parent_seen) return ApplyError.AmbiguousMatches;
+                        parent_seen = true;
+                        const value = trimAscii(body[colon + 1 ..]);
+                        if (value.len != 0) return ApplyError.UnsupportedLanguage;
+                        in_parent = true;
+                    }
+                }
+            } else if (in_parent) {
+                var indent: usize = 0;
+                while (indent < line.len and line[indent] == ' ') indent += 1;
+                if (indent == 0 or indent % 2 != 0 or (indent < line.len and line[indent] == '\t')) return ApplyError.UnsupportedLanguage;
+                if (indent == 2 and indent < body.len) {
+                    if (std.mem.indexOfScalar(u8, body[indent..], ':')) |colon_rel| {
+                        const colon = indent + colon_rel;
+                        const key = trimAscii(body[indent..colon]);
+                        if (key.len == 0) return ApplyError.ParseFailedBefore;
+                        try rememberTopLevelKey(&child_seen, key);
+                        if (std.mem.eql(u8, key, path.child)) {
+                            result.found = true;
+                            result.value_start = line_start + colon + 1;
+                            while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                            result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                        }
+                    }
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    if (!parent_seen) return ApplyError.NoMatches;
+    if (!result.found) return ApplyError.NoMatches;
+    return result;
+}
+
 fn findTomlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
     var seen = std.StringHashMap(void).init(allocator);
     defer seen.deinit();
@@ -1429,6 +1496,51 @@ fn findTomlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
         }
         if (nl) |pos| line_start = pos + 1 else break;
     }
+    return result;
+}
+
+fn findTomlTableKey(allocator: Allocator, source: []const u8, path: OneLevelPath) !FormatKeyMatch {
+    var seen = std.StringHashMap(void).init(allocator);
+    defer seen.deinit();
+    var result = FormatKeyMatch{};
+    var found_table = false;
+    var in_table = false;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#') {
+            if (trimmed[0] == '[') {
+                if (trimmed.len > 1 and trimmed[1] == '[') return ApplyError.UnsupportedLanguage;
+                if (trimmed.len < 3 or trimmed[trimmed.len - 1] != ']') return ApplyError.ParseFailedBefore;
+                const table = trimAscii(trimmed[1 .. trimmed.len - 1]);
+                in_table = std.mem.eql(u8, table, path.parent);
+                if (in_table) {
+                    if (found_table) return ApplyError.AmbiguousMatches;
+                    found_table = true;
+                }
+            } else if (in_table) {
+                const comment_at = findLineCommentStart(line);
+                const body = line[0..comment_at];
+                if (std.mem.indexOfScalar(u8, body, '=')) |eq| {
+                    const key = trimAscii(body[0..eq]);
+                    if (key.len == 0 or std.mem.indexOfScalar(u8, key, '.') != null or std.mem.indexOfScalar(u8, key, '[') != null or std.mem.indexOfScalar(u8, key, ']') != null) return ApplyError.UnsupportedLanguage;
+                    try rememberTopLevelKey(&seen, key);
+                    if (std.mem.eql(u8, key, path.child)) {
+                        result.found = true;
+                        result.value_start = line_start + eq + 1;
+                        while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                        result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                    }
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    if (!found_table) return ApplyError.NoMatches;
+    if (!result.found) return ApplyError.NoMatches;
     return result;
 }
 
@@ -1520,9 +1632,13 @@ fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8
         if (!parseTreeClean(.yaml, original)) return ApplyError.ParseFailedBefore;
         const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
         defer allocator.free(encoded);
-        const match = try findYamlTopLevelKey(allocator, original, key);
+        const path = splitOneLevelPath(key);
+        if (path == null and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
+        const match = if (path) |p| try findYamlOneLevelKey(allocator, original, p) else try findYamlTopLevelKey(allocator, original, key);
         const built = if (match.found)
             JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else if (path != null)
+            return ApplyError.NoMatches
         else
             try buildInsertedFlatKey(allocator, original, match.insert_at, key, ": ", encoded);
         if (!parseTreeClean(.yaml, built.contents)) {
@@ -1535,9 +1651,13 @@ fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8
         if (!parseTreeClean(.toml, original)) return ApplyError.ParseFailedBefore;
         const encoded = try canonicalSimpleScalar(allocator, value, .toml);
         defer allocator.free(encoded);
-        const match = try findTomlTopLevelKey(allocator, original, key);
+        const path = splitOneLevelPath(key);
+        if (path == null and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
+        const match = if (path) |p| try findTomlTableKey(allocator, original, p) else try findTomlTopLevelKey(allocator, original, key);
         const built = if (match.found)
             JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else if (path != null)
+            return ApplyError.NoMatches
         else
             try buildInsertedFlatKey(allocator, original, match.insert_at, key, " = ", encoded);
         if (!parseTreeClean(.toml, built.contents)) {
@@ -1569,7 +1689,8 @@ fn runSetKey(
     const plan_start = Io.Clock.awake.now(io);
     const edit_obj = apply_ir.expectObject(req.edit) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const key = apply_ir.requireString(edit_obj, "key") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    validateSetKeyName(key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    const allow_dotted_key = std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml") or std.mem.eql(u8, ext, ".toml");
+    validateSetKeyName(key, allow_dotted_key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const value = edit_obj.get("value") orelse return emitFailure(ApplyError.MissingField, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const built_plan: FormatSetKeyPlan = if (std.mem.eql(u8, ext, ".json")) blk: {
@@ -2350,6 +2471,52 @@ test "apply set_key rejects duplicate YAML key without mutation" {
     try std.testing.expectEqualStrings(original, post);
 }
 
+test "apply set_key updates YAML one-level mapping key and rejects duplicate child" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\app:
+        \\  name: blitz
+        \\  debug: false # keep me
+        \\limits:
+        \\  debug: false
+    ;
+    const duplicate =
+        \\app:
+        \\  debug: false
+        \\  debug: true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "nested.yaml", .data = original });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup-nested.yaml", .data = duplicate });
+    const path = try tmp.dir.realPathFileAlloc(io, "nested.yaml", allocator);
+    defer allocator.free(path);
+    const dup_path = try tmp.dir.realPathFileAlloc(io, "dup-nested.yaml", allocator);
+    defer allocator.free(dup_path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"app.debug","value":true}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_yaml_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "nested.yaml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\app:
+        \\  name: blitz
+        \\  debug: true # keep me
+        \\limits:
+        \\  debug: false
+    , post);
+    const dup_out = try runApplyTestExpectFailure(allocator, io, req, dup_path);
+    defer allocator.free(dup_out);
+    try std.testing.expect(std.mem.indexOf(u8, dup_out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, dup_out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const dup_post = try tmp.dir.readFileAlloc(io, "dup-nested.yaml", allocator, .unlimited);
+    defer allocator.free(dup_post);
+    try std.testing.expectEqualStrings(duplicate, dup_post);
+}
+
 test "apply set_key updates and inserts TOML top-level keys before tables" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
@@ -2440,6 +2607,52 @@ test "apply set_key rejects TOML duplicate dotted key and dry-run preserves file
     const dry_post = try tmp.dir.readFileAlloc(io, "dry.toml", allocator, .unlimited);
     defer allocator.free(dry_post);
     try std.testing.expectEqualStrings(dry_original, dry_post);
+}
+
+test "apply set_key updates TOML table key and rejects duplicate table child" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\[app]
+        \\name = "blitz"
+        \\debug = false # keep me
+        \\[limits]
+        \\debug = false
+    ;
+    const duplicate =
+        \\[app]
+        \\debug = false
+        \\debug = true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "nested.toml", .data = original });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup-nested.toml", .data = duplicate });
+    const path = try tmp.dir.realPathFileAlloc(io, "nested.toml", allocator);
+    defer allocator.free(path);
+    const dup_path = try tmp.dir.realPathFileAlloc(io, "dup-nested.toml", allocator);
+    defer allocator.free(dup_path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"app.debug","value":true}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_toml_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "nested.toml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\[app]
+        \\name = "blitz"
+        \\debug = true # keep me
+        \\[limits]
+        \\debug = false
+    , post);
+    const dup_out = try runApplyTestExpectFailure(allocator, io, req, dup_path);
+    defer allocator.free(dup_out);
+    try std.testing.expect(std.mem.indexOf(u8, dup_out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, dup_out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const dup_post = try tmp.dir.readFileAlloc(io, "dup-nested.toml", allocator, .unlimited);
+    defer allocator.free(dup_post);
+    try std.testing.expectEqualStrings(duplicate, dup_post);
 }
 
 test "apply set_key rejects non-json extension and nested key syntax" {

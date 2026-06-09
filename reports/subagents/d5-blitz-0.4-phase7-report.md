@@ -1,7 +1,7 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect. New Blitz-side TypeScript `set_key` support now handles the exact top-level `config.ts` object-literal key update deterministically. Direct CLI smoke passes. Router `sk\tlogLevel\tdebug` tmux/Tokscale rerun is accepted for `config/key-update` only, but it does not beat existing core baseline on total context. No Phase 7 token-savings acceptance.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect. New Blitz-side TypeScript `set_key` support now handles the exact top-level `config.ts` object-literal key update deterministically. Direct CLI smoke passes. Router `sk\tlogLevel\tdebug` tmux/Tokscale rerun is accepted for `config/key-update` only, but it does not beat existing core baseline on total context. New format-config slice adds deterministic explicit one-level YAML/TOML path support (`app.debug`) and proves JSON/YAML/TOML compact `sk` router rows executable/correct with Tokscale; all three are accepted as router rows but lose to paired core baselines on total context. No Phase 7 token-savings acceptance.
 
 ## Method
 
@@ -171,7 +171,7 @@ This is overhead evidence only, not replacement benchmark proof.
 | 8 | rename within file | `rename/function-name` (`rename.ts`) | added deterministic fixture | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 9 | Markdown section append | `markdown/append-section` (`markdown-append.md`) | added deterministic fixture | unsupported by AST alias; router guidance no-write `apply_patch` decline | fixture covered, no accepted run |
 | 10 | TSX component prop/body tweak | `semantic/tsx-replace-return` | existing | supported alias `rr` through `pi_blitz_route_edit` args `f`, `r`, `s`, `fallbackContextTokensExpected` | fixture covered, no accepted run |
-| 11 | JSON/YAML/TOML top-level key update | `json/config-key`, `yaml/config-key`, `toml/config-key` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
+| 11 | JSON/YAML/TOML top-level/explicit path key update | `json/config-key`, `yaml/config-key`, `toml/config-key` | added deterministic fixtures | supported by compact `sk` route: JSON `sk\tdebug\ttrue`; YAML/TOML `sk\tapp.debug\ttrue` | router tmux/Tokscale rows accepted/correct for all 3; paired core baselines also correct; no savings because router total context exceeds core |
 | 12 | HTML/CSS small edit | `html/small-edit`, `css/small-edit` | added deterministic fixtures | unsupported compact alias today; router guidance no-write `apply_patch` decline | fixtures covered, no accepted run |
 
 ## D5 continuation audit/proof step (2026-06-09)
@@ -285,6 +285,53 @@ bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js
 
 Both passed before benchmark/report update; final full gate recorded in task handoff.
 
+## D5 continuation: JSON/YAML/TOML format config `sk` unblock
+
+Implementation:
+- `src/apply/mod.zig` keeps JSON top-level `set_key` behavior intact.
+- YAML/TOML now allow deterministic explicit one-level dotted keys only for existing mapping/table values: `app.debug` updates `app:` child key in YAML and `[app]` table key in TOML.
+- Scope is fail-closed: no fuzzy nested search, no multi-level dotted paths, no insertion for dotted YAML/TOML keys, duplicate child keys reject before write, parse clean before/after.
+- Focused tests added for YAML one-level mapping update + duplicate child no-mutation, and TOML table key update + duplicate child no-mutation.
+
+Direct CLI smoke on copied fixtures:
+
+```bash
+# copies bench/fixtures-llm/config.{json,yaml,toml}
+# JSON request: key debug, value true
+# YAML request: key app.debug, value true
+# TOML request: key app.debug, value true
+```
+
+Result: all exit 0 with `routeReasonCode` `format_text_json_set_key`, `format_text_yaml_set_key`, `format_text_toml_set_key`; copied files changed only expected `debug: false` / `debug = false` / `"debug": false` value to boolean true.
+
+Router guidance update:
+- `bench/pi-matrix.ts` now gives exact compact router syntax for proven rows:
+  - JSON: `sk\tdebug\ttrue` (compact parser turns `true` into boolean true)
+  - YAML: `sk\tapp.debug\ttrue`
+  - TOML: `sk\tapp.debug\ttrue`
+
+New preserved artifacts:
+- Router Markdown report: `reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.md`
+- Router JSON report: `reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json`
+- Router raw tmux run root: `reports/pi-tmux-runs/2026-06-09T16-09-39-628Z`
+- Router accounting artifacts: `reports/pi-accounting-runs/2026-06-09T16-09-39-628Z`
+- Router tmux session: `pi-bench-2026-06-09T16-09-39-628Z`
+- Core Markdown report: `reports/pi-tmux-phase7-format-config-core-20260609-d5.md`
+- Core JSON report: `reports/pi-tmux-phase7-format-config-core-20260609-d5.json`
+- Core raw tmux run root: `reports/pi-tmux-runs/2026-06-09T16-10-58-044Z`
+- Core accounting artifacts: `reports/pi-accounting-runs/2026-06-09T16-10-58-044Z`
+- Core tmux session: `pi-bench-2026-06-09T16-10-58-044Z`
+
+Accepted format-config router results:
+
+| Case | Router result | Core baseline | Status vs core |
+|---|---|---|---|
+| `json/config-key` | correct 100%, exit 0, tool `pi_blitz_route_edit`, arg tok 66, result payload tok 26, total context tok 10447, Tokscale match yes | correct 100%, exit 0, tool `edit`, arg tok 70, result payload tok 51, total context tok 8484, Tokscale match yes | accepted executable row; rejected savings (router +1963 tok) |
+| `yaml/config-key` | correct 100%, exit 0, tool `pi_blitz_route_edit`, arg tok 68, result payload tok 27, total context tok 10484, Tokscale match yes | correct 100%, exit 0, tool `edit`, arg tok 67, result payload tok 98, total context tok 8696, Tokscale match yes | accepted executable row; rejected savings (router +1788 tok) |
+| `toml/config-key` | correct 100%, exit 0, tool `pi_blitz_route_edit`, arg tok 70, result payload tok 31, total context tok 10485, Tokscale match yes | correct 100%, exit 0, tool `edit`, arg tok 67, result payload tok 8, total context tok 8329, Tokscale match yes | accepted executable row; rejected savings (router +2156 tok) |
+
+Conclusion for this fixture group: JSON/YAML/TOML `config-key` compact router rows are executable and accepted for correctness, but none beat/tie core on paired total context. No token savings claim.
+
 ## Acceptance
 
 Phase7 acceptance: **NO**.
@@ -296,7 +343,8 @@ Reasons:
 4. apply_patch/core baseline remains unavailable in harness; only explicit no-write declines are honest.
 5. Companion pi-blitz terminal-decline fix `2dfcf73` did not make unsupported router fallback acceptable: rerun still timed out/incorrect.
 6. `config/key-update` blocker is removed and the unquoted `sk` router row is accepted for this case, but router total context exceeded the accepted core baseline by 2172 tokens in this run, so it is not savings evidence.
-7. No token savings counted: full 12-case paired acceptance gates are not met.
+7. JSON/YAML/TOML `config-key` compact router rows are accepted/correct, but all three exceed paired core total context in this run, so they are not savings evidence.
+8. No token savings counted: full 12-case paired acceptance gates are not met.
 
 ## Next precise work
 
