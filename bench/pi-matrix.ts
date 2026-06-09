@@ -647,7 +647,10 @@ const readmeExpected = readmeSrc.replace(
 );
 
 const configSrc = await readFile(join(fixtureDir, "config.ts"), "utf8");
-const configExpected = configSrc.replace('logLevel: "info"', 'logLevel: "debug"');
+const configExpected = configSrc.replace(
+	'logLevel: "info"',
+	'logLevel: "debug"',
+);
 
 const loggingSrc = await readFile(join(fixtureDir, "logging.ts"), "utf8");
 const loggingExpected = loggingSrc.replace(
@@ -655,7 +658,10 @@ const loggingExpected = loggingSrc.replace(
 	"  console.log(`Processing order ${orderId}`);\n  console.time(`Processing order ${orderId}`);\n",
 );
 
-const longSectionSrc = await readFile(join(fixtureDir, "long-section.ts"), "utf8");
+const longSectionSrc = await readFile(
+	join(fixtureDir, "long-section.ts"),
+	"utf8",
+);
 const longSectionExpected = longSectionSrc.replace(
 	"  return `Invoice ${id} for ${customer}: $0.00`;",
 	"  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;",
@@ -667,26 +673,41 @@ const renameExpected = renameSrc.replace(
 	"export function calculateAverage",
 );
 
-const markdownAppendSrc = await readFile(join(fixtureDir, "markdown-append.md"), "utf8");
+const markdownAppendSrc = await readFile(
+	join(fixtureDir, "markdown-append.md"),
+	"utf8",
+);
 const markdownAppendExpected = markdownAppendSrc.replace(
 	"<!-- append-target -->\n",
 	"<!-- append-target -->\n## Configuration Reference\n\nSee the `blitz --help` command.\n",
 );
 
 const jsonConfigSrc = await readFile(join(fixtureDir, "config.json"), "utf8");
-const jsonConfigExpected = jsonConfigSrc.replace('"debug": false', '"debug": true');
+const jsonConfigExpected = jsonConfigSrc.replace(
+	'"debug": false',
+	'"debug": true',
+);
 
 const yamlConfigSrc = await readFile(join(fixtureDir, "config.yaml"), "utf8");
-const yamlConfigExpected = yamlConfigSrc.replace("  debug: false", "  debug: true");
+const yamlConfigExpected = yamlConfigSrc.replace(
+	"  debug: false",
+	"  debug: true",
+);
 
 const tomlConfigSrc = await readFile(join(fixtureDir, "config.toml"), "utf8");
-const tomlConfigExpected = tomlConfigSrc.replace("debug = false", "debug = true");
+const tomlConfigExpected = tomlConfigSrc.replace(
+	"debug = false",
+	"debug = true",
+);
 
 const cssSrc = await readFile(join(fixtureDir, "style.css"), "utf8");
 const cssExpected = cssSrc.replace("background: #333;", "background: #222;");
 
 const htmlSrc = await readFile(join(fixtureDir, "index.html"), "utf8");
-const htmlExpected = htmlSrc.replace("<title>Blitz App</title>", "<title>Blitz CLI</title>");
+const htmlExpected = htmlSrc.replace(
+	"<title>Blitz App</title>",
+	"<title>Blitz CLI</title>",
+);
 
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
@@ -738,12 +759,12 @@ const routeForLane = (
 		: lane === "router"
 			? { route: "token_router", routeReasonCode: "lane_router_facade" }
 			: {
-				route:
-					fx?.id.includes("multi/") || fx?.id.includes("patch")
-						? "ast_batch"
-						: "ast_narrow",
-				routeReasonCode: "lane_blitz_structured_tool",
-			};
+					route:
+						fx?.id.includes("multi/") || fx?.id.includes("patch")
+							? "ast_batch"
+							: "ast_narrow",
+					routeReasonCode: "lane_blitz_structured_tool",
+				};
 
 const piArgs = (
 	lane: Lane,
@@ -1447,15 +1468,23 @@ const runLane = async (
 				? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
 				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
 		const compactArgs = (script: string) =>
-			JSON.stringify({ f: targetPath, ops: script.split("\n").map((line) => line.split("\t")) });
+			JSON.stringify({
+				f: targetPath,
+				ops: script.split("\n").map((line) => line.split("\t")),
+			});
 		const routeArgs = (script: string, fallback = 5000, route = "blitz") =>
-			JSON.stringify({ f: targetPath, r: route, s: script, fallbackContextTokensExpected: fallback });
+			JSON.stringify({
+				f: targetPath,
+				r: route,
+				s: script,
+				fallbackContextTokensExpected: fallback,
+			});
 		if (fx.id.includes("wrap-body")) {
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs("wb\tmediumCompute\t\\n  try {\t  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\t2")}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["wb","mediumCompute","\\n  try {","  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n",2]]}.`
-				: ' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
+					: ' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
 				' For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: "only" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\"seed must be finite\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: "last" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: "last" } } ].';
@@ -1463,12 +1492,13 @@ const runLane = async (
 			guidance +=
 				' For this edit, call `pi_blitz_insert_body_span` with symbol `mediumCompute`, anchor `let total = seed;`, position `after`, text `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError("seed must be finite");\\n  }`, occurrence `only`.';
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			const script = "rb\tmediumCompute\treturn total;\treturn total + 1;\tlast";
+			const script =
+				"rb\tmediumCompute\treturn total;\treturn total + 1;\tlast";
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+					: " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
 			guidance +=
 				' For this edit, call `pi_blitz_multi_body`. Exact tool args JSON: {"edits":[{"symbol":"adjust","op":"replace_body_span","find":"return base;","replace":"return base + 1;","occurrence":"only"},{"symbol":"emit","op":"insert_body_span","anchor":"const marker = value;","position":"after","text":"\\n  const markerUpper = value.toUpperCase();","occurrence":"only"},{"symbol":"risky","op":"wrap_body","before":"\\n  try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}]}. JSON escapes must decode to newline characters; do not pass literal backslash-n text. Emit insert text starts with newline escape `\\n`; risky `after` MUST end with newline escape `\\n`.';
@@ -1497,35 +1527,36 @@ const runLane = async (
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+					: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/class-method-try-catch")) {
 			const script = "tc\trenderScore\tconsole.error(error);\\nthrow error;\t2";
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+					: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/arrow-replace-return")) {
 			const script = 'rr\tpickLabel\t"unknown"\tlast';
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: ' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
 			const script = 'rr\tclassify\t"other"\tlast';
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: ' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/tsx-replace-return")) {
-			const script = 'rr\tStatusBadge\t<strong className="badge">{label.toUpperCase()}</strong>\tonly';
+			const script =
+				'rr\tStatusBadge\t<strong className="badge">{label.toUpperCase()}</strong>\tonly';
 			guidance += useRouter
 				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
-				: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
 		} else if (fx.id === "config/key-update") {
 			const script = "sk\tlogLevel\tdebug";
 			guidance += useRouter
@@ -1555,20 +1586,20 @@ const runLane = async (
 			: lane === "router"
 				? "pi_blitz_route_edit"
 				: toolProfile === "minimal"
-				? "pi_blitz_op"
-				: fx.id.includes("multi/large-structural")
-					? "pi_blitz_patch"
-					: fx.id.includes("multi/three-body-ops")
-						? "pi_blitz_multi_body"
-						: fx.id.includes("insert-body-span")
-							? "pi_blitz_insert_body_span"
-							: fx.id.includes("compose-preserve-islands")
-								? "pi_blitz_compose_body"
-								: fx.id.includes("wrap-body")
-									? "pi_blitz_wrap_body"
-									: fx.id.includes("marker-tail")
-										? "pi_blitz_replace_body_span"
-										: semanticTools[fx.id];
+					? "pi_blitz_op"
+					: fx.id.includes("multi/large-structural")
+						? "pi_blitz_patch"
+						: fx.id.includes("multi/three-body-ops")
+							? "pi_blitz_multi_body"
+							: fx.id.includes("insert-body-span")
+								? "pi_blitz_insert_body_span"
+								: fx.id.includes("compose-preserve-islands")
+									? "pi_blitz_compose_body"
+									: fx.id.includes("wrap-body")
+										? "pi_blitz_wrap_body"
+										: fx.id.includes("marker-tail")
+											? "pi_blitz_replace_body_span"
+											: semanticTools[fx.id];
 	assertProfileSupportsTools(toolsOverride);
 	const r =
 		runner === "tmux"
@@ -1899,9 +1930,7 @@ const main = async () => {
 			const runs: LaneResult[] = [];
 			const laneToolSpec = toolSpecForLane(lane);
 			const schemaTokens =
-				lane !== "core"
-					? (laneToolSpec?.serializedToolSpecsTokens ?? 0)
-					: 0;
+				lane !== "core" ? (laneToolSpec?.serializedToolSpecsTokens ?? 0) : 0;
 			const skillTokens =
 				lane !== "core" ? accountingArtifacts.skill.tokens : 0;
 			for (let i = 0; i < iters; i++) {
