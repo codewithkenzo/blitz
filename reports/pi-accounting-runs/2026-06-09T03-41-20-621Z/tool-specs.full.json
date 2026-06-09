@@ -1,0 +1,977 @@
+{
+  "generatedAt": "2026-06-09T03:41:20.907Z",
+  "profile": "full",
+  "profileLabel": "full",
+  "tools": [
+    {
+      "name": "pi_blitz_route_edit",
+      "label": "blitz route edit",
+      "description": "Token-first edit router. Executes Blitz only with supported ops/s and proof/request; otherwise no-write decline to core/apply_patch.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "f"
+        ],
+        "properties": {
+          "f": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Blitz alias tuples. Missing ops/s declines to core/apply_patch.",
+            "type": "array",
+            "items": {
+              "minItems": 2,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "description": "Compact op tuple item.",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          },
+          "s": {
+            "minLength": 1,
+            "maxLength": 524288,
+            "description": "Compact Blitz script, tab-separated.",
+            "type": "string"
+          },
+          "r": {
+            "description": "Route preference. auto fails closed without fallbackContextTokensExpected proof.",
+            "anyOf": [
+              {
+                "const": "auto",
+                "type": "string"
+              },
+              {
+                "const": "blitz",
+                "type": "string"
+              },
+              {
+                "const": "core",
+                "type": "string"
+              },
+              {
+                "const": "apply_patch",
+                "type": "string"
+              }
+            ]
+          },
+          "fallbackContextTokensExpected": {
+            "description": "Expected core/apply_patch context tokens for same edit.",
+            "type": "number"
+          },
+          "p": {
+            "description": "Preview/dry-run when Blitz selected.",
+            "type": "boolean"
+          },
+          "d": {
+            "description": "Include compact diff summary when Blitz selected.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_op",
+      "label": "blitz op",
+      "description": "Compact alias edit. Args: {f,ops|s,p?,d?}. s is tab-line script. Aliases rr rb ib wb tc ru ia bt as ek dk sk.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "f"
+        ],
+        "properties": {
+          "f": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Alias tuples: rr/rb/ib/wb/tc/ru/ia/bt/as/ek/dk/sk.",
+            "type": "array",
+            "items": {
+              "minItems": 2,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "description": "Compact op tuple item.",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          },
+          "s": {
+            "minLength": 1,
+            "maxLength": 524288,
+            "description": "Compact script; one tuple per line, tab-separated: rr<TAB>symbol<TAB>expr.",
+            "type": "string"
+          },
+          "p": {
+            "description": "Preview/dry-run.",
+            "type": "boolean"
+          },
+          "d": {
+            "description": "Include compact diff summary.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_read",
+      "label": "blitz read",
+      "description": "AST structure summary of a source file (via blitz).",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_edit",
+      "label": "blitz edit",
+      "description": "Symbol-anchored AST edit. `replace` (symbol name) replaces only the body of the named function/class/method and preserves its signature automatically. `after` (symbol name) inserts code after that symbol. Exactly one of those two must be set, and the value must be the SYMBOL NAME, never source code. `snippet` is the new body. For large unchanged bodies, use `// ... existing code ...` or `// @keep` markers and never repeat unchanged code.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "snippet"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "snippet": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Replacement code body. May include `// ... existing code ...` (or `# ...` for Python) to preserve unchanged regions. NOT a diff or oldText/newText pair — just the new body.",
+            "type": "string"
+          },
+          "after": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Name of the function/class/method/variable to insert AFTER. Must be the SYMBOL NAME only (e.g. \"handleRequest\"), never source code or text.",
+            "type": "string"
+          },
+          "replace": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Name of the function/class/method/variable whose body to replace. Must be the SYMBOL NAME only (e.g. \"handleRequest\"), never source code or text.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_batch",
+      "label": "blitz batch-edit",
+      "description": "Multiple symbol-anchored edits in one file.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "edits"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "edits": {
+            "minItems": 1,
+            "maxItems": 64,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "snippet"
+              ],
+              "properties": {
+                "snippet": {
+                  "minLength": 1,
+                  "maxLength": 65536,
+                  "description": "Replacement code body. May include `// ... existing code ...` (or `# ...` for Python) to preserve unchanged regions. NOT a diff or oldText/newText pair — just the new body.",
+                  "type": "string"
+                },
+                "after": {
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "description": "Name of the function/class/method/variable to insert AFTER. Must be the SYMBOL NAME only (e.g. \"handleRequest\"), never source code or text.",
+                  "type": "string"
+                },
+                "replace": {
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "description": "Name of the function/class/method/variable whose body to replace. Must be the SYMBOL NAME only (e.g. \"handleRequest\"), never source code or text.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_apply",
+      "label": "blitz apply",
+      "description": "Structured v0.2 apply via JSON IR. Use operation enum + target + edit payload. Prefer this for deterministic symbol edits and scoped wraps/insertions.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "operation",
+          "target",
+          "edit"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "operation": {
+            "description": "Structured edit operation. Prefer one of: replace_body_span, insert_body_span, wrap_body, compose_body, multi_body, insert_after_symbol, set_body, patch.",
+            "anyOf": [
+              {
+                "const": "replace_body_span",
+                "type": "string"
+              },
+              {
+                "const": "insert_body_span",
+                "type": "string"
+              },
+              {
+                "const": "wrap_body",
+                "type": "string"
+              },
+              {
+                "const": "compose_body",
+                "type": "string"
+              },
+              {
+                "const": "multi_body",
+                "type": "string"
+              },
+              {
+                "const": "insert_after_symbol",
+                "type": "string"
+              },
+              {
+                "const": "set_body",
+                "type": "string"
+              },
+              {
+                "const": "patch",
+                "type": "string"
+              },
+              {
+                "const": "replace_unique",
+                "type": "string"
+              },
+              {
+                "const": "insert_after_anchor",
+                "type": "string"
+              },
+              {
+                "const": "insert_before_anchor",
+                "type": "string"
+              },
+              {
+                "const": "replace_between",
+                "type": "string"
+              },
+              {
+                "const": "append_section",
+                "type": "string"
+              },
+              {
+                "const": "ensure_line",
+                "type": "string"
+              },
+              {
+                "const": "delete_range",
+                "type": "string"
+              },
+              {
+                "const": "set_key",
+                "type": "string"
+              }
+            ]
+          },
+          "target": {
+            "description": "Symbol target object for apply command.",
+            "type": "object",
+            "required": [
+              "symbol"
+            ],
+            "properties": {
+              "symbol": {
+                "minLength": 1,
+                "maxLength": 512,
+                "description": "Target symbol name (declaration, not call-site). No surrounding text or code.",
+                "type": "string"
+              },
+              "kind": {
+                "description": "Expected AST kind hint; narrows candidate selection.",
+                "anyOf": [
+                  {
+                    "const": "function",
+                    "type": "string"
+                  },
+                  {
+                    "const": "method",
+                    "type": "string"
+                  },
+                  {
+                    "const": "class",
+                    "type": "string"
+                  },
+                  {
+                    "const": "variable",
+                    "type": "string"
+                  },
+                  {
+                    "const": "type",
+                    "type": "string"
+                  }
+                ]
+              },
+              "range": {
+                "description": "Mutate body (default) or full declaration node range.",
+                "anyOf": [
+                  {
+                    "const": "body",
+                    "type": "string"
+                  },
+                  {
+                    "const": "node",
+                    "type": "string"
+                  }
+                ]
+              }
+            }
+          },
+          "edit": {
+            "description": "Operation-specific payload. Use only keys defined per operation docs. Unknown keys rejected by runtime checks during execution.",
+            "type": "object",
+            "patternProperties": {
+              "^(.*)$": {}
+            }
+          },
+          "dry_run": {
+            "description": "No-write preview request for apply.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request compact diff summary in CLI output.",
+            "type": "boolean"
+          },
+          "options": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "dryRun": {
+                "description": "Set true for no-write dry run. If true, tool still performs target matching and edit validation.",
+                "type": "boolean"
+              },
+              "includeDiff": {
+                "description": "Set true to request compact diff summary from CLI output.",
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_replace_body_span",
+      "label": "blitz replace body span",
+      "description": "Compact structured edit: replace exact text inside a symbol body. Use for medium/large symbols when exact in-body span is known. For tiny unique text edits, core edit may be cheaper.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "find",
+          "replace"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "find": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Exact text to find inside the symbol body.",
+            "type": "string"
+          },
+          "replace": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Replacement text.",
+            "type": "string"
+          },
+          "occurrence": {
+            "description": "Which occurrence to target. Use 'only' unless duplicate anchors are expected; use 'last' for tail edits.",
+            "anyOf": [
+              {
+                "const": "only",
+                "type": "string"
+              },
+              {
+                "const": "first",
+                "type": "string"
+              },
+              {
+                "const": "last",
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_insert_body_span",
+      "label": "blitz insert body span",
+      "description": "Compact structured edit: insert text before/after exact text inside a symbol body. Use for structural inserts in large symbols without repeating body text.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "anchor",
+          "position",
+          "text"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "anchor": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Exact anchor text inside the symbol body.",
+            "type": "string"
+          },
+          "position": {
+            "description": "Insert before or after anchor.",
+            "anyOf": [
+              {
+                "const": "before",
+                "type": "string"
+              },
+              {
+                "const": "after",
+                "type": "string"
+              }
+            ]
+          },
+          "text": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Text to insert.",
+            "type": "string"
+          },
+          "occurrence": {
+            "description": "Which occurrence to target. Use 'only' unless duplicate anchors are expected; use 'last' for tail edits.",
+            "anyOf": [
+              {
+                "const": "only",
+                "type": "string"
+              },
+              {
+                "const": "first",
+                "type": "string"
+              },
+              {
+                "const": "last",
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_wrap_body",
+      "label": "blitz wrap body",
+      "description": "Compact structured edit: wrap an entire symbol body without re-emitting it. Best token-saving path for try/catch, guards, timing wrappers, and similar large-body transforms.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "before",
+          "after"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "before": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Text placed before kept body.",
+            "type": "string"
+          },
+          "after": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Text placed after kept body.",
+            "type": "string"
+          },
+          "indentKeptBodyBy": {
+            "minimum": 0,
+            "description": "Spaces to add before each kept body line.",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_compose_body",
+      "label": "blitz compose body",
+      "description": "Compact structured edit: compose a symbol body from text segments and kept ranges. Use for multi-hunk/preserve-island edits in medium/large symbols.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "segments"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "segments": {
+            "minItems": 1,
+            "maxItems": 32,
+            "description": "Segments: {text:string}, {keep:'body'}, or {keep:{beforeKeep?,afterKeep?,includeBefore?,includeAfter?,occurrence?}}.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "patternProperties": {
+                "^(.*)$": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_multi_body",
+      "label": "blitz multi body",
+      "description": "Compact structured edit: apply multiple body-scoped edits in one apply request. Use when several symbol-body transforms should stay in one CLI call.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "edits"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "edits": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Edit entries. replace_body_span uses {symbol,op,find,replace,occurrence?}; insert_body_span uses {symbol,op,anchor,position,text,occurrence?}; wrap_body uses {symbol,op,before,after,indentKeptBodyBy?}.",
+            "type": "array",
+            "items": {
+              "additionalProperties": true,
+              "type": "object",
+              "required": [
+                "symbol",
+                "op"
+              ],
+              "properties": {
+                "symbol": {
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "description": "Target declaration symbol name only.",
+                  "type": "string"
+                },
+                "op": {
+                  "description": "Structured body operation for one edit entry.",
+                  "anyOf": [
+                    {
+                      "const": "replace_body_span",
+                      "type": "string"
+                    },
+                    {
+                      "const": "insert_body_span",
+                      "type": "string"
+                    },
+                    {
+                      "const": "wrap_body",
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_patch",
+      "label": "blitz patch",
+      "description": "Compact tuple patch wrapper. Use ops tuples for replace/insert_after/wrap/replace_return/try_catch without repeating full symbol bodies.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "ops"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Compact Blitz patch tuples.",
+            "type": "array",
+            "items": {
+              "minItems": 3,
+              "maxItems": 5,
+              "description": "One compact patch tuple.",
+              "type": "array",
+              "items": {
+                "description": "Patch tuple item. Ops: ['replace',symbol,find,replace,occurrence?], ['insert_after',symbol,anchor,text,occurrence?], ['wrap',symbol,before,after,indent?], ['replace_return',symbol,expr,occurrence?], ['try_catch',symbol,catchBody,indent?].",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            }
+          },
+          "dry_run": {
+            "description": "No-write preview request for patch.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request compact diff summary in CLI output.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_try_catch",
+      "label": "blitz try catch",
+      "description": "Compact semantic edit: wrap a symbol body in TypeScript try/catch without repeating the body. Use for large functions that need catch logging/rethrow logic.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "catchBody"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "catchBody": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Catch body, without outer catch braces.",
+            "type": "string"
+          },
+          "indent": {
+            "minimum": 0,
+            "description": "Spaces to add before each kept body line. Defaults to 2.",
+            "type": "number"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_replace_return",
+      "label": "blitz replace return",
+      "description": "Compact semantic edit: replace a return statement expression inside a symbol body. Avoids repeating surrounding logic.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "symbol",
+          "expr"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "symbol": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Target declaration symbol name only.",
+            "type": "string"
+          },
+          "dry_run": {
+            "description": "No-write preview request.",
+            "type": "boolean"
+          },
+          "include_diff": {
+            "description": "Request diff summary from blitz.",
+            "type": "boolean"
+          },
+          "expr": {
+            "minLength": 1,
+            "maxLength": 65536,
+            "description": "Return expression, without leading return and without required trailing semicolon.",
+            "type": "string"
+          },
+          "occurrence": {
+            "description": "Which occurrence to target. Use 'only' unless duplicate anchors are expected; use 'last' for tail edits.",
+            "anyOf": [
+              {
+                "const": "only",
+                "type": "string"
+              },
+              {
+                "const": "first",
+                "type": "string"
+              },
+              {
+                "const": "last",
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_rename",
+      "label": "blitz rename",
+      "description": "AST-verified single-file rename. Skips strings/comments/docstrings.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "old_name",
+          "new_name"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "old_name": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Identifier name (no surrounding code).",
+            "type": "string"
+          },
+          "new_name": {
+            "minLength": 1,
+            "maxLength": 512,
+            "description": "Identifier name (no surrounding code).",
+            "type": "string"
+          },
+          "dry_run": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_undo",
+      "label": "blitz undo",
+      "description": "Revert the last blitz edit to a file (single-depth per path).",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "file",
+          "confirm"
+        ],
+        "properties": {
+          "file": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "confirm": {
+            "description": "Must be explicitly set to true to acknowledge destructive action.",
+            "const": true,
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "name": "pi_blitz_doctor",
+      "label": "blitz doctor",
+      "description": "Report blitz version, supported grammars, and backup cache health.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  ]
+}

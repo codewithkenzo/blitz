@@ -518,9 +518,12 @@ FIXTURES[11]!.expectedFile = nestedReturnExpected;
 FIXTURES[12]!.expectedFile = componentReturnExpected;
 FIXTURES[13]!.expectedFile = readmeExpected;
 
-type Lane = "core" | "blitz";
-type Route = "core_edit" | "ast_narrow" | "ast_batch";
-type RouteReasonCode = "lane_core_edit" | "lane_blitz_structured_tool";
+type Lane = "core" | "blitz" | "router";
+type Route = "core_edit" | "ast_narrow" | "ast_batch" | "token_router";
+type RouteReasonCode =
+	| "lane_core_edit"
+	| "lane_blitz_structured_tool"
+	| "lane_router_facade";
 
 type TokenRouteDecision = {
 	contextSavingsPct: number | null;
@@ -537,7 +540,9 @@ const routeForLane = (
 ): { route: Route; routeReasonCode: RouteReasonCode } =>
 	lane === "core"
 		? { route: "core_edit", routeReasonCode: "lane_core_edit" }
-		: {
+		: lane === "router"
+			? { route: "token_router", routeReasonCode: "lane_router_facade" }
+			: {
 				route:
 					fx?.id.includes("multi/") || fx?.id.includes("patch")
 						? "ast_batch"
@@ -615,7 +620,7 @@ const runPiSpawn = (
 	const env = {
 		...process.env,
 		PATH: `${BLITZ_BIN_DIR}:${process.env.PATH ?? ""}`,
-		PI_BLITZ_TOOL_PROFILE: toolProfile,
+		PI_BLITZ_TOOL_PROFILE: lane === "router" ? "router" : toolProfile,
 	};
 	const r = spawnSync(piBin, args, {
 		cwd,
@@ -672,7 +677,7 @@ STDOUT_LOG="$RUN_DIR/stdout.log"
 STDERR_LOG="$RUN_DIR/stderr.log"
 EXIT_FILE="$RUN_DIR/exit.json"
 export PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"
-export PI_BLITZ_TOOL_PROFILE=${shellQuote(toolProfile)}
+export PI_BLITZ_TOOL_PROFILE=${shellQuote(lane === "router" ? "router" : toolProfile)}
 cd ${shellQuote(workDirAbs)}
 start_ms=$(date +%s%3N)
 status=0
@@ -1238,13 +1243,20 @@ const runLane = async (
 
 	let prompt = fx.intent(targetPath);
 	if (lane === "blitz") {
-		const useCompactOp = toolProfile === "minimal";
-		let guidance = useCompactOp
-			? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
-			: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+		const useRouter = lane === "router";
+		const useCompactOp = toolProfile === "minimal" || useRouter;
+		let guidance = useRouter
+			? "Use only `pi_blitz_route_edit`. Copy exact args JSON. Do not call other pi_blitz_* tools. Use route preference `blitz` for executable Blitz rows."
+			: useCompactOp
+				? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
+				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+		const routeArgs = (script: string, fallback = 5000) =>
+			JSON.stringify({ f: targetPath, r: "blitz", s: script, fallbackContextTokensExpected: fallback });
 		if (fx.id.includes("wrap-body")) {
-			guidance += useCompactOp
-				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["wb","mediumCompute","\\n  try {","  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n",2]]}.`
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs("wb\tmediumCompute\t\\n  try {\t  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\t2")}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["wb","mediumCompute","\\n  try {","  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n",2]]}.`
 				: ' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
@@ -1311,9 +1323,11 @@ const runLane = async (
 		"semantic/tsx-replace-return": "pi_blitz_replace_return",
 	};
 	const toolsOverride =
-		lane !== "blitz"
+		lane === "core"
 			? undefined
-			: toolProfile === "minimal"
+			: lane === "router"
+				? "pi_blitz_route_edit"
+				: toolProfile === "minimal"
 				? "pi_blitz_op"
 				: fx.id.includes("multi/large-structural")
 					? "pi_blitz_patch"
@@ -1573,6 +1587,7 @@ const main = async () => {
 	const profileSupportsFixture = (profile: string, fx: Fixture): boolean => {
 		if (fx.lanePolicy === "core-only") return false;
 		if (profile === "full") return true;
+		if (profile === "router") return true;
 		if (profile === "minimal" || profile === "minimal-v0") {
 			return true;
 		}
@@ -1639,17 +1654,17 @@ const main = async () => {
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
 		if (fx.lanePolicy === "core-only") return ["core"];
-		return ["core", "blitz"];
+		return ["core", "blitz", "router"];
 	};
 	for (const fx of selectedFixtures) {
 		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
 			const schemaTokens =
-				lane === "blitz"
+				lane !== "core"
 					? (accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? 0)
 					: 0;
 			const skillTokens =
-				lane === "blitz" ? accountingArtifacts.skill.tokens : 0;
+				lane !== "core" ? accountingArtifacts.skill.tokens : 0;
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx, i);
 				const argTokens = r.session.editToolCallArgsTokens;
@@ -1687,13 +1702,17 @@ const main = async () => {
 					...routeForLane(lane, fx),
 					iter: i,
 					toolProfile:
-						lane === "blitz"
-							? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile)
-							: "core",
+						lane === "core"
+							? "core"
+							: lane === "router"
+								? "router"
+								: (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile),
 					visibleToolNames:
-						lane === "blitz"
-							? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
-							: ["edit"],
+						lane === "core"
+							? ["edit"]
+							: lane === "router"
+								? ["pi_blitz_route_edit"]
+								: (accountingArtifacts.toolSpec?.visibleToolNames ?? []),
 					toolSpecTokens: schemaTokens,
 					schemaTokens,
 					skillTokens,
@@ -1782,13 +1801,17 @@ const main = async () => {
 				lane,
 				...routeForLane(lane, fx),
 				toolProfile:
-					lane === "blitz"
-						? (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile)
-						: "core",
+					lane === "core"
+						? "core"
+						: lane === "router"
+							? "router"
+							: (accountingArtifacts.toolSpec?.profileLabel ?? toolProfile),
 				visibleToolNames:
-					lane === "blitz"
-						? (accountingArtifacts.toolSpec?.visibleToolNames ?? [])
-						: ["edit"],
+					lane === "core"
+						? ["edit"]
+						: lane === "router"
+							? ["pi_blitz_route_edit"]
+							: (accountingArtifacts.toolSpec?.visibleToolNames ?? []),
 				toolSpecTokens: schemaTokens,
 				schemaTokens,
 				skillTokens,

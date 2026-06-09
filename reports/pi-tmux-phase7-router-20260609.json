@@ -1,0 +1,241 @@
+{
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "runner": "tmux",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z",
+  "tmuxSession": "pi-bench-2026-06-09T03-41-20-621Z",
+  "timeoutMs": 120000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "toolProfile": "router",
+  "accountingArtifacts": {
+    "artifactRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z",
+    "toolSpec": {
+      "profile": "router",
+      "profileLabel": "router",
+      "visibleToolNames": [
+        "pi_blitz_route_edit"
+      ],
+      "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tool-specs.router.json",
+      "serializedToolSpecsTokens": 564,
+      "serializedToolSpecsBytes": 2653
+    },
+    "toolSpecs": [
+      {
+        "profile": "router",
+        "profileLabel": "router",
+        "visibleToolNames": [
+          "pi_blitz_route_edit"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tool-specs.router.json",
+        "serializedToolSpecsTokens": 564,
+        "serializedToolSpecsBytes": 2653
+      },
+      {
+        "profile": "full",
+        "profileLabel": "full",
+        "visibleToolNames": [
+          "pi_blitz_route_edit",
+          "pi_blitz_op",
+          "pi_blitz_read",
+          "pi_blitz_edit",
+          "pi_blitz_batch",
+          "pi_blitz_apply",
+          "pi_blitz_replace_body_span",
+          "pi_blitz_insert_body_span",
+          "pi_blitz_wrap_body",
+          "pi_blitz_compose_body",
+          "pi_blitz_multi_body",
+          "pi_blitz_patch",
+          "pi_blitz_try_catch",
+          "pi_blitz_replace_return",
+          "pi_blitz_rename",
+          "pi_blitz_undo",
+          "pi_blitz_doctor"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tool-specs.full.json",
+        "serializedToolSpecsTokens": 6595,
+        "serializedToolSpecsBytes": 30973
+      }
+    ],
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+      "snapshotPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/skill.router.md",
+      "tokens": 563,
+      "bytes": 2282
+    },
+    "tokenizer": {
+      "toolSpecTokenizer": "cl100k_base via tiktoken",
+      "skillTokenizer": "cl100k_base via tiktoken",
+      "toolCallArgTokenizer": "cl100k_base via tiktoken",
+      "model": "glm-4.5-air",
+      "provider": "zai"
+    },
+    "metadataPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tokenizer.router.json"
+  },
+  "phase0Accounting": {
+    "visibleTools": [
+      "pi_blitz_route_edit"
+    ],
+    "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tool-specs.router.json",
+    "serializedToolSpecsTokens": 564,
+    "residentSkillSnapshotPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/skill.router.md",
+    "residentSkillTokens": 563,
+    "tokenizerMetadataPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-09T03-41-20-621Z/tokenizer.router.json",
+    "tokScaleSessionJsonPaths": [
+      "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/sessions/2026-06-09T03-41-21-435Z_019eaa78-749b-7a18-bfe1-61e366907bae.jsonl"
+    ]
+  },
+  "profileCoverage": [
+    {
+      "profile": "router",
+      "supportedFixtures": [],
+      "skippedFixtures": [
+        {
+          "fixture": "semantic/arrow-replace-return",
+          "reason": "unsupported by router registered tool profile"
+        }
+      ]
+    },
+    {
+      "profile": "full",
+      "supportedFixtures": [
+        "semantic/arrow-replace-return"
+      ],
+      "skippedFixtures": []
+    }
+  ],
+  "overheadComparisons": [
+    {
+      "profile": "router",
+      "schemaTokens": 564,
+      "skillTokens": 563,
+      "combinedResidentTokens": 1127,
+      "reductionVsFullPct": 84.25537859737356,
+      "meetsCommonLaneTarget": true
+    },
+    {
+      "profile": "full",
+      "schemaTokens": 6595,
+      "skillTokens": 563,
+      "combinedResidentTokens": 7158,
+      "reductionVsFullPct": 0,
+      "meetsCommonLaneTarget": false
+    }
+  ],
+  "tokScaleMode": "required",
+  "generatedAt": "2026-06-09T03:43:21.188Z",
+  "rows": [
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "router",
+      "route": "token_router",
+      "routeReasonCode": "lane_router_facade",
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 564,
+      "schemaTokens": 564,
+      "skillTokens": 563,
+      "promptTokens": 271,
+      "argTokens": 0,
+      "outputTokens": 2356,
+      "cacheRead": 49659,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 0,
+      "residualInputTokens": 7682,
+      "totalContextTokens": 62222,
+      "toolName": "",
+      "wallMsMedian": 120169.617408,
+      "inputMedian": 8809,
+      "outputMedian": 2356,
+      "cacheReadMedian": 49659,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 0,
+      "tokScaleInputMedian": 8809,
+      "tokScaleOutputMedian": 2356,
+      "tokScaleCacheReadMedian": 49659,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 11,
+      "tokScaleCostSum": 0.00584317,
+      "tokScaleProcessingTimeMsMedian": 19,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 0,
+      "costSum": 0,
+      "exitCodes": [
+        -1
+      ],
+      "timedOut": true,
+      "failure": "[pi-blitz] tool profile router registered"
+    }
+  ],
+  "pairwise": [],
+  "runs": [
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "lane": "router",
+      "route": "token_router",
+      "routeReasonCode": "lane_router_facade",
+      "iter": 0,
+      "toolProfile": "router",
+      "visibleToolNames": [
+        "pi_blitz_route_edit"
+      ],
+      "toolSpecTokens": 564,
+      "schemaTokens": 564,
+      "skillTokens": 563,
+      "promptTokens": 271,
+      "argTokens": 0,
+      "outputTokens": 2356,
+      "cacheRead": 49659,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 0,
+      "residualInputTokens": 7682,
+      "totalContextTokens": 62222,
+      "toolName": null,
+      "wallMs": 120169.617408,
+      "inputTokens": 8809,
+      "cacheReadTokens": 49659,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 0,
+      "cost": 0,
+      "tokScaleInput": 8809,
+      "tokScaleOutput": 2356,
+      "tokScaleCacheRead": 49659,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 11,
+      "tokScaleCost": 0.00584317,
+      "tokScaleProcessingTimeMs": 19,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": false,
+      "exitCode": -1,
+      "timedOut": true,
+      "failure": "[pi-blitz] tool profile router registered",
+      "tokenRouteDecision": {
+        "contextSavingsPct": null,
+        "schemaTokensExpected": 564,
+        "argTokensExpected": 0,
+        "outputTokensExpected": 2356,
+        "fallbackContextTokensExpected": null,
+        "selectedBecause": "Blitz lane selected by explicit profile; paired core row required before savings claim"
+      },
+      "runDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0",
+      "sessionDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/sessions",
+      "sessionFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/sessions/2026-06-09T03-41-21-435Z_019eaa78-749b-7a18-bfe1-61e366907bae.jsonl",
+      "commandFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-09T03-41-20-621Z/semantic_arrow-replace-return__router__0/exit.json"
+    }
+  ]
+}
