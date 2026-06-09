@@ -1231,11 +1231,14 @@ const runLane = async (
 
 	let prompt = fx.intent(targetPath);
 	if (lane === "blitz") {
-		let guidance =
-			"Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+		const useCompactOp = toolProfile === "minimal";
+		let guidance = useCompactOp
+			? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
+			: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
 		if (fx.id.includes("wrap-body")) {
-			guidance +=
-				' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["wb","mediumCompute","\\n  try {","  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n",2]]}.`
+				: ' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
 				' For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: "only" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\"seed must be finite\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: "last" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: "last" } } ].';
@@ -1269,20 +1272,25 @@ const runLane = async (
 			guidance +=
 				" For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("semantic/async-try-catch")) {
-			guidance +=
-				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["tc","loadUser","console.error(error);\\nthrow error;",2]]}.`
+				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/class-method-try-catch")) {
-			guidance +=
-				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["tc","renderScore","console.error(error);\\nthrow error;",2]]}.`
+				: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/arrow-replace-return")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","pickLabel","\\"unknown\\"","last"]]}.`
+				: ' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","classify","\\"other\\"","last"]]}.`
+				: ' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/tsx-replace-return")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
+			guidance += useCompactOp
+				? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["rr","StatusBadge","<strong className=\\"badge\\">{label.toUpperCase()}</strong>","only"]]}.`
+				: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
 		} else if (fx.id.includes("small")) {
 			guidance += " For this edit, route to core oldText/newText.";
 		}
@@ -1558,7 +1566,7 @@ const main = async () => {
 		if (fx.lanePolicy === "core-only") return false;
 		if (profile === "full") return true;
 		if (profile === "minimal" || profile === "minimal-v0") {
-			return fx.id === "multi/large-structural";
+			return true;
 		}
 		if (profile === "semantic") return fx.id.startsWith("semantic/");
 		if (profile === "structural") {
