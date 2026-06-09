@@ -51,10 +51,47 @@ Goal sources:
 
 ## Active follow-up
 
-Revived D5 run: `44af8187`.
+Phase 2 remediation is now evidenced and pushed:
 
-Expected next artifacts:
-- fixed pi-blitz compact alias implementation/tests and pushed commit;
-- fixed Blitz harness guidance/support accounting and pushed commit;
-- new targeted report `reports/pi-tmux-phase2-op-blitz-rerun-20260609.{md,json}` or clearly named equivalent;
-- final D5 report with verification commands and residual gaps.
+- pi-blitz: `b5f013e fix compact op alias translation` on `feat/blitz-0.4-token-core-profile-canonical` / `origin/feat/blitz-0.4-token-core-profile`.
+- Blitz harness: `5112866 fix compact op benchmark guidance` on `feat/blitz-0.4-token-core-profile`.
+- Blitz report artifacts: `f6bb3de docs: preserve phase 2 compact op benchmark evidence`.
+- Accepted report: `reports/pi-tmux-phase2-op-blitz-rerun-20260609.md`.
+  - `medium-10k/wrap-body`: `correct=100.0%`, `tokscale token match=yes`, `arg tok=90`, total context `23782`.
+  - `semantic/arrow-replace-return`: `correct=100.0%`, `tokscale token match=yes`, `arg tok=65`, total context `10277`.
+  - minimal-v0 coverage reports `supported 2/2; skipped 0`.
+  - minimal combined resident schema+skill: `837`, `87.0%` reduction vs full.
+- Failed/caveated attempts are preserved in:
+  - `reports/pi-tmux-phase2-op-blitz-20260609.{md,json}`
+  - `reports/pi-tmux-phase2-core-20260609.{md,json}`
+  - raw accounting/tmux roots for `2026-06-09T02-46-18-961Z`, `2026-06-09T02-48-53-599Z`, and `2026-06-09T02-59-35-877Z`.
+
+Independent main verification after Phase 2 remediation passed:
+
+- `/home/kenzo/dev/pi-blitz`: `bun run typecheck && bun test && bun run build`.
+- `/home/kenzo/dev/blitz`: `bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-phase2-main-check.js && zig build && zig build test`.
+
+New D5 run for remaining Phase 4/5/6 work: `b5e12abe-31f2-443a-b03c-457f4ed0b8ff`.
+
+Phase 4/5/6 D5 run completed and pushed:
+
+- D5 run: `b5e12abe-31f2-443a-b03c-457f4ed0b8ff`.
+- Report: `reports/subagents/d5-blitz-0.4-phase456-report.md`.
+- pi-blitz: `8ade791 feat(op): support compact script field` pushed to `origin/feat/blitz-0.4-token-core-profile`.
+  - Adds `pi_blitz_op.s` compact tab-line script field.
+  - Tests cover `rr` and `dk` script translation.
+  - Local tokenizer comparison only: `rr` JSON 24 tokens vs script 22; `dk` JSON 19 vs script 17.
+  - No real Pi/Tokscale savings claim for script path yet.
+- Blitz: `f6130b3 feat(bench): record token route decisions` and `3f84f94 style(bench): format token route decision block` pushed to `origin/feat/blitz-0.4-token-core-profile`.
+  - Adds `tokenRouteDecision` fields in run records: `contextSavingsPct`, `schemaTokensExpected`, `argTokensExpected`, `outputTokensExpected`, `fallbackContextTokensExpected`, `selectedBecause`.
+  - Current boundary is benchmark/report-level plus profile enforcement; no runtime core edit wrapper/facade and no core replacement claim.
+- Main reran verification after D5:
+  - `/home/kenzo/dev/pi-blitz`: `bun run typecheck && bun test && bun run build` passed.
+  - `/home/kenzo/dev/blitz`: `bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-main-phase456-audit.js && zig build && zig build test` passed.
+
+Completion status after Phase 4/5/6 audit:
+
+- Phase 4: partially satisfied. Script field implemented and locally compared; real Pi/Tokscale script rows are still missing before any adoption/savings claim.
+- Phase 5: not implemented. Deferred to named follow-up **Phase 5A — chunk-local merge IR** with concrete code blockers in D5 report.
+- Phase 6: partially satisfied. Benchmark token-route fields and explicit boundary exist, but runtime edit facade/router is deferred to **Phase 6A — runtime edit facade/router**.
+- Overall goal is **not complete** as a core-edit replacement proof because Phase 5A and Phase 6A remain required before default/core replacement claims survive audit.
