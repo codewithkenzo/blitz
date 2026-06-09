@@ -1526,6 +1526,13 @@ const runLane = async (
 				: useCompactOp
 					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
 				: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
+		} else if (fx.id === "config/key-update") {
+			const script = "sk\tlogLevel\tdebug";
+			guidance += useRouter
+				? ` For this TypeScript config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this TypeScript config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this TypeScript config fixture only, update top-level object-literal key `logLevel` to string literal `"debug"`.';
 		} else if (fx.id.includes("small")) {
 			guidance += useRouter
 				? ` For this unsupported exact-text edit, call \`pi_blitz_route_edit\` once with exact no-write decline args JSON: ${routeArgs("", 500, "apply_patch")}.`

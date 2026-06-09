@@ -187,6 +187,10 @@ pub fn run(
                 .{ "yaml", "format_text_yaml_set_key" }
             else if (std.mem.eql(u8, ext, ".toml"))
                 .{ "toml", "format_text_toml_set_key" }
+            else if (std.mem.eql(u8, ext, ".ts"))
+                .{ "typescript", "format_text_typescript_set_key" }
+            else if (std.mem.eql(u8, ext, ".tsx"))
+                .{ "tsx", "format_text_typescript_set_key" }
             else
                 return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const decision = if (std.mem.eql(u8, route_option, "force-core")) estimateRouteDecision(operation, route_option) else formatTextRouteDecision(reason_code);
@@ -1437,7 +1441,81 @@ fn buildInsertedFlatKey(allocator: Allocator, source: []const u8, insert_at: usi
     return .{ .contents = try apply_diff.spliceText(allocator, source, insert_at, insert_at, replacement), .edit_start = insert_at, .edit_end = insert_at };
 }
 
+fn isIdentByte(c: u8) bool {
+    return std.ascii.isAlphanumeric(c) or c == '_' or c == '$';
+}
+
+fn updateBraceDepthLine(line: []const u8, depth: *usize) void {
+    var quote: u8 = 0;
+    var escaped = false;
+    for (line) |c| {
+        if (quote != 0) {
+            if (escaped) {
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == quote) {
+                quote = 0;
+            }
+            continue;
+        }
+        if (c == '"' or c == '\'') {
+            quote = c;
+        } else if (c == '{') {
+            depth.* += 1;
+        } else if (c == '}') {
+            if (depth.* > 0) depth.* -= 1;
+        }
+    }
+}
+
+fn findTypeScriptTopLevelObjectKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
+    _ = allocator;
+    var result = FormatKeyMatch{};
+    var depth: usize = 0;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const depth_before = depth;
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (depth_before == 1 and trimmed.len > wanted.len + 1 and std.mem.startsWith(u8, trimmed, wanted) and trimmed[wanted.len] == ':') {
+            var indent: usize = 0;
+            while (indent < line.len and (line[indent] == ' ' or line[indent] == '\t')) indent += 1;
+            if (indent != 2) return ApplyError.UnsupportedLanguage;
+            if ((wanted.len > 0 and isIdentByte(wanted[0]) and trimmed.len > wanted.len and isIdentByte(trimmed[wanted.len]))) return ApplyError.UnsupportedLanguage;
+            const colon_in_line = indent + wanted.len;
+            var value_start = line_start + colon_in_line + 1;
+            while (value_start < line_start + line.len and (source[value_start] == ' ' or source[value_start] == '\t')) value_start += 1;
+            var value_end = line_start + line.len;
+            if (std.mem.lastIndexOfScalar(u8, line[value_start - line_start ..], ',')) |comma_rel| value_end = value_start + comma_rel;
+            value_end = trimRightSpaceEnd(source, value_start, value_end);
+            if (value_start >= value_end) return ApplyError.UnsupportedLanguage;
+            if (result.found) return ApplyError.AmbiguousMatches;
+            result = .{ .found = true, .value_start = value_start, .value_end = value_end, .insert_at = 0 };
+        }
+        updateBraceDepthLine(line, &depth);
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    return result;
+}
+
 fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8, key: []const u8, value: std.json.Value) !FormatSetKeyPlan {
+    if (std.mem.eql(u8, ext, ".ts") or std.mem.eql(u8, ext, ".tsx")) {
+        const lang: bindings.Language = if (std.mem.eql(u8, ext, ".tsx")) .tsx else .typescript;
+        if (!parseTreeClean(lang, original)) return ApplyError.ParseFailedBefore;
+        const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
+        defer allocator.free(encoded);
+        const match = try findTypeScriptTopLevelObjectKey(allocator, original, key);
+        if (!match.found) return ApplyError.NoMatches;
+        const built = JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end };
+        if (!parseTreeClean(lang, built.contents)) {
+            allocator.free(built.contents);
+            return ApplyError.ParseFailedAfter;
+        }
+        return .{ .contents = built.contents, .edit_start = built.edit_start, .edit_end = built.edit_end, .language = if (lang == .tsx) "tsx" else "typescript", .reason_code = "format_text_typescript_set_key", .single_match = true };
+    }
     if (std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml")) {
         if (!parseTreeClean(.yaml, original)) return ApplyError.ParseFailedBefore;
         const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
@@ -2119,6 +2197,75 @@ test "apply set_key rejects duplicate JSON keys without mutation" {
     defer allocator.free(out);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null or std.mem.indexOf(u8, out, "\"code\":\"AMBIGUOUS_MATCH\"") != null);
     const post = try tmp.dir.readFileAlloc(io, "dup.json", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply set_key updates TypeScript config object literal property" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export const CONFIG = {
+        \\  apiUrl: "https://api.example.com/v1",
+        \\  timeoutMs: 5000,
+        \\  retryCount: 3,
+        \\  logLevel: "info",
+        \\  featureFlags: {
+        \\    darkMode: true,
+        \\    analytics: false,
+        \\    betaFeatures: false,
+        \\  },
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "config.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "config.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"logLevel","value":"debug"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_typescript_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "config.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\export const CONFIG = {
+        \\  apiUrl: "https://api.example.com/v1",
+        \\  timeoutMs: 5000,
+        \\  retryCount: 3,
+        \\  logLevel: "debug",
+        \\  featureFlags: {
+        \\    darkMode: true,
+        \\    analytics: false,
+        \\    betaFeatures: false,
+        \\  },
+        \\};
+    , post);
+}
+
+test "apply set_key rejects duplicate TypeScript top-level object key without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export const CONFIG = {
+        \\  logLevel: "info",
+        \\  logLevel: "warn",
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "dup.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"logLevel","value":"debug"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"AMBIGUOUS_MATCH\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "dup.ts", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
 }

@@ -1,7 +1,7 @@
 # D5 Blitz 0.4 Phase 7 report
 
 Date: 2026-06-09
-Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect. Direct Blitz CLI smoke shows existing `set_key` rejects the TypeScript `config.ts` fixture with `UNSUPPORTED_LANGUAGE`; pi-blitz `sk` maps to `set_key`, so current `sk` cannot satisfy this Phase 7 fixture. No Phase 7 token-savings acceptance.
+Status: partial/blocker. Harness now represents the explicit Phase 7 fixture set and router rows report as profile `router` with visible tool `pi_blitz_route_edit`. Parser fix now captures router `pi_blitz_*` tool calls for Zai/Pi JSONL; single semantic router smoke is accepted as evidence for that row only. D5 continuation added one paired proof slice for `config/key-update`: core succeeds; router fallback/no-write path remains rejected due timeout/incorrect despite observed `pi_blitz_route_edit`. Companion `pi-blitz` terminal-decline fix `2dfcf73` was benchmarked; the row still timed out/incorrect. New Blitz-side TypeScript `set_key` support now handles the exact top-level `config.ts` object-literal key update deterministically. Direct CLI smoke passes. Router `sk\tlogLevel\tdebug` tmux/Tokscale rerun is accepted for `config/key-update` only, but it does not beat existing core baseline on total context. No Phase 7 token-savings acceptance.
 
 ## Method
 
@@ -247,6 +247,44 @@ tmp=$(mktemp -d); cp bench/fixtures-llm/config.ts "$tmp/config.ts"; python3 -c '
 
 Result: rejected with `code: "UNSUPPORTED_LANGUAGE"`, `operation: "set_key"`, `status=1`; file stayed `logLevel: "info"`. Existing pi-blitz `sk` alias translates directly to Blitz `set_key` (`edit: { key, value }`), so `sk` cannot perform the TypeScript `config/key-update` fixture today. No router-sk tmux/Tokscale rerun was produced because route support is absent; failed terminal-decline artifacts remain preserved.
 
+## D5 continuation: TypeScript config `set_key` unblock
+
+Implementation:
+- `src/apply/mod.zig` now routes `.ts`/`.tsx` `set_key` through narrow format-text support.
+- Scope is fail-closed: clean TypeScript parse before/after, existing top-level object-literal property only, two-space property indent, duplicate top-level key rejects before write, no insertion/fuzzy rewrite.
+- New focused tests cover exact `bench/fixtures-llm/config.ts` shape and duplicate top-level `logLevel` rejection; existing JSON/YAML/TOML `set_key` tests remain in same suite.
+
+Direct CLI smoke on copied fixture:
+
+```bash
+# steering-override: ztk-for-noisy-file-output — exact CLI smoke evidence
+tmp=$(mktemp -d); cp bench/fixtures-llm/config.ts "$tmp/config.ts"; printf '%s' '{"version":1,"file":"'$tmp'/config.ts","operation":"set_key","edit":{"key":"logLevel","value":"debug"}}' | ./zig-out/bin/blitz apply --edit - --json; echo '---'; cat "$tmp/config.ts"; rm -rf "$tmp"
+```
+
+Result: exit 0, `routeReasonCode:"format_text_typescript_set_key"`, `language:"typescript"`, `parseBeforeClean:true`, `parseAfterClean:true`; copied file changed only `logLevel: "info"` to `logLevel: "debug"`.
+
+Router guidance update:
+- `bench/pi-matrix.ts` now gives `config/key-update` an executable router instruction only for this fixture: `pi_blitz_route_edit` args with compact script `sk\tlogLevel\tdebug`.
+- First attempt using `sk\tlogLevel\t"debug"` is preserved as failed artifact because it produced `logLevel: "\\"debug\\""` and correctness 0%.
+
+New preserved artifacts:
+- Failed quoted-value router attempt: `reports/pi-tmux-phase7-config-router-sk-20260609-d5.md`, `reports/pi-tmux-phase7-config-router-sk-20260609-d5.json`, run root `reports/pi-tmux-runs/2026-06-09T15-54-26-384Z`, accounting root `reports/pi-accounting-runs/2026-06-09T15-54-26-384Z`.
+- Accepted unquoted-value router attempt: `reports/pi-tmux-phase7-config-router-sk2-20260609-d5.md`, `reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json`, run root `reports/pi-tmux-runs/2026-06-09T15-55-07-265Z`, accounting root `reports/pi-accounting-runs/2026-06-09T15-55-07-265Z`, tmux session `pi-bench-2026-06-09T15-55-07-265Z`.
+
+Accepted config router result:
+- `config/key-update` router: correctness 100%, exit 0, tool observed `pi_blitz_route_edit`, arg tok 67, result payload tok 24, Tokscale token match yes, total context tok 10435, wall 13882ms.
+- Existing core baseline `reports/pi-tmux-phase7-config-core-20260609-d5.md`: correctness 100%, exit 0, tool observed `edit`, arg tok 73, result payload tok 3, Tokscale token match yes, total context tok 8263, wall 10115ms.
+- Conclusion for this case only: blocker removed and router row accepted; no savings claim because router total context exceeded core baseline by 2172 tokens in this run.
+
+Verification after implementation:
+
+```bash
+zig build && zig build test
+bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js
+```
+
+Both passed before benchmark/report update; final full gate recorded in task handoff.
+
 ## Acceptance
 
 Phase7 acceptance: **NO**.
@@ -262,8 +300,8 @@ Reasons:
 
 ## Next precise work
 
-1. Add Blitz-side support for this TypeScript object-literal key update, or define another accepted compact route for `config/key-update`; current `sk`/`set_key` only supports JSON/YAML/TOML-style `set_key` and rejects `config.ts` as `UNSUPPORTED_LANGUAGE`.
-2. Rerun `config/key-update` router after the real route exists and compare against the accepted core baseline; preserve the failed terminal-decline artifacts.
+1. `config/key-update` real compact route now exists and one router row is accepted, but this single case did not beat core baseline on total context.
+2. Preserve the failed terminal-decline and quoted-value router artifacts; they document why `sk\tlogLevel\tdebug` is the accepted syntax for this fixture.
 3. Extend real compact aliases or genuine fallback lanes for logging/markdown/json/yaml/toml/html/css before claiming 12-case Phase 7 acceptance.
 4. Add real apply_patch/core lane only if parent wants baseline comparison; do not fake via router declines.
 5. Full Phase 7 still requires paired core/current Blitz/optimized router evidence across all required cases plus structural savings preservation.
