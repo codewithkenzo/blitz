@@ -5,7 +5,7 @@ Status: benchmark-only route-selected synthesis; not Phase 7 completion; not pro
 
 ## Method
 
-- Source rows: `reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json`, `reports/pi-tmux-phase7-format-config-core-20260609-d5.json`, `reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json`, `reports/pi-tmux-phase7-config-core-20260609-d5.json`, `reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json`, `reports/pi-tmux-phase7-router-semantic-rerun-20260609.json`, `reports/pi-tmux-phase7-router-pilot-20260609-d5.json`, `reports/pi-tmux-phase7-structural-core-20260609-d5.json`, `reports/pi-tmux-phase7-structural-current-20260609-d5.json`, `reports/pi-tmux-phase7-structural-router-20260609-d5.json`, `reports/pi-tmux-phase7-semantic-core-20260609-d5.json`, `reports/pi-tmux-phase7-semantic-router-20260609-d5.json`.
+- Source rows: `reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json`, `reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json`, `reports/pi-tmux-phase7-format-config-core-20260609-d5.json`, `reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json`, `reports/pi-tmux-phase7-config-core-20260609-d5.json`, `reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json`, `reports/pi-tmux-phase7-router-semantic-rerun-20260609.json`, `reports/pi-tmux-phase7-router-pilot-20260609-d5.json`, `reports/pi-tmux-phase7-structural-core-20260609-d5.json`, `reports/pi-tmux-phase7-structural-current-20260609-d5.json`, `reports/pi-tmux-phase7-structural-router-20260609-d5.json`, `reports/pi-tmux-phase7-semantic-core-20260609-d5.json`, `reports/pi-tmux-phase7-semantic-router-20260609-d5.json`, `reports/pi-tmux-phase7-wrapbody-rerun-20260610-d5.json`, `reports/pi-tmux-phase7-wrapbody-rerun2-20260610-d5.json`, `reports/pi-tmux-phase7-wrapbody-zigfix-20260610-d5.json`, `reports/pi-tmux-phase7-longsection-rerun-20260610-d5.json`, `reports/pi-tmux-phase7-longsection-router-rerun-20260610-d5.json`.
 - Accepted row: correctness 100%, Tokscale token match yes, no timeout, exit code 0 when present.
 - Selected route: lowest `totalContextTokens` among accepted real rows per fixture.
 - Core baseline: lowest accepted `core` row for same fixture where present.
@@ -19,8 +19,8 @@ Status: benchmark-only route-selected synthesis; not Phase 7 completion; not pro
 | tiny exact text replace | small/wrap-tail | accepted | core/edit | 8574 | 8574 | route-selected-core-cheapest | pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json |
 | small config key | config/key-update | accepted | core/edit | 8263 | 8263 | route-selected-core-cheapest | pi-tmux-phase7-config-core-20260609-d5.json |
 | insert logging line | logging/insert-timer | accepted | core/edit | 8785 | 8785 | route-selected-core-cheapest | pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json |
-| wrap function body | medium-10k/wrap-body | incomplete | — | — | — | not-proven | 4 rejected row(s) |
-| replace long function body section | long-section/replace-return | incomplete | — | — | — | not-proven | 2 rejected row(s) |
+| wrap function body | medium-10k/wrap-body | accepted | blitz/pi_blitz_wrap_body | 30087 | — | accepted-router-no-core-baseline | pi-tmux-phase7-wrapbody-zigfix-20260610-d5.json |
+| replace long function body section | long-section/replace-return | accepted | core/edit | 9769 | 9769 | route-selected-core-cheapest | pi-tmux-phase7-longsection-rerun-20260610-d5.json |
 | multi-hunk same-file edit | multi/large-structural | accepted | blitz/pi_blitz_patch | 30913 | — | accepted-router-no-core-baseline | pi-tmux-phase7-structural-current-20260609-d5.json |
 | rename within file | rename/function-name | accepted | core/edit | 8598 | 8598 | route-selected-core-cheapest | pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json |
 | Markdown section append | markdown/append-section | accepted | router/pi_blitz_route_edit | 10556 | — | accepted-router-no-core-baseline | pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json |
@@ -39,11 +39,11 @@ Rows without accepted paired core/router evidence remain unproven. Rows where ro
 ## Remaining gaps
 
 - Benchmark-level route selection only: selected core rows are proof choices from existing evidence, not product-real pi_blitz_route_edit core/apply_patch interception.
-- No direct apply_patch baseline exists in current harness evidence.
-- Current Phase 7 structural preservation remains incomplete: multi/large-structural now has accepted current Blitz evidence, but no accepted core baseline; medium-10k/wrap-body still has no accepted current row across core/Blitz/router attempts.
-- TSX semantic row now has accepted core and router rows, but selected benchmark route chooses core; this does not prove product-real core fallback.
-- Semantic arrow row now has accepted router and core rows and router is cheaper in selected evidence; current proof is still benchmark evidence, not product runtime replacement.
-- Missing accepted router/Blitz evidence for logging/insert-timer and long-section/replace-return; long-section core also failed.
+- No direct apply_patch baseline exists in current harness evidence; current harness lanes are core/edit, blitz, and router facade only.
+- Structural preservation improved: medium-10k/wrap-body and multi/large-structural now have accepted current Blitz evidence, but neither has an accepted core/apply_patch baseline for beat/tie proof.
+- TSX semantic row has accepted core and router rows, but selected benchmark route chooses core; this does not prove product-real core fallback.
+- Semantic arrow row has accepted router and core rows and router is cheaper in selected evidence; current proof is still benchmark evidence, not product runtime replacement.
+- Long-section now has accepted core and router rows after fixture escaping fix; selected benchmark route chooses core.
 - Markdown append has accepted router evidence but accepted core baseline is absent; core attempts failed.
 - HTML router row is accepted but extreme 142,615-token outlier; selected path chooses accepted core row for benchmark proof only.
 

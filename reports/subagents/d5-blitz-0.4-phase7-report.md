@@ -507,3 +507,13 @@ Result:
 - Structural savings still not proven for Phase 7 current matrix because required wrap-body row remains red and multi lacks paired accepted baseline.
 - Route selection remains benchmark-only. `pi_blitz_route_edit` still does not invoke product-real core/apply_patch.
 - Phase 7 status remains **NO**.
+
+
+## 2026-06-10 D5 wrap/long/apply_patch follow-up
+
+Detailed report: `reports/subagents/d5-phase7-wrap-long-applypatch-20260610.md`.
+
+- `medium-10k/wrap-body` root cause isolated to model/wrapper passing literal `\n` in `before`, which made Blitz `wrap_body` generate invalid TS and reject. Narrow Blitz fix in `src/apply/mod.zig` normalizes `\n` in `wrap_body` `before`/`after`. Accepted rerun: `reports/pi-tmux-phase7-wrapbody-zigfix-20260610-d5.{md,json}`, run root `reports/pi-tmux-runs/2026-06-10T05-39-20-199Z`, correctness 100%, Tokscale match yes, total context 30,087.
+- `long-section/replace-return` root cause isolated to harness expected-file bug: JS replacement string treated `$$` specially and expected omitted `$` before interpolation. Fixed with replacement callback in `bench/pi-matrix.ts`. Accepted core rerun: `reports/pi-tmux-phase7-longsection-rerun-20260610-d5.{md,json}` at 9,769 context. Accepted router rerun: `reports/pi-tmux-phase7-longsection-router-rerun-20260610-d5.{md,json}` at 11,122 context. Synthesis chooses core.
+- apply_patch-style baseline remains unavailable in current Pi/tmux harness: lanes are `core`/`blitz`/`router`; core exposes built-in `edit` find/replace only; no OpenAI-native `apply_patch` or distinct patch tool is honestly exposed as a Pi benchmark lane.
+- Phase 7 remains NO: structural current rows now pass for wrap-body and multi/large-structural, but no accepted core/apply_patch baseline exists for either; router remains benchmark/runtime facade, not product-real core/apply_patch fallback.

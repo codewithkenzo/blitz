@@ -77,3 +77,19 @@ Changed selected outcome:
 - `medium-10k/wrap-body`: still incomplete; core timed out/Tokscale mismatch, current Blitz incorrect, router incorrect/timeout in selected evidence.
 
 Status remains benchmark-only. Core-selected rows are evidence selection, not runtime core/apply_patch interception by `pi_blitz_route_edit`. Phase 7 remains **NO** because structural preservation is incomplete, direct apply_patch baseline is absent, and product-real routing fallback remains unproven.
+
+
+## 2026-06-10 update
+
+Synthesis regenerated with new evidence files:
+- `reports/pi-tmux-phase7-wrapbody-rerun-20260610-d5.json` (stale/failed timeout, preserved)
+- `reports/pi-tmux-phase7-wrapbody-rerun2-20260610-d5.json` (pre-fix rejected)
+- `reports/pi-tmux-phase7-wrapbody-zigfix-20260610-d5.json` (accepted)
+- `reports/pi-tmux-phase7-longsection-rerun-20260610-d5.json` (accepted core)
+- `reports/pi-tmux-phase7-longsection-router-rerun-20260610-d5.json` (accepted router)
+
+Updated selections:
+- `medium-10k/wrap-body`: accepted `blitz/pi_blitz_wrap_body`, total context 30,087, no accepted core/apply_patch baseline.
+- `long-section/replace-return`: selected `core/edit`, total context 9,769; router accepted at 11,122 but loses.
+
+Phase 7 remains NO. Synthesis remains benchmark-only; no product-real `pi_blitz_route_edit` core/apply_patch interception is proven.

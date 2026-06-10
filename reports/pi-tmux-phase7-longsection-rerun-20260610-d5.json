@@ -1,0 +1,253 @@
+{
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "runner": "tmux",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z",
+  "tmuxSession": "pi-bench-2026-06-10T05-35-09-188Z",
+  "timeoutMs": 180000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "toolProfile": "full",
+  "accountingArtifacts": {
+    "artifactRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z",
+    "toolSpec": {
+      "profile": "full",
+      "profileLabel": "full",
+      "visibleToolNames": [
+        "pi_blitz_route_edit",
+        "pi_blitz_op",
+        "pi_blitz_read",
+        "pi_blitz_edit",
+        "pi_blitz_batch",
+        "pi_blitz_apply",
+        "pi_blitz_replace_body_span",
+        "pi_blitz_insert_body_span",
+        "pi_blitz_wrap_body",
+        "pi_blitz_compose_body",
+        "pi_blitz_multi_body",
+        "pi_blitz_patch",
+        "pi_blitz_try_catch",
+        "pi_blitz_replace_return",
+        "pi_blitz_rename",
+        "pi_blitz_undo",
+        "pi_blitz_doctor"
+      ],
+      "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/tool-specs.full.json",
+      "serializedToolSpecsTokens": 6595,
+      "serializedToolSpecsBytes": 30973
+    },
+    "toolSpecs": [
+      {
+        "profile": "full",
+        "profileLabel": "full",
+        "visibleToolNames": [
+          "pi_blitz_route_edit",
+          "pi_blitz_op",
+          "pi_blitz_read",
+          "pi_blitz_edit",
+          "pi_blitz_batch",
+          "pi_blitz_apply",
+          "pi_blitz_replace_body_span",
+          "pi_blitz_insert_body_span",
+          "pi_blitz_wrap_body",
+          "pi_blitz_compose_body",
+          "pi_blitz_multi_body",
+          "pi_blitz_patch",
+          "pi_blitz_try_catch",
+          "pi_blitz_replace_return",
+          "pi_blitz_rename",
+          "pi_blitz_undo",
+          "pi_blitz_doctor"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/tool-specs.full.json",
+        "serializedToolSpecsTokens": 6595,
+        "serializedToolSpecsBytes": 30973
+      }
+    ],
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+      "snapshotPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/skill.full.md",
+      "tokens": 580,
+      "bytes": 2350
+    },
+    "tokenizer": {
+      "toolSpecTokenizer": "cl100k_base via tiktoken",
+      "skillTokenizer": "cl100k_base via tiktoken",
+      "toolCallArgTokenizer": "cl100k_base via tiktoken",
+      "model": "glm-4.5-air",
+      "provider": "zai"
+    },
+    "metadataPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/tokenizer.full.json"
+  },
+  "phase0Accounting": {
+    "visibleTools": [
+      "pi_blitz_route_edit",
+      "pi_blitz_op",
+      "pi_blitz_read",
+      "pi_blitz_edit",
+      "pi_blitz_batch",
+      "pi_blitz_apply",
+      "pi_blitz_replace_body_span",
+      "pi_blitz_insert_body_span",
+      "pi_blitz_wrap_body",
+      "pi_blitz_compose_body",
+      "pi_blitz_multi_body",
+      "pi_blitz_patch",
+      "pi_blitz_try_catch",
+      "pi_blitz_replace_return",
+      "pi_blitz_rename",
+      "pi_blitz_undo",
+      "pi_blitz_doctor"
+    ],
+    "serializedToolSpecsPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/tool-specs.full.json",
+    "serializedToolSpecsTokens": 6595,
+    "residentSkillSnapshotPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/skill.full.md",
+    "residentSkillTokens": 580,
+    "tokenizerMetadataPath": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/2026-06-10T05-35-09-188Z/tokenizer.full.json",
+    "tokScaleSessionJsonPaths": [
+      "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/sessions/2026-06-10T05-35-09-899Z_019eb007-024b-7ba5-a77b-4d75a562f705.jsonl"
+    ]
+  },
+  "profileCoverage": [
+    {
+      "profile": "full",
+      "supportedFixtures": [
+        "long-section/replace-return"
+      ],
+      "skippedFixtures": []
+    }
+  ],
+  "overheadComparisons": [
+    {
+      "profile": "full",
+      "schemaTokens": 6595,
+      "skillTokens": 580,
+      "combinedResidentTokens": 7175,
+      "reductionVsFullPct": 0,
+      "meetsCommonLaneTarget": false
+    }
+  ],
+  "tokScaleMode": "required",
+  "generatedAt": "2026-06-10T05:35:31.050Z",
+  "rows": [
+    {
+      "fixture": "long-section/replace-return",
+      "className": "long_section_replace_return",
+      "recommendedLane": "core",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 331,
+      "argTokens": 97,
+      "outputTokens": 779,
+      "cacheRead": 4581,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 8,
+      "residualInputTokens": 3876,
+      "totalContextTokens": 9769,
+      "toolName": "edit",
+      "wallMsMedian": 21087,
+      "inputMedian": 3973,
+      "outputMedian": 779,
+      "cacheReadMedian": 4581,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 97,
+      "tokScaleInputMedian": 3973,
+      "tokScaleOutputMedian": 779,
+      "tokScaleCacheReadMedian": 4581,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 2,
+      "tokScaleCostSum": 0.00178893,
+      "tokScaleProcessingTimeMsMedian": 16,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 1,
+      "costSum": 0,
+      "exitCodes": [
+        0
+      ],
+      "timedOut": false,
+      "failure": ""
+    }
+  ],
+  "pairwise": [
+    {
+      "fixture": "long-section/replace-return",
+      "status": "incomplete",
+      "acceptedRoute": "none",
+      "routeDecisionReason": "Pair missing lane; savings not counted",
+      "savingsCounted": false
+    }
+  ],
+  "runs": [
+    {
+      "fixture": "long-section/replace-return",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "iter": 0,
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 331,
+      "argTokens": 97,
+      "outputTokens": 779,
+      "cacheRead": 4581,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 8,
+      "residualInputTokens": 3876,
+      "totalContextTokens": 9769,
+      "toolName": "edit",
+      "wallMs": 21087,
+      "inputTokens": 3973,
+      "cacheReadTokens": 4581,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 97,
+      "cost": 0,
+      "tokScaleInput": 3973,
+      "tokScaleOutput": 779,
+      "tokScaleCacheRead": 4581,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 2,
+      "tokScaleCost": 0.00178893,
+      "tokScaleProcessingTimeMs": 16,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "failure": "",
+      "tokenRouteDecision": {
+        "contextSavingsPct": null,
+        "schemaTokensExpected": 0,
+        "argTokensExpected": 97,
+        "outputTokensExpected": 779,
+        "fallbackContextTokensExpected": null,
+        "selectedBecause": "core lane selected as baseline/fallback"
+      },
+      "runDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0",
+      "sessionDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/sessions",
+      "sessionFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/sessions/2026-06-10T05-35-09-899Z_019eb007-024b-7ba5-a77b-4d75a562f705.jsonl",
+      "commandFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/2026-06-10T05-35-09-188Z/long-section_replace-return__core__0/exit.json"
+    }
+  ]
+}
