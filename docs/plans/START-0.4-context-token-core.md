@@ -4,7 +4,7 @@ Use this as the next `/goal` or new-chat start prompt.
 
 ## Goal prompt
 
-Make Blitz become a core-edit replacement by reducing context-window/token overhead and proving token savings with real Pi/Tokscale benchmarks. Start with Phase 0 measurement and Phase 1 minimal tool profile from `docs/plans/PLAN-0.4-context-token-optimization.md`.
+Make Blitz become a default-cheaper Pi edit path by reducing context-window/token overhead and proving cumulative savings over realistic edit streaks with real Pi/Tokscale benchmarks. Start with Phase 0 measurement and Phase 1 minimal tool profile from `docs/plans/PLAN-0.4-context-token-optimization.md`.
 
 ## Required context before planning
 
@@ -23,7 +23,18 @@ If implementation touches `@codewithkenzo/pi-blitz`, also read its local `AGENTS
 
 This project is nothing without token savings. Do not optimize for raw speed first. Speed is a guardrail; context/token savings are the product.
 
-Blitz is **not core edit today**. This goal exists to make it core only if evidence proves it can be default-cheaper or can route cheaper alternatives correctly.
+Blitz is **not core edit today**. This goal exists to make it default-cheaper only if evidence over realistic edit streaks proves it beats Pi core `edit` or routes to Pi core when core is cheaper.
+
+
+## 2026-06-10 goal tweak
+
+Interpret this start prompt under current narrowed objective:
+
+- Pi core `edit` is the only required baseline/fallback. Do not add or require Codex/OpenAI `apply_patch` parity for this slice.
+- Primary evidence is cumulative model-visible context across realistic edit streaks, not isolated structural wins.
+- Required streak reports should include 10+ tiny edits, 20+ mixed language/config/markdown/code edits, one same-file multi-edit scenario, and representative single rows.
+- Huge structural rows are secondary capability evidence.
+- Benchmark-only route-selected core choices must be labeled as synthesis, not product-real `pi_blitz_route_edit` fallback.
 
 ## Required first slice
 
@@ -61,7 +72,7 @@ After Phase 0/1 evidence, proceed only where data points:
 - If simple rows lose from arg/output size: add compact op IR/freeform DSL.
 - If semantic rows repeat too much code: add AST target + deterministic chunk-local merge.
 - Runtime routing integration must be explicit before replacement claims: Pi extension facade/core-tool wrapper/skill-level route contract, not benchmark-only routing.
-- If a Blitz route is not cheaper: route to core/apply_patch and record reason.
+- If a Blitz route is not cheaper: route to Pi core `edit` and record reason.
 
 ## Acceptance gates
 
@@ -74,7 +85,7 @@ Do not call goal done until all are true:
 - Correctness is 100% for accepted savings rows.
 - Resident tool/skill overhead is measured; target reduction is >=70% for common lanes.
 - Structural rows preserve current large token wins.
-- Simple both-correct rows either beat/tie core after overhead or router chooses core/apply_patch with explicit token proof.
+- Simple both-correct rows either beat/tie Pi core `edit` after overhead or route-selected evidence chooses core with explicit token proof.
 - Report lists failed/skipped rows and caveats; no hidden failures.
 
 ## Builder routing

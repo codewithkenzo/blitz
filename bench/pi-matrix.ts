@@ -2325,8 +2325,8 @@ const main = async () => {
 					status: "both_correct",
 					acceptedRoute: blitzWinsOrTiesContext ? "blitz" : "core",
 					routeDecisionReason: blitzWinsOrTiesContext
-						? `Blitz total context ${blitz.totalContextTokens} <= core ${core.totalContextTokens}`
-						: `core/apply_patch fallback: Blitz total context ${blitz.totalContextTokens} > core ${core.totalContextTokens}`,
+						? `Blitz total context ${blitz.totalContextTokens} <= Pi core edit ${core.totalContextTokens}`
+						: `Pi core edit fallback: Blitz total context ${blitz.totalContextTokens} > core ${core.totalContextTokens}`,
 					savingsCounted: blitzWinsOrTiesContext,
 					outputSavingsPct,
 					argsSavingsPct,
@@ -2335,7 +2335,7 @@ const main = async () => {
 					costSavingsPct,
 				});
 				summaryLines.push(
-					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("total context", totalContextSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}; route=${blitzWinsOrTiesContext ? "blitz" : "core/apply_patch fallback"}; savings ${blitzWinsOrTiesContext ? "counted" : "not counted"}`,
+					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("total context", totalContextSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}; route=${blitzWinsOrTiesContext ? "blitz" : "Pi core edit fallback"}; savings ${blitzWinsOrTiesContext ? "counted" : "not counted"}`,
 				);
 			} else if (!blitzCorrect) {
 				pairwise.push({

@@ -2,15 +2,15 @@
 
 Date: 2026-06-05
 Status: finalized research + implementation plan; implementation not started
-Primary objective: make Blitz save context-window and tokens across as many real coding-agent edits as possible, enough to become the default replacement for core edit where safe.
+Primary objective: make Blitz save context-window and tokens across realistic Pi edit streaks, enough to become the default-cheaper path only where real Pi/tmux/Tokscale evidence beats Pi core `edit`.
 
 ## Non-negotiable framing
 
-Blitz is **not core edit today**. 0.4 exists because Blitz needs to become core edit: the default, token-cheaper edit path agents can trust for normal code changes, not a niche fallback for structural failures.
+Blitz is **not core edit today**. 0.4 exists because Blitz needs to become core edit: the default-cheaper edit path agents can trust for normal Pi code changes, not a niche fallback for structural failures.
 
 This is **not** a raw speed plan. It is a context-window and token-savings plan.
 
-A Blitz edit is successful only if it reduces model-visible context/output/tool-call tokens or correctly routes away from Blitz when core is cheaper. Wall time stays a secondary guardrail: keep Blitz fast or make it faster, but do not call speed the main win.
+A Blitz edit is successful only if it reduces model-visible context/output/tool-call tokens or correctly routes away from Blitz when Pi core `edit` is cheaper. Wall time stays a secondary guardrail: keep Blitz fast or make it faster, but do not call speed the main win.
 
 ## Baseline from existing real Pi/Tokscale bench
 
@@ -149,7 +149,7 @@ Findings:
 - `tool_search` exists for `gpt-5.4+`: defer rarely used tools and load them only when needed.
 - Custom/freeform tools can accept raw text payloads instead of JSON object wrapping. This can be better for compact edit DSLs.
 - Custom tools can be constrained by CFG grammar. That enables a compact Blitz edit language like `rr(path,symbol,expr)` or tuple text without verbose JSON keys. CFG can add generation latency, so benchmark required.
-- `apply_patch` is the current OpenAI-native code-edit baseline. It supports create/update/delete and streaming patch changes. Blitz should compare against it, not only core edit.
+- `apply_patch` is an OpenAI-native code-edit comparator for future broader studies. Current 0.4 Pi-default evidence does not require it; Pi core `edit` is the baseline/fallback.
 
 Action for Blitz:
 
@@ -157,7 +157,7 @@ Action for Blitz:
   - one JSON-schema tool with compact short keys, or
   - one freeform custom tool with a compact grammar if Pi/OpenAI path supports it.
 - Add a `tool_search`/lazy profile path for `gpt-5.4+` models where available.
-- Benchmark against core edit and apply_patch-style patches.
+- Benchmark current default-readiness against Pi core `edit`; keep apply_patch-style patches as optional future comparators.
 
 ### Anthropic MCP/code-execution strategy
 
@@ -267,7 +267,7 @@ To replace core, Blitz must cover these real use cases:
 4. **Large structural edit**: avoid repeated old code/location tokens.
 5. **Multi-edit same file**: one tool call, one parse, one write.
 6. **Text/Markdown/config edit**: deterministic anchors and section/key ops.
-7. **Fallback edit**: if Blitz cannot be cheaper/correct, it must choose core or apply_patch and report why.
+7. **Fallback edit**: if Blitz cannot be cheaper/correct under the current 0.4 gate, it must choose Pi core `edit` and report why. apply_patch-style fallbacks are future comparisons, not current acceptance gates.
 
 For each use case, Blitz must prove:
 
@@ -366,7 +366,7 @@ Resident skill should only say:
 
 1. Use `pi_blitz_op` for edits that can be expressed compactly.
 2. Do not repeat unchanged code.
-3. Use core/apply_patch when compact op is longer than direct edit or unsupported.
+3. Use Pi core `edit` when compact op is longer than direct edit or unsupported.
 4. For uncertainty, call route/explain or read structure, then edit.
 5. Always verify.
 
@@ -401,11 +401,23 @@ Runtime integration point must be explicit before core-replacement claims. The r
 Route selection order:
 
 1. no-op if already applied
-2. compact deterministic Blitz op if shorter than core/apply_patch and safe
+2. compact deterministic Blitz op if shorter than Pi core `edit` and safe
 3. direct text/core for tiny exact edits where core is cheaper
 4. structural Blitz for body/multi/symbol edits
-5. apply_patch/unified diff for model-familiar multi-file patches
+5. future patch/diff fallback for multi-file patches, outside current Pi core-baseline gate
 6. fail closed if target ambiguity or savings uncertain and no fallback chosen
+
+
+## 2026-06-10 goal tweak: streak-first Pi core baseline
+
+Active objective is narrowed from broad core-replacement parity to evidence for a default-cheaper Pi edit path over realistic edit streaks. Durable interpretation:
+
+- Baseline/fallback is Pi core `edit` only. Codex/OpenAI `apply_patch` is not a required gate for this objective.
+- Primary metric is cumulative model-visible context across edit streaks: schema/skill, prompt/input/cache, tool args, model output, result payload, residuals, and total context.
+- Representative single rows remain useful diagnostics, but 10+ tiny and 20+ mixed streak totals decide whether Blitz can be default-cheaper.
+- Huge structural rows remain capability evidence; they do not prove default readiness by themselves.
+- Benchmark-only route-selected core choices must be labeled as synthesis, not product-real `pi_blitz_route_edit` fallback.
+- If true sequential same-session Pi streak execution is not implemented, reports must say so and use accepted real Pi/tmux/Tokscale row aggregation only as an honest approximation.
 
 ## Implementation phases
 
@@ -434,7 +446,6 @@ Deliverables:
   - core
   - current Blitz full/narrow
   - Phase 1 minimal-v0/semantic/structural profiles
-  - apply_patch-style baseline if available
 - Add report table: `schemaTokens`, `skillTokens`, `promptTokens`, `argTokens`, `outputTokens`, `cacheRead`, `cacheWrite`, `residualInputTokens`, `totalContextTokens`.
 
 Do not use chars/4 or rough source-size estimates for acceptance. Rough estimates are allowed only in exploratory notes that are clearly excluded from savings claims.
@@ -540,13 +551,13 @@ Deliverables:
   - core-tool wrapper/alias that makes Blitz the familiar default edit path,
   - skill-level route contract plus enforced profile selection,
   - or explicit documented boundary that routing is benchmark-only until a named follow-up phase.
-- Router chooses core/apply_patch if Blitz cannot beat token/context threshold.
+- Router chooses Pi core `edit` if Blitz cannot beat token/context threshold.
 - Reports put token/context first; wall time second.
 
 Acceptance:
 
 - Every selected Blitz row has token/context justification.
-- Every non-selected Blitz row reports why core/apply_patch was cheaper.
+- Every non-selected Blitz row reports why Pi core `edit` was cheaper.
 
 ### Phase 7 — Real-world replacement benchmark
 
@@ -568,7 +579,6 @@ Benchmark set:
 For each case:
 
 - core edit
-- OpenAI/apply_patch-style baseline if available
 - current Blitz full/narrow
 - optimized Blitz minimal/op
 - token-first router-selected path
@@ -609,7 +619,7 @@ Additional source-backed requirements from `.pi/research/20260605-tool-schema-co
 9. **Morph/apply models are fallback baselines.** Morph Fast Apply and OpenAI `apply_patch` are the right competitors for non-deterministic edits. Blitz should benchmark against core edit **and** apply_patch/Morph-style chunk merge, not only against core.
 10. **Streaming parser is a real optimization path.** Codex has a streaming apply_patch parser. Blitz compact IR should be stream-parseable so invalid ops fail early and UI can show progress while tool payload streams.
 
-Plan impact: Phase 0 must measure schema/skill/prompt tax exactly; Phase 1 must implement profile registration without assuming `pi_blitz_op`; Phase 2 must evaluate both compact JSON and freeform DSL; Phase 5 must include deterministic chunk-local merge; Phase 6 must define runtime route integration; Phase 7 must include apply_patch/Morph/CEDARScript-style baselines.
+Plan impact: Phase 0 must measure schema/skill/prompt tax exactly; Phase 1 must implement profile registration without assuming `pi_blitz_op`; Phase 2 must evaluate both compact JSON and freeform DSL; Phase 5 must include deterministic chunk-local merge; Phase 6 must define runtime route integration; Phase 7 current gate must include Pi core `edit` baselines; apply_patch/Morph/CEDARScript-style baselines are future optional comparisons, not required for default-cheaper Pi evidence.
 
 ## Cross-repo execution contract
 
@@ -632,7 +642,7 @@ For companion `pi-blitz` work:
 
 Blitz can be considered a candidate core replacement only when real Pi/tmux/Tokscale reports prove:
 
-1. Current simple-edit losses are fixed by optimized Blitz or routed to core/apply_patch with explicit token proof.
+1. Current simple-edit losses are fixed by optimized Blitz or routed to Pi core `edit` with explicit token proof.
 2. Tool/skill resident context overhead is reduced >=70% for common lanes.
 3. Structural edits preserve large savings (~9k tokens per current representative case).
 4. Reports prove token/context savings first and speed second.
@@ -656,4 +666,4 @@ After first-slice evidence:
 5. Compress resident skill to <=500 tokens and move examples to references.
 6. Add deterministic chunk-local merge spike for symbol-scoped snippets with keep markers.
 7. Define runtime router integration point, not benchmark-only routing.
-8. Re-run 12-pair matrix plus real-world set against core, current Blitz, optimized Blitz, and apply_patch/Morph-style baselines.
+8. Re-run 12-pair matrix plus realistic edit-streak set against Pi core `edit`, current Blitz, optimized Blitz, and route-selected evidence.
