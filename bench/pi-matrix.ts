@@ -324,7 +324,7 @@ const FIXTURES: Fixture[] = [
 		intent: (p: string) => buildWrapIntent(p, mediumSrc, "mediumCompute"),
 		expectedFile: "",
 		blitzGuidance:
-			'For this edit, call `pi_blitz_wrap_body`. Tool args must be exactly: symbol `mediumCompute`; before value is an actual newline character followed by two spaces and `try {`; after value is `  } catch (error) {`, newline, four spaces `console.error(error);`, newline, four spaces `throw error;`, newline, two spaces `}`, newline; indentKeptBodyBy `2`. Do not pass literal backslash-n text in `before` or `after`.',
+			"For this edit, call `pi_blitz_wrap_body`. Tool args must be exactly: symbol `mediumCompute`; before value is an actual newline character followed by two spaces and `try {`; after value is `  } catch (error) {`, newline, four spaces `console.error(error);`, newline, four spaces `throw error;`, newline, two spaces `}`, newline; indentKeptBodyBy `2`. Do not pass literal backslash-n text in `before` or `after`.",
 		recommendedLane: "blitz",
 		className: "medium_wrap_body",
 	},
