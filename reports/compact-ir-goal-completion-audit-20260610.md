@@ -2,7 +2,7 @@
 
 Date: 2026-06-10
 Blitz branch: `feat/blitz-0.4-token-core-profile`
-Blitz head: `6299d7b docs: record compact route manual benchmark`
+Blitz head: `dfeea52 docs: add compact IR completion audit`
 pi-blitz branch: local `feat/blitz-0.4-token-core-profile-canonical`, pushed to `origin/feat/blitz-0.4-token-core-profile`
 pi-blitz head: `f0d2c7a feat: send compact op IR directly`
 
