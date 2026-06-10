@@ -16,6 +16,7 @@ const ApplyError = error{
 pub const ApplyTarget = struct {
     symbol: []const u8,
     kind: ?[]const u8 = null,
+    parent: ?[]const u8 = null,
     range: ?[]const u8 = null,
     occurrence: ?usize = null,
 };
@@ -342,12 +343,12 @@ fn normalizeCompactOperation(raw: []const u8) ![]const u8 {
 
 fn parseCompactTarget(value: std.json.Value) !ApplyTarget {
     const obj = try expectObject(value);
-    if (obj.get("p") != null) return ApplyError.UnsupportedOperation;
     const kind = try requireOptionalString(obj, "k");
     const symbol = try requireString(obj, "n");
+    const parent = try requireOptionalString(obj, "p");
     const range = try requireOptionalString(obj, "range");
     const occurrence = try requireOptionalUsize(obj, "occ");
-    return .{ .symbol = symbol, .kind = kind, .range = range, .occurrence = occurrence };
+    return .{ .symbol = symbol, .kind = kind, .parent = parent, .range = range, .occurrence = occurrence };
 }
 
 fn parseCompactGuard(value: std.json.Value) !ApplyGuard {
@@ -379,7 +380,7 @@ fn parseVersionField(value: std.json.Value) !u8 {
 
 fn parseTargetField(value: std.json.Value) !ApplyTarget {
     const obj = try expectObject(value);
-    return .{ .symbol = try requireString(obj, "symbol"), .kind = try requireOptionalString(obj, "kind"), .range = try requireOptionalString(obj, "range"), .occurrence = try requireOptionalUsize(obj, "occurrence") };
+    return .{ .symbol = try requireString(obj, "symbol"), .kind = try requireOptionalString(obj, "kind"), .parent = try requireOptionalString(obj, "parent"), .range = try requireOptionalString(obj, "range"), .occurrence = try requireOptionalUsize(obj, "occurrence") };
 }
 
 fn parseOptionsField(value: std.json.Value) !ApplyOptions {

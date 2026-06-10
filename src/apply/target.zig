@@ -61,6 +61,14 @@ pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, 
     return ast.resolveEditableSymbolOccurrence(source, root, symbol, occurrence);
 }
 
+pub fn resolveEditableSymbolWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolWithParent(source, root, symbol, parent);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrenceWithParent(source, root, symbol, parent, occurrence);
+}
+
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
     return ast.countEditableSymbolMatches(source, root, symbol);
 }

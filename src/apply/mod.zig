@@ -268,6 +268,11 @@ pub fn run(
     const target_resolve_start = Io.Clock.awake.now(io);
     const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
         null
+    else if (req.target.?.parent) |parent|
+        if (req.target.?.occurrence) |occurrence|
+            apply_target.resolveEditableSymbolOccurrenceWithParent(original, root, req.target.?.symbol, parent, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else
+            apply_target.resolveEditableSymbolWithParent(original, root, req.target.?.symbol, parent) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else if (req.target.?.occurrence) |occurrence|
         apply_target.resolveEditableSymbolOccurrence(original, root, req.target.?.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else

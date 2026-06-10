@@ -38,6 +38,18 @@ pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, 
     return findDeclarationNodeOccurrence(source, root, symbol, occurrence, &seen) orelse error.SymbolNotFound;
 }
 
+pub fn resolveEditableSymbolWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8) ResolveError!bindings.Node {
+    const count = countDeclarationNodesWithParent(source, root, symbol, parent, false);
+    if (count == 0) return error.SymbolNotFound;
+    if (count > 1) return error.AmbiguousSymbol;
+    return findDeclarationNodeWithParent(source, root, symbol, parent, false) orelse error.SymbolNotFound;
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    var seen: usize = 0;
+    return findDeclarationNodeOccurrenceWithParent(source, root, symbol, parent, occurrence, false, &seen) orelse error.SymbolNotFound;
+}
+
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
     return countDeclarationNodes(source, root, symbol);
 }
@@ -143,6 +155,60 @@ fn countDeclarationNodes(source: []const u8, node: bindings.Node, symbol: []cons
     return count;
 }
 
+fn findDeclarationNodeWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, ancestor_matches: bool) ?bindings.Node {
+    if (ancestor_matches and grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+        return node;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeWithParent(source, child, symbol, parent, child_ancestor_matches)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn findDeclarationNodeOccurrenceWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize, ancestor_matches: bool, seen: *usize) ?bindings.Node {
+    if (ancestor_matches and grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+        if (seen.* == occurrence) return node;
+        seen.* += 1;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeOccurrenceWithParent(source, child, symbol, parent, occurrence, child_ancestor_matches, seen)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn countDeclarationNodesWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, ancestor_matches: bool) usize {
+    var count: usize = 0;
+    if (ancestor_matches and grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+        count += 1;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            count += countDeclarationNodesWithParent(source, child, symbol, parent, child_ancestor_matches);
+            if (count > 1) return count;
+        }
+    }
+
+    return count;
+}
+
 fn nodeHasSymbolName(source: []const u8, node: bindings.Node, symbol: []const u8) bool {
     const name_field = grammar_config.nameFieldForKind(node.kind()) orelse return false;
     const child_count = node.childCount();
@@ -174,4 +240,49 @@ test "ast symbol resolver counts duplicate declarations" {
 
     try std.testing.expectEqual(@as(usize, 2), countEditableSymbolMatches(source, tree.rootNode(), "repeat"));
     try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbol(source, tree.rootNode(), "repeat"));
+}
+
+test "ast symbol resolver filters duplicate methods by parent declaration" {
+    const source =
+        \\const Alpha = {
+        \\  run() { return "alpha"; }
+        \\};
+        \\const Beta = {
+        \\  run() { return "beta"; }
+        \\};
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbol(source, tree.rootNode(), "run"));
+    const beta_run = try resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Beta");
+    const text = source[@intCast(beta_run.startByte())..@intCast(beta_run.endByte())];
+    try std.testing.expect(std.mem.indexOf(u8, text, "beta") != null);
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Missing"));
+}
+
+test "ast parent filter remains ambiguous within same parent until occurrence supplied" {
+    const source =
+        \\class Alpha {
+        \\  run() { return 1; }
+        \\  run() { return 2; }
+        \\}
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Alpha"));
+    const second = try resolveEditableSymbolOccurrenceWithParent(source, tree.rootNode(), "run", "Alpha", 1);
+    const text = source[@intCast(second.startByte())..@intCast(second.endByte())];
+    try std.testing.expect(std.mem.indexOf(u8, text, "2") != null);
 }
