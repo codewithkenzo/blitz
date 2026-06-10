@@ -56,6 +56,18 @@ const CompactApplySuccess = struct {
     ranges: RangesResult,
 };
 
+const CompactBatchApplySuccess = struct {
+    ok: bool = true,
+    status: []const u8,
+    op: []const u8 = "batch",
+    file: []const u8,
+    symbol: []const u8,
+    changed: bool,
+    parse: bool,
+    count: usize,
+    ranges: RangesResult,
+};
+
 fn emitCompactApplySuccess(stdout: *Writer, result: ApplyResult) !void {
     const compact = CompactApplySuccess{
         .status = result.status,
@@ -64,6 +76,19 @@ fn emitCompactApplySuccess(stdout: *Writer, result: ApplyResult) !void {
         .symbol = result.symbol,
         .changed = result.changed,
         .parse = result.validation.parseAfterClean,
+        .ranges = result.ranges,
+    };
+    try stdout.print("{f}\n", .{std.json.fmt(compact, .{})});
+}
+
+fn emitCompactBatchApplySuccess(stdout: *Writer, result: ApplyResult, count: usize) !void {
+    const compact = CompactBatchApplySuccess{
+        .status = result.status,
+        .file = result.file,
+        .symbol = result.symbol,
+        .changed = result.changed,
+        .parse = result.validation.parseAfterClean,
+        .count = count,
         .ranges = result.ranges,
     };
     try stdout.print("{f}\n", .{std.json.fmt(compact, .{})});
@@ -91,6 +116,27 @@ fn normalizeEscapedNewlines(allocator: Allocator, value: []const u8) ![]u8 {
 fn validateGuard(source: []const u8, guard: apply_ir.ApplyGuard) !void {
     if (guard.range.end > source.len) return ApplyError.HashMismatch;
     if (!std.mem.eql(u8, source[guard.range.start..guard.range.end], guard.text)) return ApplyError.HashMismatch;
+}
+
+fn compactOpsCount(value: std.json.Value) ?usize {
+    const obj = switch (value) {
+        .object => |o| o,
+        else => return null,
+    };
+    if (obj.get("v") == null or obj.get("f") == null) return null;
+    const ops_value = obj.get("ops") orelse return null;
+    return switch (ops_value) {
+        .array => |arr| arr.items.len,
+        else => null,
+    };
+}
+
+fn readCompactDryRun(ops: []const ApplyRequest, cli_dry_run: bool) bool {
+    if (cli_dry_run) return true;
+    for (ops) |req| {
+        if (req.options) |opts| if (opts.dryRun orelse false) return true;
+    }
+    return false;
 }
 
 const MatchSpan = apply_ops.MatchSpan;
@@ -149,6 +195,19 @@ pub fn run(
         return emitFailure(if (err == error.OutOfMemory) ApplyError.IoError else ApplyError.InvalidJson, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     defer parsed.deinit();
+
+    if (compactOpsCount(parsed.value)) |count| {
+        if (count > 1) {
+            const obj = expectObject(parsed.value) catch |err| {
+                return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            };
+            const batch = apply_ir.parseCompactBatchRequest(allocator, obj) catch |err| {
+                return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            };
+            defer allocator.free(batch.ops);
+            return runCompactBatch(allocator, io, start, batch, request_bytes, json_output, stdout, stderr, readCompactDryRun(batch.ops, cli_dry_run), diff_requested);
+        }
+    }
 
     const req = apply_ir.parseRequest(parsed.value) catch |err| {
         return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
@@ -555,6 +614,166 @@ pub fn run(
     }
 
     try stdout.print("{f}\n", .{std.json.fmt(result, .{})});
+    return 0;
+}
+
+fn runCompactBatch(
+    allocator: Allocator,
+    io: Io,
+    start: anytype,
+    batch: apply_ir.CompactBatchRequest,
+    request_bytes: []const u8,
+    json_output: bool,
+    stdout: *Writer,
+    stderr: *Writer,
+    dry_run: bool,
+    diff_requested: bool,
+) !u8 {
+    _ = diff_requested;
+    if (batch.file.len == 0) return emitFailure(ApplyError.MissingFile, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+    const real_path = Dir.cwd().realPathFileAlloc(io, batch.file, allocator) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+    defer allocator.free(real_path);
+    workspace.enforce(real_path) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+
+    const read_start = Io.Clock.awake.now(io);
+    const original = Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES)) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+    const read_ms = msSince(read_start, Io.Clock.awake.now(io));
+    defer allocator.free(original);
+
+    const ext = std.fs.path.extension(batch.file);
+    const lang = grammar_config.languageForExtension(ext) orelse return emitFailure(ApplyError.UnsupportedLanguage, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+    var current = try allocator.dupe(u8, original);
+    defer allocator.free(current);
+    var last_range = RangesResult{ .targetStart = 0, .targetEnd = 0, .bodyStart = null, .bodyEnd = null, .editStart = 0, .editEnd = 0 };
+    var changed_before: usize = 0;
+    var changed_after: usize = 0;
+    var target_resolve_ms: u64 = 0;
+    var plan_ms: u64 = 0;
+    var parse_after_ms: u64 = 0;
+    var parser_init_ms: u64 = 0;
+    var parse_before_ms: u64 = 0;
+
+    for (batch.ops) |req| {
+        if (req.guard) |guard| validateGuard(current, guard) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const operation = apply_ops.parseOperation(req.operation) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (operation != .set_body and operation != .insert_after_symbol) return emitFailure(ApplyError.UnsupportedOperation, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const target = req.target orelse return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+        const parser_init_start = Io.Clock.awake.now(io);
+        var parser = bindings.Parser.init();
+        defer parser.deinit();
+        if (!parser.setLanguage(lang)) return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        parser_init_ms += msSince(parser_init_start, Io.Clock.awake.now(io));
+
+        const parse_before_start = Io.Clock.awake.now(io);
+        var source_tree = parser.parseString(current) orelse return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        defer source_tree.deinit();
+        const root = source_tree.rootNode();
+        if (root.isNull() or root.hasError()) return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        parse_before_ms += msSince(parse_before_start, Io.Clock.awake.now(io));
+
+        const target_resolve_start = Io.Clock.awake.now(io);
+        const target_node: bindings.Node = if (target.parent) |parent|
+            if (target.occurrence) |occurrence|
+                apply_target.resolveEditableSymbolOccurrenceWithParent(current, root, target.symbol, parent, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+            else
+                apply_target.resolveEditableSymbolWithParent(current, root, target.symbol, parent) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else if (target.occurrence) |occurrence|
+            apply_target.resolveEditableSymbolOccurrence(current, root, target.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else
+            apply_target.resolveEditableSymbol(current, root, target.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const target_start: usize = @intCast(target_node.startByte());
+        const target_end: usize = @intCast(target_node.endByte());
+        const body_range = if (operation == .insert_after_symbol)
+            edit_support.ByteRange{ .start = target_start, .end = target_end }
+        else
+            apply_target.bodyRangeFor(lang, current, target_node) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        target_resolve_ms += msSince(target_resolve_start, Io.Clock.awake.now(io));
+
+        const plan_start = Io.Clock.awake.now(io);
+        const op_result = switch (operation) {
+            .insert_after_symbol => blk: {
+                const code = switch (req.edit) {
+                    .string => |value| value,
+                    .object => |edit_obj| apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                    else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                };
+                break :blk OpResult{ .contents = try apply_diff.spliceText(allocator, current, target_end, target_end, code), .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end }, .single_match = true, .changed_before = 0, .changed_after = code.len };
+            },
+            .set_body => blk: {
+                const body = switch (req.edit) {
+                    .string => |value| value,
+                    .object => |edit_obj| apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                    else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                };
+                break :blk OpResult{ .contents = try apply_diff.spliceText(allocator, current, body_range.start, body_range.end, body), .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end }, .single_match = true, .changed_before = body_range.end - body_range.start, .changed_after = body.len };
+            },
+            else => unreachable,
+        };
+        plan_ms += msSince(plan_start, Io.Clock.awake.now(io));
+
+        const parse_after_start = Io.Clock.awake.now(io);
+        const replacement_end = op_result.range.editStart + op_result.changed_after;
+        const parse_after_single_range: ?apply_validate.SingleRangeEdit = if (replacement_end > op_result.contents.len)
+            null
+        else
+            .{ .start = op_result.range.editStart, .end = op_result.range.editEnd, .replacement = op_result.contents[op_result.range.editStart..replacement_end] };
+        const parse_after = try apply_validate.parseAfterEdit(allocator, &parser, &source_tree, current, op_result.contents, false, parse_after_single_range);
+        parse_after_ms += msSince(parse_after_start, Io.Clock.awake.now(io));
+        if (!parse_after) {
+            allocator.free(op_result.contents);
+            return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        }
+
+        allocator.free(current);
+        current = op_result.contents;
+        last_range = op_result.range;
+        changed_before += op_result.changed_before;
+        changed_after += op_result.changed_after;
+    }
+
+    const changed = !std.mem.eql(u8, original, current);
+    const write_start = Io.Clock.awake.now(io);
+    if (changed and !dry_run) {
+        var lock_guard = file_lock.acquire(allocator, io, real_path) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        defer lock_guard.release();
+        const cache_dir = backup.defaultCacheDir(allocator) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        defer allocator.free(cache_dir);
+        backup.store(allocator, io, cache_dir, real_path, original) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        backup.atomicWrite(allocator, io, real_path, current) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+    }
+    const write_ms = msSince(write_start, Io.Clock.awake.now(io));
+    const total_ms = msSince(start, Io.Clock.awake.now(io));
+    const result = ApplyResult{
+        .status = if (dry_run) "planned" else "applied",
+        .operation = "batch",
+        .route = "blitz",
+        .routeReasonCode = "compact_batch",
+        .routeDecision = estimateRouteDecision(.set_body, "auto"),
+        .file = batch.file,
+        .symbol = "*",
+        .language = languageName(lang),
+        .dryRun = dry_run,
+        .changed = changed,
+        .validation = .{ .parseBeforeClean = true, .parseAfterClean = true, .singleMatch = true },
+        .ranges = last_range,
+        .metrics = .{ .fileBytesBefore = original.len, .fileBytesAfter = current.len, .requestBytes = request_bytes.len, .changedBytesBefore = changed_before, .changedBytesAfter = changed_after, .wallMs = total_ms, .phaseMs = .{ .read = read_ms, .parserInit = parser_init_ms, .parseBefore = parse_before_ms, .targetResolve = target_resolve_ms, .plan = plan_ms, .parseAfter = parse_after_ms, .write = write_ms, .total = total_ms } },
+        .diffSummary = "compact batch",
+    };
+    if (json_output) {
+        try emitCompactBatchApplySuccess(stdout, result, batch.ops.len);
+    } else {
+        try stdout.print("{s}: {s}\n", .{ result.status, result.file });
+    }
     return 0;
 }
 
@@ -3280,6 +3499,89 @@ test "apply compact tuple ia inserts after symbol" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
+}
+
+test "apply compact batch rebases later op against updated same file" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"],["rb","function","second","\n  return 22;\n"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"batch\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"count\":2") != null);
+    const inserted_at = std.mem.indexOf(u8, post, "function inserted").?;
+    const second_at = std.mem.indexOf(u8, post, "function second").?;
+    const updated_at = std.mem.indexOf(u8, post, "return 22;").?;
+    try std.testing.expect(inserted_at < second_at);
+    try std.testing.expect(second_at < updated_at);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 2;") == null);
+}
+
+test "apply compact batch second failure leaves file unchanged" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"],["rb","function","missing","\n  return 22;\n"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact batch guard validates sequential contents" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const inserted = "\nfunction inserted(): number { return 3; }\n";
+    const guarded_source = try std.mem.concat(allocator, u8, &.{ original[0..std.mem.indexOf(u8, original, "function second").?], inserted, original[std.mem.indexOf(u8, original, "function second").?..] });
+    defer allocator.free(guarded_source);
+    const guard_text = "function second";
+    const guard_start = std.mem.indexOf(u8, guarded_source, guard_text).?;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[["ia","function","first","\nfunction inserted(): number {{ return 3; }}\n"],{{"op":"rb","t":{{"k":"function","n":"second"}},"s":"\n  return 22;\n","g":{{"range":[{d},{d}],"text":"{s}"}}}}]}}
+    , .{ guard_start, guard_start + guard_text.len, guard_text });
+    defer allocator.free(req);
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 22;") != null);
 }
 
 test "apply compact unknown alias rejects" {

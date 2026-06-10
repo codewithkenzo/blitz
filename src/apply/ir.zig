@@ -50,6 +50,11 @@ pub const ApplyRequest = struct {
     compact: bool = false,
 };
 
+pub const CompactBatchRequest = struct {
+    file: []const u8,
+    ops: []ApplyRequest,
+};
+
 pub const ValidationResult = struct {
     parseBeforeClean: bool,
     parseAfterClean: bool,
@@ -289,7 +294,30 @@ fn parseCompactRequest(obj: std.json.ObjectMap) !ApplyRequest {
     return req;
 }
 
-fn parseCompactOp(file: []const u8, value: std.json.Value) !ApplyRequest {
+pub fn parseCompactBatchRequest(allocator: std.mem.Allocator, obj: std.json.ObjectMap) !CompactBatchRequest {
+    const version = if (obj.get("v")) |value| try parseVersionField(value) else return ApplyError.MissingField;
+    if (version != 1) return ApplyError.UnsupportedVersion;
+    const file = switch (obj.get("f") orelse return ApplyError.MissingField) {
+        .string => |value| value,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const ops_value = obj.get("ops") orelse return ApplyError.MissingField;
+    const ops = switch (ops_value) {
+        .array => |arr| arr,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    if (ops.items.len == 0) return ApplyError.MissingField;
+
+    var requests = try allocator.alloc(ApplyRequest, ops.items.len);
+    errdefer allocator.free(requests);
+    for (ops.items, 0..) |op, i| {
+        requests[i] = try parseCompactOp(file, op);
+        requests[i].compact = true;
+    }
+    return .{ .file = file, .ops = requests };
+}
+
+pub fn parseCompactOp(file: []const u8, value: std.json.Value) !ApplyRequest {
     return switch (value) {
         .object => |op_obj| parseCompactObjectOp(file, op_obj),
         .array => |items| parseCompactTupleOp(file, items),
