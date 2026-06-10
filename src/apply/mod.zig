@@ -45,6 +45,30 @@ const ApplyFailureResult = apply_ir.ApplyFailureResult;
 const PhaseMetricsResult = apply_ir.PhaseMetricsResult;
 const RouteDecision = apply_ir.RouteDecision;
 
+const CompactApplySuccess = struct {
+    ok: bool = true,
+    status: []const u8,
+    op: []const u8,
+    file: []const u8,
+    symbol: []const u8,
+    changed: bool,
+    parse: bool,
+    ranges: RangesResult,
+};
+
+fn emitCompactApplySuccess(stdout: *Writer, result: ApplyResult) !void {
+    const compact = CompactApplySuccess{
+        .status = result.status,
+        .op = result.operation,
+        .file = result.file,
+        .symbol = result.symbol,
+        .changed = result.changed,
+        .parse = result.validation.parseAfterClean,
+        .ranges = result.ranges,
+    };
+    try stdout.print("{f}\n", .{std.json.fmt(compact, .{})});
+}
+
 fn expectObject(value: std.json.Value) !std.json.ObjectMap {
     return switch (value) {
         .object => |obj| obj,
@@ -507,6 +531,11 @@ pub fn run(
 
     if (!json_output) {
         if (changed and !dry_run) try stdout.print("Applied {s}: {s}\n", .{ req.file, status }) else try stdout.print("No changes for {s}: {s}\n", .{ req.file, status });
+        return 0;
+    }
+
+    if (req.compact) {
+        try emitCompactApplySuccess(stdout, result);
         return 0;
     }
 
@@ -3119,6 +3148,9 @@ test "apply set_body replaces complete body" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"language\":\"typescript\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
@@ -3144,7 +3176,11 @@ test "apply compact object rb replaces body" {
     defer allocator.free(out);
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
-    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
 }
@@ -3168,7 +3204,11 @@ test "apply compact tuple ia inserts after symbol" {
     defer allocator.free(out);
     const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
     defer allocator.free(post);
-    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"insert_after_symbol\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"insert_after_symbol\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
 }
 

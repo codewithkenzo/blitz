@@ -34,6 +34,7 @@ pub const ApplyRequest = struct {
     target: ?ApplyTarget = null,
     edit: std.json.Value,
     options: ?ApplyOptions = null,
+    compact: bool = false,
 };
 
 pub const ValidationResult = struct {
@@ -270,7 +271,9 @@ fn parseCompactRequest(obj: std.json.ObjectMap) !ApplyRequest {
         else => return ApplyError.FieldTypeMismatch,
     };
     if (ops.items.len != 1) return ApplyError.UnsupportedOperation;
-    return parseCompactOp(file, ops.items[0]);
+    var req = try parseCompactOp(file, ops.items[0]);
+    req.compact = true;
+    return req;
 }
 
 fn parseCompactOp(file: []const u8, value: std.json.Value) !ApplyRequest {
