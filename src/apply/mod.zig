@@ -60,6 +60,10 @@ fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
     };
 }
 
+fn normalizeEscapedNewlines(allocator: Allocator, value: []const u8) ![]u8 {
+    return std.mem.replaceOwned(u8, allocator, value, "\\n", "\n");
+}
+
 const MatchSpan = apply_ops.MatchSpan;
 const OpResult = apply_ops.OpResult;
 const MultiEdit = apply_ops.MultiEdit;
@@ -288,9 +292,13 @@ pub fn run(
         .wrap_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const before = apply_ir.requireString(edit_obj, "before") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const before_raw = apply_ir.requireString(edit_obj, "before") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const keep = apply_ir.requireString(edit_obj, "keep") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
-            const after = apply_ir.requireString(edit_obj, "after") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const after_raw = apply_ir.requireString(edit_obj, "after") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const before = normalizeEscapedNewlines(allocator, before_raw) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(before);
+            const after = normalizeEscapedNewlines(allocator, after_raw) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(after);
             if (!std.mem.eql(u8, keep, "body")) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const indent = if (edit_obj.get("indentKeptBodyBy")) |indent_raw| switch (indent_raw) {
                 .integer => |v| if (v < 0) return emitFailure(ApplyError.InvalidOccurrence, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len) else @as(usize, @intCast(v)),
