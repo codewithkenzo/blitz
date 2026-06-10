@@ -292,10 +292,22 @@ fn parseCompactObjectOp(file: []const u8, op_obj: std.json.ObjectMap) !ApplyRequ
 
 fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
     if (items.items.len < 4) return ApplyError.MissingField;
-    const op_raw = switch (items.items[0]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
-    const kind = switch (items.items[1]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
-    const name = switch (items.items[2]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
-    const snippet = switch (items.items[3]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
+    const op_raw = switch (items.items[0]) {
+        .string => |v| v,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const kind = switch (items.items[1]) {
+        .string => |v| v,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const name = switch (items.items[2]) {
+        .string => |v| v,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const snippet = switch (items.items[3]) {
+        .string => |v| v,
+        else => return ApplyError.FieldTypeMismatch,
+    };
     const occ: ?usize = if (items.items.len > 4) switch (items.items[4]) {
         .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
         else => return ApplyError.FieldTypeMismatch,

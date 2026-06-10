@@ -234,11 +234,10 @@ pub fn run(
     const target_resolve_start = Io.Clock.awake.now(io);
     const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
         null
+    else if (req.target.?.occurrence) |occurrence|
+        apply_target.resolveEditableSymbolOccurrence(original, root, req.target.?.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else
-        if (req.target.?.occurrence) |occurrence|
-            apply_target.resolveEditableSymbolOccurrence(original, root, req.target.?.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
-        else
-            apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;

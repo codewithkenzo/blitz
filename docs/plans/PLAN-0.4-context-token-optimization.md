@@ -473,20 +473,34 @@ Acceptance:
 - Resident schema tokens, counted from serialized registered specs, are reduced >=70% vs current full registration.
 - No claim is made that Phase 1 is an optimized replacement path until Phase 2/6 prove it.
 
-### Phase 2 — Compact op tool / alias IR
+### Phase 2 — Zig-native compact apply IR v1
 
-Deliverables:
+Current 2026-06-10 direction: build the compact edit engine inside `/home/kenzo/dev/blitz` first by extending the existing `blitz apply --edit - --json` path. Do **not** start this phase in `/home/kenzo/dev/pi-blitz`, do not create a new CLI command surface like `blitz edit-ir apply`, and do not treat wrapper/profile trimming as the main implementation slice. Pi core `edit` remains the required baseline/fallback.
 
-- Add `pi_blitz_op` tool.
-- Add parser/translator from aliases to Blitz apply JSON or compact_patch.
-- Support at least: `rr`, `rb`, `ib`, `wb`, `tc`, `ru`, `ia`, `bt`, `as`, `ek`, `dk`, `sk`.
-- Add compact success output mode by default.
+Deliverables in this repo:
 
-Acceptance:
+- Extend existing apply IR parsing to accept compact JSON object form and tuple form while preserving verbose IR compatibility.
+- Support initial compact op set:
+  - `rb` / `replace_body` / `set_body`: replace resolved symbol body with new snippet only.
+  - `ia` / `insert_after_symbol`: insert snippet after resolved symbol/node.
+  - optional `mn` / `merge_body_chunk`: FastEdit-style keep-marker body merge using existing splice machinery.
+  - optional same-file `ops` batch: one file, one parse/plan/write, deterministic rebasing after earlier edits.
+- Implement minimum target object: `{"k":"function|method|class|object|section|any","n":"name","p":"optional parent","occ":0,"range":"body|node"}`.
+- Resolve targets by clean parse, kind/name filter, optional parent/ancestor filter, deterministic occurrence, then body/node range. Zero matches and ambiguous matches without disambiguation must fail closed.
+- Keep mutation safety: parse compact IR, validate path/guards, parse source cleanly unless explicitly opted out, compute all replacements in memory, parse-after validate merged file, and write only after all same-file ops plan successfully.
+- Add compact success output mode after correctness: tiny `ok`/ranges/parse status by default for compact requests; verbose JSON remains available when requested.
 
-- `replace_return` op arg tokens below current 76-98 range.
-- `wrap_body` op arg tokens stays near/below current 90-120 but with much lower schema tax.
-- Existing Blitz safety/preconditions preserved.
+Acceptance before benchmark claims:
+
+- Compact object parses into canonical operation.
+- Tuple aliases parse for `rb`, `ia`, and `mn` if implemented.
+- Unknown aliases fail compactly.
+- Duplicate symbol without occurrence/parent fails closed; occurrence and/or parent disambiguates deterministically.
+- `rb` replaces body without old-code echo in the tool payload.
+- `ia` inserts after symbol and preserves indentation/newline.
+- Same-file batch rebases later operation ranges after earlier edit if batch is implemented.
+- Parse-failing snippet/source and guard/hash/range mismatch cause no write.
+- `zig build`, `zig build test`, and focused compact fixture CLI commands pass.
 
 ### Phase 3 — Skill compression and lazy docs
 
