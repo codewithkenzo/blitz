@@ -324,7 +324,7 @@ const FIXTURES: Fixture[] = [
 		intent: (p: string) => buildWrapIntent(p, mediumSrc, "mediumCompute"),
 		expectedFile: "",
 		blitzGuidance:
-			'For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.',
+			'For this edit, call `pi_blitz_wrap_body`. Tool args must be exactly: symbol `mediumCompute`; before value is an actual newline character followed by two spaces and `try {`; after value is `  } catch (error) {`, newline, four spaces `console.error(error);`, newline, four spaces `throw error;`, newline, two spaces `}`, newline; indentKeptBodyBy `2`. Do not pass literal backslash-n text in `before` or `after`.',
 		recommendedLane: "blitz",
 		className: "medium_wrap_body",
 	},
@@ -664,7 +664,7 @@ const longSectionSrc = await readFile(
 );
 const longSectionExpected = longSectionSrc.replace(
 	"  return `Invoice ${id} for ${customer}: $0.00`;",
-	"  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;",
+	() => "  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;",
 );
 
 const renameSrc = await readFile(join(fixtureDir, "rename.ts"), "utf8");
