@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2026-06-10T08:35:23.121Z",
+  "profile": "minimal",
+  "profileLabel": "minimal-v0",
+  "tools": [
+    {
+      "name": "pi_blitz_op",
+      "label": "blitz op",
+      "description": "Compact alias edit. Args: {f,ops|s,p?,d?}. s is tab-line script. Aliases rr rb ib wb tc ru ia bt as ek dk sk.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "f"
+        ],
+        "properties": {
+          "f": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Alias tuples: rr/rb/ib/wb/tc/ru/ia/bt/as/ek/dk/sk.",
+            "type": "array",
+            "items": {
+              "minItems": 2,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "description": "Compact op tuple item.",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          },
+          "s": {
+            "minLength": 1,
+            "maxLength": 524288,
+            "description": "Compact script; one tuple per line, tab-separated: rr<TAB>symbol<TAB>expr.",
+            "type": "string"
+          },
+          "p": {
+            "description": "Preview/dry-run.",
+            "type": "boolean"
+          },
+          "d": {
+            "description": "Include compact diff summary.",
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  ]
+}
