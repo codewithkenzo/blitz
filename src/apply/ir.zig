@@ -10,6 +10,7 @@ const ApplyError = error{
     MissingFile,
     MissingField,
     FieldTypeMismatch,
+    InvalidPosition,
 };
 
 pub const ApplyTarget = struct {
@@ -27,6 +28,16 @@ pub const ApplyOptions = struct {
     diffContext: ?usize = null,
 };
 
+pub const ApplyGuardRange = struct {
+    start: usize,
+    end: usize,
+};
+
+pub const ApplyGuard = struct {
+    range: ApplyGuardRange,
+    text: []const u8,
+};
+
 pub const ApplyRequest = struct {
     version: u8,
     file: []const u8,
@@ -34,6 +45,7 @@ pub const ApplyRequest = struct {
     target: ?ApplyTarget = null,
     edit: std.json.Value,
     options: ?ApplyOptions = null,
+    guard: ?ApplyGuard = null,
     compact: bool = false,
 };
 
@@ -290,7 +302,8 @@ fn parseCompactObjectOp(file: []const u8, op_obj: std.json.ObjectMap) !ApplyRequ
     const target_value = op_obj.get("t") orelse return ApplyError.MissingField;
     const target = try parseCompactTarget(target_value);
     const snippet = try requireString(op_obj, "s");
-    return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null };
+    const guard = if (op_obj.get("g")) |value| try parseCompactGuard(value) else null;
+    return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null, .guard = guard };
 }
 
 fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
@@ -335,6 +348,26 @@ fn parseCompactTarget(value: std.json.Value) !ApplyTarget {
     const range = try requireOptionalString(obj, "range");
     const occurrence = try requireOptionalUsize(obj, "occ");
     return .{ .symbol = symbol, .kind = kind, .range = range, .occurrence = occurrence };
+}
+
+fn parseCompactGuard(value: std.json.Value) !ApplyGuard {
+    const obj = try expectObject(value);
+    const range_value = obj.get("range") orelse return ApplyError.MissingField;
+    const range_items = switch (range_value) {
+        .array => |items| items,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    if (range_items.items.len != 2) return ApplyError.FieldTypeMismatch;
+    const start = switch (range_items.items[0]) {
+        .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const end = switch (range_items.items[1]) {
+        .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    if (end < start) return ApplyError.InvalidPosition;
+    return .{ .range = .{ .start = start, .end = end }, .text = try requireString(obj, "text") };
 }
 
 fn parseVersionField(value: std.json.Value) !u8 {

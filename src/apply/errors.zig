@@ -68,6 +68,7 @@ pub fn reason(err: anyerror) []const u8 {
     if (std.mem.eql(u8, name, "NoMatches")) return "no matching pattern";
     if (std.mem.eql(u8, name, "AmbiguousMatches")) return "ambiguous pattern match";
     if (std.mem.eql(u8, name, "OverlappingEdits")) return "overlapping edits";
+    if (std.mem.eql(u8, name, "HashMismatch")) return "guard range text mismatch";
     if (std.mem.eql(u8, name, "UnsupportedMultiEditOperation")) return "unsupported multi-body operation";
     if (std.mem.eql(u8, name, "ParseFailedBefore")) return "source did not parse before edit";
     if (std.mem.eql(u8, name, "ParseFailedAfter")) return "edited source did not parse";

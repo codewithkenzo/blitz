@@ -88,6 +88,11 @@ fn normalizeEscapedNewlines(allocator: Allocator, value: []const u8) ![]u8 {
     return std.mem.replaceOwned(u8, allocator, value, "\\n", "\n");
 }
 
+fn validateGuard(source: []const u8, guard: apply_ir.ApplyGuard) !void {
+    if (guard.range.end > source.len) return ApplyError.HashMismatch;
+    if (!std.mem.eql(u8, source[guard.range.start..guard.range.end], guard.text)) return ApplyError.HashMismatch;
+}
+
 const MatchSpan = apply_ops.MatchSpan;
 const OpResult = apply_ops.OpResult;
 const MultiEdit = apply_ops.MultiEdit;
@@ -113,6 +118,7 @@ const ApplyError = error{
     NoMatches,
     AmbiguousMatches,
     OverlappingEdits,
+    HashMismatch,
     UnsupportedMultiEditOperation,
     ParseFailedBefore,
     ParseFailedAfter,
@@ -182,6 +188,10 @@ pub fn run(
     };
     const read_ms = msSince(read_start, Io.Clock.awake.now(io));
     defer allocator.free(original);
+
+    if (req.guard) |guard| {
+        validateGuard(original, guard) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    }
 
     if (isDirectTextOperation(operation) and shouldExplain(route_option, dry_run, route_requested)) {
         const decision = estimateRouteDecision(operation, route_option);
@@ -3183,6 +3193,61 @@ test "apply compact object rb replaces body" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
+}
+
+test "apply compact object guard range text match applies" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function guarded(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const expected = "return value * 2";
+    const start = std.mem.indexOf(u8, original, expected).?;
+    const end = start + expected.len;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[{{"op":"rb","t":{{"k":"function","n":"guarded"}},"s":"\n  return value + 1;\n","g":{{"range":[{d},{d}],"text":"{s}"}}}}]}}
+    , .{ start, end, expected });
+    defer allocator.free(req);
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+}
+
+test "apply compact object guard mismatch rejects and leaves file unchanged" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function guarded(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const start = std.mem.indexOf(u8, original, "return value * 2").?;
+    const end = start + "return value * 2".len;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[{{"op":"rb","t":{{"k":"function","n":"guarded"}},"s":"\n  return value + 1;\n","g":{{"range":[{d},{d}],"text":"return stale;"}}}}]}}
+    , .{ start, end });
+    defer allocator.free(req);
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"HASH_MISMATCH\"") != null);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply compact tuple ia inserts after symbol" {
