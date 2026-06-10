@@ -57,6 +57,10 @@ pub fn resolveEditableSymbol(source: []const u8, root: bindings.Node, symbol: []
     return ast.resolveEditableSymbol(source, root, symbol);
 }
 
+pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrence(source, root, symbol, occurrence);
+}
+
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
     return ast.countEditableSymbolMatches(source, root, symbol);
 }

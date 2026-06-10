@@ -33,6 +33,11 @@ pub fn resolveEditableSymbol(source: []const u8, root: bindings.Node, symbol: []
     return findDeclarationNode(source, root, symbol) orelse error.SymbolNotFound;
 }
 
+pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    var seen: usize = 0;
+    return findDeclarationNodeOccurrence(source, root, symbol, occurrence, &seen) orelse error.SymbolNotFound;
+}
+
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
     return countDeclarationNodes(source, root, symbol);
 }
@@ -97,6 +102,23 @@ fn findDeclarationNode(source: []const u8, node: bindings.Node, symbol: []const 
     while (child_i < child_count) : (child_i += 1) {
         if (node.namedChild(child_i)) |child| {
             if (findDeclarationNode(source, child, symbol)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn findDeclarationNodeOccurrence(source: []const u8, node: bindings.Node, symbol: []const u8, occurrence: usize, seen: *usize) ?bindings.Node {
+    if (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+        if (seen.* == occurrence) return node;
+        seen.* += 1;
+    }
+
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeOccurrence(source, child, symbol, occurrence, seen)) |found| return found;
         }
     }
 

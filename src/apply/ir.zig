@@ -16,6 +16,7 @@ pub const ApplyTarget = struct {
     symbol: []const u8,
     kind: ?[]const u8 = null,
     range: ?[]const u8 = null,
+    occurrence: ?usize = null,
 };
 
 pub const ApplyOptions = struct {
@@ -206,6 +207,7 @@ pub fn parseTargetRange(raw: ?[]const u8) !TargetRange {
 
 pub fn parseRequest(root: std.json.Value) !ApplyRequest {
     const obj = try expectObject(root);
+    if (obj.get("v") != null or obj.get("f") != null or obj.get("ops") != null) return parseCompactRequest(obj);
     var version: ?u8 = null;
     var file: ?[]const u8 = null;
     var operation: ?[]const u8 = null;
@@ -255,6 +257,71 @@ pub fn parseRequest(root: std.json.Value) !ApplyRequest {
     return .{ .version = version.?, .file = file.?, .operation = operation.?, .target = target, .edit = edit.?, .options = options };
 }
 
+fn parseCompactRequest(obj: std.json.ObjectMap) !ApplyRequest {
+    const version = if (obj.get("v")) |value| try parseVersionField(value) else return ApplyError.MissingField;
+    if (version != 1) return ApplyError.UnsupportedVersion;
+    const file = switch (obj.get("f") orelse return ApplyError.MissingField) {
+        .string => |value| value,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    const ops_value = obj.get("ops") orelse return ApplyError.MissingField;
+    const ops = switch (ops_value) {
+        .array => |arr| arr,
+        else => return ApplyError.FieldTypeMismatch,
+    };
+    if (ops.items.len != 1) return ApplyError.UnsupportedOperation;
+    return parseCompactOp(file, ops.items[0]);
+}
+
+fn parseCompactOp(file: []const u8, value: std.json.Value) !ApplyRequest {
+    return switch (value) {
+        .object => |op_obj| parseCompactObjectOp(file, op_obj),
+        .array => |items| parseCompactTupleOp(file, items),
+        else => ApplyError.FieldTypeMismatch,
+    };
+}
+
+fn parseCompactObjectOp(file: []const u8, op_obj: std.json.ObjectMap) !ApplyRequest {
+    const op_raw = try requireString(op_obj, "op");
+    const operation = try normalizeCompactOperation(op_raw);
+    const target_value = op_obj.get("t") orelse return ApplyError.MissingField;
+    const target = try parseCompactTarget(target_value);
+    const snippet = try requireString(op_obj, "s");
+    return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null };
+}
+
+fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
+    if (items.items.len < 4) return ApplyError.MissingField;
+    const op_raw = switch (items.items[0]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
+    const kind = switch (items.items[1]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
+    const name = switch (items.items[2]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
+    const snippet = switch (items.items[3]) { .string => |v| v, else => return ApplyError.FieldTypeMismatch };
+    const occ: ?usize = if (items.items.len > 4) switch (items.items[4]) {
+        .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
+        else => return ApplyError.FieldTypeMismatch,
+    } else null;
+    const operation = try normalizeCompactOperation(op_raw);
+    const target = ApplyTarget{ .symbol = name, .kind = kind, .occurrence = occ };
+    return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null };
+}
+
+fn normalizeCompactOperation(raw: []const u8) ![]const u8 {
+    if (std.mem.eql(u8, raw, "rb") or std.mem.eql(u8, raw, "replace_body") or std.mem.eql(u8, raw, "set_body")) return "set_body";
+    if (std.mem.eql(u8, raw, "ia") or std.mem.eql(u8, raw, "insert_after_symbol")) return "insert_after_symbol";
+    if (std.mem.eql(u8, raw, "mn") or std.mem.eql(u8, raw, "merge_body_chunk")) return "merge_body_chunk";
+    return ApplyError.UnsupportedOperation;
+}
+
+fn parseCompactTarget(value: std.json.Value) !ApplyTarget {
+    const obj = try expectObject(value);
+    if (obj.get("p") != null) return ApplyError.UnsupportedOperation;
+    const kind = try requireOptionalString(obj, "k");
+    const symbol = try requireString(obj, "n");
+    const range = try requireOptionalString(obj, "range");
+    const occurrence = try requireOptionalUsize(obj, "occ");
+    return .{ .symbol = symbol, .kind = kind, .range = range, .occurrence = occurrence };
+}
+
 fn parseVersionField(value: std.json.Value) !u8 {
     return switch (value) {
         .integer => |v| if (v < 0 or v > std.math.maxInt(u8)) return ApplyError.FieldTypeMismatch else @as(u8, @intCast(v)),
@@ -264,7 +331,7 @@ fn parseVersionField(value: std.json.Value) !u8 {
 
 fn parseTargetField(value: std.json.Value) !ApplyTarget {
     const obj = try expectObject(value);
-    return .{ .symbol = try requireString(obj, "symbol"), .kind = try requireOptionalString(obj, "kind"), .range = try requireOptionalString(obj, "range") };
+    return .{ .symbol = try requireString(obj, "symbol"), .kind = try requireOptionalString(obj, "kind"), .range = try requireOptionalString(obj, "range"), .occurrence = try requireOptionalUsize(obj, "occurrence") };
 }
 
 fn parseOptionsField(value: std.json.Value) !ApplyOptions {

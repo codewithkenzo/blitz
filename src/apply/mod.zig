@@ -235,7 +235,10 @@ pub fn run(
     const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
         null
     else
-        apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (req.target.?.occurrence) |occurrence|
+            apply_target.resolveEditableSymbolOccurrence(original, root, req.target.?.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else
+            apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
@@ -348,8 +351,11 @@ pub fn run(
         },
         .merge_body_chunk => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-            const edit_obj = try expectObject(req.edit);
-            const snippet = apply_ir.requireString(edit_obj, "snippet") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const snippet = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "snippet") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
             const merge = mergeBodyChunk(
                 allocator,
                 original[body_range.start..body_range.end],
@@ -367,8 +373,11 @@ pub fn run(
             };
         },
         .insert_after_symbol => blk: {
-            const edit_obj = try expectObject(req.edit);
-            const code = apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const code = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, target_end, target_end, code),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end },
@@ -380,8 +389,11 @@ pub fn run(
         .set_key => unreachable,
         .set_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-            const edit_obj = try expectObject(req.edit);
-            const body = apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const body = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, body),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
@@ -3111,6 +3123,127 @@ test "apply set_body replaces complete body" {
     try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
+}
+
+test "apply compact object rb replaces body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function compact(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"compact"},"s":"\n  return value + 1;\n"}]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
+}
+
+test "apply compact tuple ia inserts after symbol" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function last(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"insert_after_symbol\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
+}
+
+test "apply compact unknown alias rejects" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function x(): number { return 1; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["xx","function","x","\n  return 2;\n"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"UNSUPPORTED_OPERATION\"") != null);
+}
+
+test "apply compact duplicate ambiguity rejects unless occurrence selects" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function dupe(): number { return 1; }
+        \\function dupe(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const ambiguous =
+        \\{"v":1,"f":"{FILE}","ops":[["rb","function","dupe","\n  return 9;\n"]]}
+    ;
+    const fail = try runApplyTestExpectFailure(allocator, io, ambiguous, path);
+    defer allocator.free(fail);
+    const after_fail = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(after_fail);
+    try std.testing.expectEqualStrings(original, after_fail);
+
+    const selected =
+        \\{"v":1,"f":"{FILE}","ops":[["rb","function","dupe","\n  return 9;\n",1]]}
+    ;
+    const out = try runApplyTest(allocator, io, selected, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function dupe(): number { return 1; }") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 9;") != null);
+}
+
+test "apply compact parse-after failure does not write" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function invalid(): number { return 1; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"invalid"},"s":"\n  const = ;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply set_body invalid body type rejects without mutation" {
