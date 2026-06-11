@@ -329,13 +329,13 @@ pub fn run(
         null
     else if (req.target.?.parent) |parent|
         if (req.target.?.occurrence) |occurrence|
-            apply_target.resolveEditableSymbolOccurrenceWithParent(original, root, req.target.?.symbol, parent, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+            apply_target.resolveEditableSymbolOccurrenceWithParentAndKind(original, root, req.target.?.symbol, parent, occurrence, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
         else
-            apply_target.resolveEditableSymbolWithParent(original, root, req.target.?.symbol, parent) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+            apply_target.resolveEditableSymbolWithParentAndKind(original, root, req.target.?.symbol, parent, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else if (req.target.?.occurrence) |occurrence|
-        apply_target.resolveEditableSymbolOccurrence(original, root, req.target.?.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        apply_target.resolveEditableSymbolOccurrenceWithKind(original, root, req.target.?.symbol, occurrence, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else
-        apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        apply_target.resolveEditableSymbolWithKind(original, root, req.target.?.symbol, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
@@ -343,6 +343,8 @@ pub fn run(
         edit_support.ByteRange{ .start = target_start, .end = target_end }
     else if (operation == .patch)
         edit_support.ByteRange{ .start = 0, .end = 0 }
+    else if (target_range == .node)
+        edit_support.ByteRange{ .start = target_start, .end = target_end }
     else
         apply_target.bodyRangeFor(lang, original, target_node.?) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const target_resolve_ms = msSince(target_resolve_start, Io.Clock.awake.now(io));
@@ -485,7 +487,6 @@ pub fn run(
         },
         .set_key => unreachable,
         .set_body => blk: {
-            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const body = switch (req.edit) {
                 .string => |value| value,
                 .object => |edit_obj| apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
@@ -684,16 +685,19 @@ fn runCompactBatch(
         const target_resolve_start = Io.Clock.awake.now(io);
         const target_node: bindings.Node = if (target.parent) |parent|
             if (target.occurrence) |occurrence|
-                apply_target.resolveEditableSymbolOccurrenceWithParent(current, root, target.symbol, parent, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+                apply_target.resolveEditableSymbolOccurrenceWithParentAndKind(current, root, target.symbol, parent, occurrence, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
             else
-                apply_target.resolveEditableSymbolWithParent(current, root, target.symbol, parent) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+                apply_target.resolveEditableSymbolWithParentAndKind(current, root, target.symbol, parent, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
         else if (target.occurrence) |occurrence|
-            apply_target.resolveEditableSymbolOccurrence(current, root, target.symbol, occurrence) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+            apply_target.resolveEditableSymbolOccurrenceWithKind(current, root, target.symbol, occurrence, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
         else
-            apply_target.resolveEditableSymbol(current, root, target.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            apply_target.resolveEditableSymbolWithKind(current, root, target.symbol, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
         const target_start: usize = @intCast(target_node.startByte());
         const target_end: usize = @intCast(target_node.endByte());
+        const target_range = apply_target.parseTargetRange(target.range) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
         const body_range = if (operation == .insert_after_symbol)
+            edit_support.ByteRange{ .start = target_start, .end = target_end }
+        else if (target_range == .node)
             edit_support.ByteRange{ .start = target_start, .end = target_end }
         else
             apply_target.bodyRangeFor(lang, current, target_node) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
@@ -3417,6 +3421,123 @@ test "apply compact object rb replaces body" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
+}
+
+test "apply compact target kind disambiguates class and function with same name" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Dup {
+        \\  value = 1;
+        \\}
+        \\function Dup(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"Dup"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "class Dup") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "value = 1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 2") != null);
+}
+
+test "apply compact target wrong kind ignores cross-kind duplicate" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Dup {
+        \\  value = 1;
+        \\}
+        \\function Dup(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"method","n":"Dup"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "SYMBOL_NOT_FOUND") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact target range node replaces declaration while body keeps wrapper" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function nodeBody(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "body.ts", .data = original });
+    const body_path = try tmp.dir.realPathFileAlloc(io, "body.ts", allocator);
+    defer allocator.free(body_path);
+    const body_req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"nodeBody","range":"body"},"s":"\n  return 2;\n"}]}
+    ;
+    var out = try runApplyTest(allocator, io, body_req, body_path);
+    allocator.free(out);
+    const body_post = try tmp.dir.readFileAlloc(io, "body.ts", allocator, .unlimited);
+    defer allocator.free(body_post);
+    try std.testing.expect(std.mem.indexOf(u8, body_post, "function nodeBody(): number {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, body_post, "return 2") != null);
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "node.ts", .data = original });
+    const node_path = try tmp.dir.realPathFileAlloc(io, "node.ts", allocator);
+    defer allocator.free(node_path);
+    const node_req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"nodeBody","range":"node"},"s":"function nodeBody(): number {\n  return 3;\n}"}]}
+    ;
+    out = try runApplyTest(allocator, io, node_req, node_path);
+    allocator.free(out);
+    const node_post = try tmp.dir.readFileAlloc(io, "node.ts", allocator, .unlimited);
+    defer allocator.free(node_post);
+    try std.testing.expectEqualStrings("function nodeBody(): number {\n  return 3;\n}", node_post);
+}
+
+test "apply compact unsupported target range fails closed" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function badRange(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"badRange","range":"signature"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "invalid target range") != null);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply compact object guard range text match applies" {

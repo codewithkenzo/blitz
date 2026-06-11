@@ -95,6 +95,31 @@ pub fn isDeclarationKind(kind: []const u8) bool {
     return false;
 }
 
+pub fn targetKindMatches(target_kind: []const u8, node_kind: []const u8) bool {
+    if (std.mem.eql(u8, target_kind, "any")) return isDeclarationKind(node_kind);
+    if (std.mem.eql(u8, target_kind, "function")) {
+        return std.mem.eql(u8, node_kind, "function_declaration") or
+            std.mem.eql(u8, node_kind, "function_definition") or
+            std.mem.eql(u8, node_kind, "function_item");
+    }
+    if (std.mem.eql(u8, target_kind, "method")) {
+        return std.mem.eql(u8, node_kind, "method_declaration") or
+            std.mem.eql(u8, node_kind, "method_definition");
+    }
+    if (std.mem.eql(u8, target_kind, "class")) {
+        return std.mem.eql(u8, node_kind, "class_declaration") or
+            std.mem.eql(u8, node_kind, "class_definition");
+    }
+    if (std.mem.eql(u8, target_kind, "variable")) return std.mem.eql(u8, node_kind, "variable_declarator");
+    if (std.mem.eql(u8, target_kind, "type")) {
+        return std.mem.eql(u8, node_kind, "type_alias_declaration") or
+            std.mem.eql(u8, node_kind, "interface_declaration") or
+            std.mem.eql(u8, node_kind, "struct_item") or
+            std.mem.eql(u8, node_kind, "enum_item");
+    }
+    return false;
+}
+
 pub fn isBodyKind(kind: []const u8) bool {
     inline for (body_kinds) |candidate| {
         if (std.mem.eql(u8, kind, candidate)) return true;
