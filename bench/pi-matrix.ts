@@ -1465,13 +1465,22 @@ const runLane = async (
 		let guidance = useRouter
 			? "Use only `pi_blitz_route_edit`. Copy exact args JSON. Do not call other pi_blitz_* tools. Use route preference `blitz` for executable Blitz rows."
 			: useCompactOp
-				? "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
+				? toolProfile === "minimal"
+					? "Use only `blitz_edit`. Copy exact args JSON. Do not call other tools."
+					: "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
 				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
-		const compactArgs = (script: string) =>
-			JSON.stringify({
-				f: targetPath,
-				ops: script.split("\n").map((line) => line.split("\t")),
-			});
+		const compactArgs = (script: string) => {
+			const ops = script.split("\n").map((line) => line.split("\t"));
+			if (toolProfile === "minimal") {
+				return JSON.stringify({
+					f: targetPath,
+					e: ops.map((op) =>
+						op[0] === "ru" ? ["x", op[1] ?? "", op[2] ?? ""] : op,
+					),
+				});
+			}
+			return JSON.stringify({ f: targetPath, ops });
+		};
 		const routeArgs = (script: string, fallback = 5000, route = "blitz") =>
 			JSON.stringify({
 				f: targetPath,
@@ -1658,7 +1667,7 @@ const runLane = async (
 			: lane === "router"
 				? "pi_blitz_route_edit"
 				: toolProfile === "minimal"
-					? "pi_blitz_op"
+					? "blitz_edit"
 					: fx.id.includes("multi/large-structural")
 						? "pi_blitz_patch"
 						: fx.id.includes("multi/three-body-ops")

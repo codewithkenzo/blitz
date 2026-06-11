@@ -1,0 +1,327 @@
+{
+  "generatedAt": "2026-06-11T18:37:53.800Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "tiny-10",
+  "scenarioTitle": "10 tiny/core-like edits",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z",
+  "tmuxSession": "pi-true-streak-2026-06-11T18-36-55-535Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 1761,\n      \"output\": 936,\n      \"cacheRead\": 59839,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 11,\n      \"cost\": 0.00317697\n    }\n  ],\n  \"totalInput\": 1761,\n  \"totalOutput\": 936,\n  \"totalCacheRead\": 59839,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 11,\n  \"totalCost\": 0.00317697,\n  \"processingTimeMs\": 15\n}\n",
+    "stderr": ""
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 57705,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/sessions/2026-06-11T18-36-56-087Z_019eb7f9-1997-75e9-9527-0bda1bad3f9d.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work"
+  },
+  "steps": [
+    {
+      "id": "tiny-01.ts",
+      "path": "tiny-01.ts",
+      "correct": true,
+      "expectedSha": "f879209f4275cd8a",
+      "actualSha": "f879209f4275cd8a"
+    },
+    {
+      "id": "tiny-02.ts",
+      "path": "tiny-02.ts",
+      "correct": true,
+      "expectedSha": "3bbcf24ccaf46861",
+      "actualSha": "3bbcf24ccaf46861"
+    },
+    {
+      "id": "tiny-03.ts",
+      "path": "tiny-03.ts",
+      "correct": true,
+      "expectedSha": "9b1a9192034529cc",
+      "actualSha": "9b1a9192034529cc"
+    },
+    {
+      "id": "tiny-04.ts",
+      "path": "tiny-04.ts",
+      "correct": true,
+      "expectedSha": "e72559f979ba163f",
+      "actualSha": "e72559f979ba163f"
+    },
+    {
+      "id": "tiny-05.ts",
+      "path": "tiny-05.ts",
+      "correct": true,
+      "expectedSha": "838a5e478ba077d3",
+      "actualSha": "838a5e478ba077d3"
+    },
+    {
+      "id": "tiny-06.ts",
+      "path": "tiny-06.ts",
+      "correct": true,
+      "expectedSha": "6cd6e775c9eab1bf",
+      "actualSha": "6cd6e775c9eab1bf"
+    },
+    {
+      "id": "tiny-07.ts",
+      "path": "tiny-07.ts",
+      "correct": true,
+      "expectedSha": "7a901eb623e22c14",
+      "actualSha": "7a901eb623e22c14"
+    },
+    {
+      "id": "tiny-08.ts",
+      "path": "tiny-08.ts",
+      "correct": true,
+      "expectedSha": "11d1e00f19651fdf",
+      "actualSha": "11d1e00f19651fdf"
+    },
+    {
+      "id": "tiny-09.ts",
+      "path": "tiny-09.ts",
+      "correct": true,
+      "expectedSha": "9fd3e993ccfafb8d",
+      "actualSha": "9fd3e993ccfafb8d"
+    },
+    {
+      "id": "tiny-10.ts",
+      "path": "tiny-10.ts",
+      "correct": true,
+      "expectedSha": "e7fef6f4d6e05769",
+      "actualSha": "e7fef6f4d6e05769"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-01.ts",
+        "e": [
+          [
+            "x",
+            "export const label1 = \"old-1\";",
+            "export const label1 = \"new-1\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-02.ts",
+        "e": [
+          [
+            "x",
+            "export const label2 = \"old-2\";",
+            "export const label2 = \"new-2\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-03.ts",
+        "e": [
+          [
+            "x",
+            "export const label3 = \"old-3\";",
+            "export const label3 = \"new-3\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-04.ts",
+        "e": [
+          [
+            "x",
+            "export const label4 = \"old-4\";",
+            "export const label4 = \"new-4\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-05.ts",
+        "e": [
+          [
+            "x",
+            "export const label5 = \"old-5\";",
+            "export const label5 = \"new-5\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-06.ts",
+        "e": [
+          [
+            "x",
+            "export const label6 = \"old-6\";",
+            "export const label6 = \"new-6\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-07.ts",
+        "e": [
+          [
+            "x",
+            "export const label7 = \"old-7\";",
+            "export const label7 = \"new-7\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-08.ts",
+        "e": [
+          [
+            "x",
+            "export const label8 = \"old-8\";",
+            "export const label8 = \"new-8\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-09.ts",
+        "e": [
+          [
+            "x",
+            "export const label9 = \"old-9\";",
+            "export const label9 = \"new-9\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "f": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-36-55-535Z/work/tiny-10.ts",
+        "e": [
+          [
+            "x",
+            "export const label10 = \"old-10\";",
+            "export const label10 = \"new-10\";"
+          ]
+        ]
+      },
+      "argTokens": 75
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=1",
+      "resultPayloadTokens": 4
+    }
+  ],
+  "usage": {
+    "input": 1761,
+    "output": 936,
+    "cacheRead": 59839,
+    "cacheWrite": 0,
+    "totalTokens": 62536
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 1590,
+    "argTokens": 750,
+    "outputTokens": 936,
+    "cacheRead": 59839,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 40,
+    "residualInputTokens": 171,
+    "totalContextTokens": 62536
+  },
+  "caveats": [
+    "schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

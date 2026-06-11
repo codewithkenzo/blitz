@@ -20,7 +20,7 @@ const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 
-type Lane = "core" | "router";
+type Lane = "core" | "router" | "blitz-edit";
 type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi";
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
@@ -104,7 +104,7 @@ const mdOut = resolve(
 const tokScaleRequired = hasFlag("--tokscale");
 const tmuxSession = `pi-true-streak-${stamp}`;
 
-if (!["core", "router"].includes(lane))
+if (!["core", "router", "blitz-edit"].includes(lane))
 	throw new Error(`invalid --lane ${lane}`);
 if (!["tiny-10", "mixed-20", "same-file-multi"].includes(scenarioId))
 	throw new Error(`invalid --scenario ${scenarioId}`);
@@ -260,7 +260,38 @@ const finalExpectedByPath = (steps: Step[]) => {
 	return map;
 };
 
+
+const exactChangedSpan = (before: string, after: string) => {
+	let start = 0;
+	while (start < before.length && start < after.length && before[start] === after[start]) start += 1;
+	let beforeEnd = before.length;
+	let afterEnd = after.length;
+	while (beforeEnd > start && afterEnd > start && before[beforeEnd - 1] === after[afterEnd - 1]) {
+		beforeEnd -= 1;
+		afterEnd -= 1;
+	}
+	const isBoundary = (ch: string | undefined) => ch === undefined || /\s|[=;:,{}()<>]/.test(ch);
+	while (start > 0 && !isBoundary(before[start - 1]) && !isBoundary(after[start - 1])) start -= 1;
+	while (beforeEnd < before.length && afterEnd < after.length && !isBoundary(before[beforeEnd]) && !isBoundary(after[afterEnd])) {
+		beforeEnd += 1;
+		afterEnd += 1;
+	}
+	return { oldText: before.slice(start, beforeEnd), newText: after.slice(start, afterEnd) };
+};
+
 const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
+	if (lane === "blitz-edit") {
+		const e = steps.map((step) => {
+			const { oldText, newText } = exactChangedSpan(step.before, step.after);
+			return ["x", join(workDir, step.path), oldText, newText];
+		});
+		return [
+			`Run ${steps.length} ordered exact edits in this one Pi session.`,
+			"Use only blitz_edit. No prose. Call blitz_edit exactly once with this exact JSON:",
+			JSON.stringify({ e }),
+		].join("\n");
+	}
+
 	const lines = [
 		`Run ${steps.length} ordered edits in this one Pi session.`,
 		`Use only the available ${lane === "core" ? "edit" : "pi_blitz_route_edit"} tool.`,
@@ -322,7 +353,7 @@ const piArgs = (promptFile: string, sessionDir: string) => {
 		"--skill",
 		skill,
 		"--tools",
-		"pi_blitz_route_edit",
+		lane === "blitz-edit" ? "blitz_edit" : "pi_blitz_route_edit",
 		`@${promptFile}`,
 	];
 };
@@ -486,7 +517,7 @@ const main = async () => {
 	const args = piArgs(promptFile, sessionDir);
 	await writeFile(
 		commandFile,
-		`#!/usr/bin/env bash\nset -u\nexport PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"\nexport PI_BLITZ_TOOL_PROFILE=router\ncd ${shellQuote(workDir)}\nstart_ms=$(date +%s%3N)\nstatus=0\n${[piBin, ...args].map(shellQuote).join(" ")} > >(tee ${shellQuote(stdoutLog)}) 2> >(tee ${shellQuote(stderrLog)} >&2) || status=$?\nend_ms=$(date +%s%3N)\nprintf '{"status":%s,"wallMs":%s,"timedOut":false}\\n' "$status" "$((end_ms - start_ms))" > ${shellQuote(exitFile)}\nexit "$status"\n`,
+		`#!/usr/bin/env bash\nset -u\nexport PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"\nexport PI_BLITZ_TOOL_PROFILE=${lane === "blitz-edit" ? "minimal" : "router"}\ncd ${shellQuote(workDir)}\nstart_ms=$(date +%s%3N)\nstatus=0\n${[piBin, ...args].map(shellQuote).join(" ")} > >(tee ${shellQuote(stdoutLog)}) 2> >(tee ${shellQuote(stderrLog)} >&2) || status=$?\nend_ms=$(date +%s%3N)\nprintf '{"status":%s,"wallMs":%s,"timedOut":false}\\n' "$status" "$((end_ms - start_ms))" > ${shellQuote(exitFile)}\nexit "$status"\n`,
 		"utf8",
 	);
 	await chmod(commandFile, 0o755);
