@@ -337,11 +337,25 @@ fn parseCompactObjectOp(file: []const u8, op_obj: std.json.ObjectMap) !ApplyRequ
 }
 
 fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
-    if (items.items.len < 4) return ApplyError.MissingField;
+    if (items.items.len < 1) return ApplyError.MissingField;
     const op_raw = switch (items.items[0]) {
         .string => |v| v,
         else => return ApplyError.FieldTypeMismatch,
     };
+    const operation = try normalizeCompactOperation(op_raw);
+    if (std.mem.eql(u8, operation, "replace_unique")) {
+        if (items.items.len != 3) return ApplyError.MissingField;
+        _ = switch (items.items[1]) {
+            .string => |v| v,
+            else => return ApplyError.FieldTypeMismatch,
+        };
+        _ = switch (items.items[2]) {
+            .string => |v| v,
+            else => return ApplyError.FieldTypeMismatch,
+        };
+        return .{ .version = 1, .file = file, .operation = operation, .target = null, .edit = .{ .array = items }, .options = null };
+    }
+    if (items.items.len < 4) return ApplyError.MissingField;
     const kind = switch (items.items[1]) {
         .string => |v| v,
         else => return ApplyError.FieldTypeMismatch,
@@ -358,7 +372,6 @@ fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
         .integer => |v| if (v < 0) return ApplyError.FieldTypeMismatch else @as(usize, @intCast(v)),
         else => return ApplyError.FieldTypeMismatch,
     } else null;
-    const operation = try normalizeCompactOperation(op_raw);
     try validateCompactTargetKind(kind);
     const target = ApplyTarget{ .symbol = name, .kind = kind, .occurrence = occ };
     return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null };
@@ -368,6 +381,7 @@ fn normalizeCompactOperation(raw: []const u8) ![]const u8 {
     if (std.mem.eql(u8, raw, "rb") or std.mem.eql(u8, raw, "replace_body") or std.mem.eql(u8, raw, "set_body")) return "set_body";
     if (std.mem.eql(u8, raw, "ia") or std.mem.eql(u8, raw, "insert_after_symbol")) return "insert_after_symbol";
     if (std.mem.eql(u8, raw, "mn") or std.mem.eql(u8, raw, "merge_body_chunk")) return "merge_body_chunk";
+    if (std.mem.eql(u8, raw, "x") or std.mem.eql(u8, raw, "ru") or std.mem.eql(u8, raw, "replace_unique")) return "replace_unique";
     return ApplyError.UnsupportedOperation;
 }
 

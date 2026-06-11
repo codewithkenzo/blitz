@@ -798,9 +798,25 @@ fn runReplaceUnique(
     diff_requested: bool,
 ) !u8 {
     const plan_start = Io.Clock.awake.now(io);
-    const edit_obj = apply_ir.expectObject(req.edit) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const find = apply_ir.requireString(edit_obj, "find") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const replace = apply_ir.requireString(edit_obj, "replace") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    const find, const replace = switch (req.edit) {
+        .object => |edit_obj| .{
+            apply_ir.requireString(edit_obj, "find") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            apply_ir.requireString(edit_obj, "replace") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+        },
+        .array => |items| blk: {
+            if (!req.compact or items.items.len != 3) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const old = switch (items.items[1]) {
+                .string => |value| value,
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            };
+            const new = switch (items.items[2]) {
+                .string => |value| value,
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            };
+            break :blk .{ old, new };
+        },
+        else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+    };
     const match = apply_ops.selectMatch(original, find, .{ .kind = .only }, true) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const contents = apply_diff.spliceText(allocator, original, match.start, match.end, replace) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     defer allocator.free(contents);
@@ -856,6 +872,11 @@ fn runReplaceUnique(
 
     if (!json_output) {
         if (changed and !dry_run) try stdout.print("Applied {s}: {s}\n", .{ req.file, status }) else try stdout.print("No changes for {s}: {s}\n", .{ req.file, status });
+        return 0;
+    }
+
+    if (req.compact) {
+        if (changed) try stdout.print("ok c=1\n", .{}) else try stdout.print("noop\n", .{});
         return 0;
     }
 
@@ -3422,6 +3443,76 @@ test "apply compact object rb replaces body" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
+}
+
+test "apply compact tuple x exact replace emits quiet success" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const label = "old";
+        \\const other = "keep";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","old","new"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings("ok c=1\n", out);
+    try std.testing.expect(std.mem.indexOf(u8, post, "\"new\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "\"old\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "keep") != null);
+}
+
+test "apply compact tuple x rejects missing match without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const label = "old";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","missing","new"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "NO_MATCH") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact tuple x rejects multi match without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const a = "old";
+        \\const b = "old";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","old","new"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "AMBIGUOUS_MATCH") != null);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply compact target kind disambiguates class and function with same name" {

@@ -148,8 +148,9 @@ pub fn selectMatch(haystack: []const u8, needle: []const u8, selector: MatchSele
             break :blk last orelse return error.NoMatches;
         },
         .only => blk: {
+            if (total == 0) return error.NoMatches;
             if (total != 1) return error.AmbiguousMatches;
-            break :blk first orelse return error.NoMatches;
+            break :blk first.?;
         },
         .index => selected orelse return error.NoMatches,
     };
