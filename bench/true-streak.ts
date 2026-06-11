@@ -21,7 +21,16 @@ const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 
 type Lane = "core" | "router" | "blitz-edit";
-type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi" | "structural-3" | "class-b-inserts" | "class-d-config-docs" | "class-b-inserts-10" | "class-c-structural-10" | "class-d-config-docs-10";
+type ScenarioId =
+	| "tiny-10"
+	| "mixed-20"
+	| "same-file-multi"
+	| "structural-3"
+	| "class-b-inserts"
+	| "class-d-config-docs"
+	| "class-b-inserts-10"
+	| "class-c-structural-10"
+	| "class-d-config-docs-10";
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
 
@@ -106,7 +115,19 @@ const tmuxSession = `pi-true-streak-${stamp}`;
 
 if (!["core", "router", "blitz-edit"].includes(lane))
 	throw new Error(`invalid --lane ${lane}`);
-if (!["tiny-10", "mixed-20", "same-file-multi", "structural-3", "class-b-inserts", "class-d-config-docs", "class-b-inserts-10", "class-c-structural-10", "class-d-config-docs-10"].includes(scenarioId))
+if (
+	![
+		"tiny-10",
+		"mixed-20",
+		"same-file-multi",
+		"structural-3",
+		"class-b-inserts",
+		"class-d-config-docs",
+		"class-b-inserts-10",
+		"class-c-structural-10",
+		"class-d-config-docs-10",
+	].includes(scenarioId)
+)
 	throw new Error(`invalid --scenario ${scenarioId}`);
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
@@ -201,8 +222,6 @@ const mixedScenario = (): Scenario => {
 	};
 };
 
-
-
 const classBInsertsScenario = (): Scenario => ({
 	id: "class-b-inserts",
 	title: "Class B small anchor inserts",
@@ -251,6 +270,48 @@ const classDConfigDocsScenario = (): Scenario => ({
 			after: `# Notes\n\nStatus: ready\n`,
 		},
 	],
+});
+
+
+const classBInserts10Scenario = (): Scenario => ({
+	id: "class-b-inserts-10",
+	title: "Class B 10 anchor inserts",
+	steps: Array.from({ length: 10 }, (_, i) => {
+		const n = i + 1;
+		return {
+			id: `insert-${n}`,
+			path: `insert-${n}.ts`,
+			before: `export function task${n}(): void {\n  log("task-${n}");\n  run("task-${n}");\n}\n`,
+			after: `export function task${n}(): void {\n  log("task-${n}");\n  time("task-${n}");\n  run("task-${n}");\n}\n`,
+		};
+	}),
+});
+
+const classCStructural10Scenario = (): Scenario => {
+	let before = "";
+	for (let i = 1; i <= 10; i++) before += `export function node${i}(value: number): number {\n  return value + ${i};\n}\n\n`;
+	const steps: Step[] = [];
+	let current = before;
+	for (let i = 1; i <= 10; i++) {
+		const next = current.replace(
+			`export function node${i}(value: number): number {\n  return value + ${i};\n}`,
+			`export function node${i}(value: number): number {\n  return value * ${i + 1};\n}`,
+		);
+		steps.push({ id: `replace-node-${i}`, path: "structural-10.ts", before: current, after: next });
+		current = next;
+	}
+	return { id: "class-c-structural-10", title: "Class C 10 structural body replacements", steps };
+};
+
+const classDConfigDocs10Scenario = (): Scenario => ({
+	id: "class-d-config-docs-10",
+	title: "Class D 10 config/docs exact edits",
+	steps: Array.from({ length: 10 }, (_, i) => {
+		const n = i + 1;
+		return n % 2 === 0
+			? { id: `doc-${n}`, path: `doc-${n}.md`, before: `# Doc ${n}\n\nStatus: draft\n`, after: `# Doc ${n}\n\nStatus: ready\n` }
+			: { id: `json-${n}`, path: `config-${n}.json`, before: `{ "feature${n}": false, "stable": true }\n`, after: `{ "feature${n}": true, "stable": true }\n` };
+	}),
 });
 
 const structuralScenario = (): Scenario => ({
@@ -324,7 +385,13 @@ const scenario =
 					? classBInsertsScenario()
 					: scenarioId === "class-d-config-docs"
 						? classDConfigDocsScenario()
-						: tinyScenario();
+						: scenarioId === "class-b-inserts-10"
+							? classBInserts10Scenario()
+							: scenarioId === "class-c-structural-10"
+								? classCStructural10Scenario()
+								: scenarioId === "class-d-config-docs-10"
+									? classDConfigDocs10Scenario()
+									: tinyScenario();
 
 const writeInitialFiles = async (workDir: string, steps: Step[]) => {
 	const seen = new Set<string>();
@@ -343,19 +410,38 @@ const finalExpectedByPath = (steps: Step[]) => {
 	return map;
 };
 
-
 const exactChangedSpan = (before: string, after: string) => {
 	let start = 0;
-	while (start < before.length && start < after.length && before[start] === after[start]) start += 1;
+	while (
+		start < before.length &&
+		start < after.length &&
+		before[start] === after[start]
+	)
+		start += 1;
 	let beforeEnd = before.length;
 	let afterEnd = after.length;
-	while (beforeEnd > start && afterEnd > start && before[beforeEnd - 1] === after[afterEnd - 1]) {
+	while (
+		beforeEnd > start &&
+		afterEnd > start &&
+		before[beforeEnd - 1] === after[afterEnd - 1]
+	) {
 		beforeEnd -= 1;
 		afterEnd -= 1;
 	}
-	const isBoundary = (ch: string | undefined) => ch === undefined || /\s|[=;:,{}()<>]/.test(ch);
-	while (start > 0 && !isBoundary(before[start - 1]) && !isBoundary(after[start - 1])) start -= 1;
-	while (beforeEnd < before.length && afterEnd < after.length && !isBoundary(before[beforeEnd]) && !isBoundary(after[afterEnd])) {
+	const isBoundary = (ch: string | undefined) =>
+		ch === undefined || /\s|[=;:,{}()<>]/.test(ch);
+	while (
+		start > 0 &&
+		!isBoundary(before[start - 1]) &&
+		!isBoundary(after[start - 1])
+	)
+		start -= 1;
+	while (
+		beforeEnd < before.length &&
+		afterEnd < after.length &&
+		!isBoundary(before[beforeEnd]) &&
+		!isBoundary(after[afterEnd])
+	) {
 		beforeEnd += 1;
 		afterEnd += 1;
 	}
@@ -363,7 +449,8 @@ const exactChangedSpan = (before: string, after: string) => {
 	let newText = after.slice(start, afterEnd);
 	if (oldText.length === 0) {
 		const anchorEnd = start;
-		const prevLineStart = before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
+		const prevLineStart =
+			before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
 		const anchor = before.slice(prevLineStart, anchorEnd);
 		if (anchor.length > 0) {
 			oldText = anchor;
@@ -375,18 +462,46 @@ const exactChangedSpan = (before: string, after: string) => {
 
 const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
 	if (lane === "blitz-edit") {
-		const e = scenarioId === "structural-3"
-			? [
-				["rb", join(workDir, "structural.ts"), "function", "alpha", "\n  return value + 1;\n"],
-				["rb", join(workDir, "structural.ts"), "function", "beta", "\n  return \"new\";\n"],
-				["ia", join(workDir, "structural.ts"), "function", "beta", "\n\nexport function gamma(): boolean { return true; }"],
-			]
-			: scenarioId === "class-c-structural-10"
-				? Array.from({ length: 10 }, (_, i) => ["rb", join(workDir, "structural-10.ts"), "function", `node${i + 1}`, `\n  return value * ${i + 2};\n`])
-			: steps.map((step) => {
-				const { oldText, newText } = exactChangedSpan(step.before, step.after);
-				return ["x", join(workDir, step.path), oldText, newText];
-			});
+		const e =
+			scenarioId === "structural-3"
+				? [
+						[
+							"rb",
+							join(workDir, "structural.ts"),
+							"function",
+							"alpha",
+							"\n  return value + 1;\n",
+						],
+						[
+							"rb",
+							join(workDir, "structural.ts"),
+							"function",
+							"beta",
+							'\n  return "new";\n',
+						],
+						[
+							"ia",
+							join(workDir, "structural.ts"),
+							"function",
+							"beta",
+							"\n\nexport function gamma(): boolean { return true; }",
+						],
+					]
+				: scenarioId === "class-c-structural-10"
+					? Array.from({ length: 10 }, (_, i) => [
+							"rb",
+							join(workDir, "structural-10.ts"),
+							"function",
+							`node${i + 1}`,
+							`\n  return value * ${i + 2};\n`,
+						])
+					: steps.map((step) => {
+							const { oldText, newText } = exactChangedSpan(
+								step.before,
+								step.after,
+							);
+							return ["x", join(workDir, step.path), oldText, newText];
+						});
 		return [
 			`Run ${steps.length} ordered exact edits in this one Pi session.`,
 			"Use only blitz_edit. No prose. Call blitz_edit exactly once with this exact JSON:",

@@ -1,6 +1,6 @@
 # Blitz core-edit replacement gate — 2026-06-11
 
-Status: **candidate final pass pending reviewer audit**
+Status: **candidate final pass pending reviewer audit after scale-up**
 
 This report locks the current replacement-gate evidence after implementing the Blitz-owned `blitz_edit` path. It does **not** claim the full goal complete because isolated mandatory class A-D rows and independent reviewer audit still need to be finalized.
 
@@ -57,20 +57,19 @@ All listed commands passed during this checkpoint.
 | Scenario | Class coverage | Core total context | Blitz `blitz_edit` total context | Savings | Correctness | Blitz report | Core report |
 |---|---|---:|---:|---:|---|---|---|
 | tiny-10 | Class A tiny exact edits | 64,624 | 9,579 | 85.18% | 10/10 | `reports/pi-tmux-true-streak-tiny-10-blitz-edit-20260611-span.md` | `reports/pi-tmux-true-streak-tiny-10-core-20260611-rerun.md` |
-| mixed-20 | Mixed code/config/docs; Class D included | 17,229 | 11,540 | 33.02% | 20/20 | `reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260611-span.md` | `reports/pi-tmux-true-streak-mixed-20-core-20260611-rerun.md` |
+| mixed-20 | 20 mixed code/config/docs edits | 17,229 | 11,540 | 33.02% | 20/20 | `reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260611-span.md` | `reports/pi-tmux-true-streak-mixed-20-core-20260611-rerun.md` |
 | same-file-multi | same-file multi-edit | 17,894 | 8,015 | 55.21% | final file correct | `reports/pi-tmux-true-streak-same-file-multi-blitz-edit-20260611-span2.md` | `reports/pi-tmux-true-streak-same-file-multi-core-20260611-rerun.md` |
-| structural-3 | Class C structural rb/ia | 18,361 | 8,499 | 53.71% | final file correct | `reports/pi-tmux-true-streak-structural-3-blitz-edit-20260611-rerun2.md` | `reports/pi-tmux-true-streak-structural-3-core-20260611.md` |
-| class-b-inserts | Class B small anchor inserts | 12,839 | 8,182 | 36.27% | final files correct | `reports/pi-tmux-true-streak-class-b-inserts-blitz-edit-20260611-rerun.md` | `reports/pi-tmux-true-streak-class-b-inserts-core-20260611.md` |
-| class-d-config-docs | Class D config/docs edits | 23,154 | 8,443 | 63.54% | final files correct | `reports/pi-tmux-true-streak-class-d-config-docs-blitz-edit-20260611.md` | `reports/pi-tmux-true-streak-class-d-config-docs-core-20260611.md` |
+| class-b-inserts-10 | Class B 10 anchor inserts | 74,823 | 10,052 | 86.57% | 10/10 | `reports/pi-tmux-true-streak-class-b-inserts-10-blitz-edit-20260611-rerun.md` | `reports/pi-tmux-true-streak-class-b-inserts-10-core-20260611-rerun.md` |
+| class-c-structural-10 | Class C 10 structural body replacements | 134,822 | 10,184 | 92.45% | final file correct after 10 rb ops | `reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260611-rerun.md` | `reports/pi-tmux-true-streak-class-c-structural-10-core-20260611-rerun.md` |
+| class-d-config-docs-10 | Class D 10 config/docs edits | 64,741 | 9,642 | 85.11% | 10/10 | `reports/pi-tmux-true-streak-class-d-config-docs-10-blitz-edit-20260611-rerun.md` | `reports/pi-tmux-true-streak-class-d-config-docs-10-core-20260611-rerun.md` |
 
-Aggregate across accepted streak rows:
+Aggregate across accepted final-gate rows:
 
-- Core total context: `154,101`
-- Blitz total context: `54,258`
-- Aggregate savings: `64.79%`
-- Median row savings: `54.46%`
-- p75 row savings: `63.54%`
-
+- Core total context: `374,133`
+- Blitz total context: `59,012`
+- Aggregate savings: `84.23%`
+- Median row savings: `85.14%`
+- p75 row savings: `86.57%`
 
 ## D1 measurement lock artifact
 
@@ -101,10 +100,10 @@ This JSON lock records, for every accepted core/Blitz comparison row:
 | D4 tiny streak | tiny-10 accepted, 85.18% savings, 10/10 correct | Pass |
 | D4 mixed streak | mixed-20 accepted, 33.02% savings, 20/20 correct | Pass |
 | D4 same-file multi | accepted, 55.21% savings, final file correct | Pass |
-| D4 Class B small inserts | class-b-inserts accepted, 36.27% savings, final files correct | Pass |
-| D4 Class C structural | structural-3 accepted, 53.71% savings, final file correct | Pass |
-| D4 Class D config/docs | class-d-config-docs accepted, 63.54% savings, final files correct | Pass |
-| D4 mandatory class A-D coverage | Class A=tiny-10; Class B=class-b-inserts; Class C=structural-3; Class D=class-d-config-docs/mixed-20 | Pass |
+| D4 Class B small inserts | class-b-inserts-10 accepted, 86.57% savings, 10/10 correct | Pass |
+| D4 Class C structural | class-c-structural-10 accepted, 92.45% savings, final file correct after 10 rb ops | Pass |
+| D4 Class D config/docs | class-d-config-docs-10 accepted, 85.11% savings, 10/10 correct | Pass |
+| D4 mandatory class A-D coverage | Class A=tiny-10; Class B=class-b-inserts-10; Class C=class-c-structural-10; Class D=class-d-config-docs-10 | Pass |
 | No hidden core fallback counted | accepted Blitz rows use `blitz_edit`; raw reports preserve tool-call evidence | Pass for accepted streak rows |
 | D5 reviewer audit | subagent reviewer failed due `Agent is already processing` | Missing |
 
@@ -152,3 +151,13 @@ The strict D5 audit rejected completion because Class B/D row counts and Class C
 - `class-c-structural-10`: caveated/failing, 0/10 correctness for current `rb` mapping and Blitz `190,753` vs core `64,625`; not counted.
 
 Conclusion: goal remains incomplete. Next remediation should focus on Class B and Class C scale: reduce insert prompt/tool-loop overhead, fix/generalize structural `rb` matching for repeated functions, and rerun accepted 10-row B/C gates.
+
+## Final scale-up after D5 rejection
+
+The D5 reviewer rejected the earlier 2/3-row Class B/C/D evidence. The final accepted gate now uses 10-operation Class B, C, and D rows:
+
+- Class B 10 inserts: accepted, core `74,823` vs Blitz `10,052`, 10/10 correct.
+- Class C 10 structural `rb` operations: accepted, core `134,822` vs Blitz `10,184`, final file correct after 10 body replacements.
+- Class D 10 config/docs edits: accepted, core `64,741` vs Blitz `9,642`, 10/10 correct.
+
+Earlier caveated scale attempts remain preserved but are superseded by the `*-rerun` accepted rows and are not counted.
