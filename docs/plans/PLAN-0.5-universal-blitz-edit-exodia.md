@@ -172,3 +172,15 @@ Accounting/provenance remediation landed:
 Started implementation slice 2 via D5 subagent (`e8ad1dbf-b086-4ced-b2be-f35fd9406c18`) in `/home/kenzo/dev/pi-blitz` to fix product `blitz_edit` same-file batch atomicity. Target: group same-file ops into one compact preview/apply request; document remaining cross-file transaction limitation if Blitz CLI cannot provide multi-file atomicity yet.
 
 Next after slice 2: implement fair optimized-core baseline in `bench/true-streak.ts`, then natural/unscripted route harness.
+
+## Execution log — 2026-06-11 checkpoint 3
+
+Started implementation slice 3 via D5 subagent (`da63631a-7728-4cf8-9521-767f5a89141d`) in `/home/kenzo/dev/blitz` for fair optimized-core baseline support:
+
+- add a new core `edit`-only lane such as `core-optimized`;
+- use minimal changed spans instead of full-file old/new where safe;
+- use same-file batched `edits` when core supports it, or document limitation;
+- preserve existing `core` and `blitz-edit` lanes;
+- add a report note and smoke row.
+
+This directly addresses the blind-spot audit P0 finding that current scripted core baselines are pessimized for same-file and structural rows.
