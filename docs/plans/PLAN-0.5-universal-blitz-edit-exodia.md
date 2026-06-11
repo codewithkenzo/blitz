@@ -184,3 +184,14 @@ Started implementation slice 3 via D5 subagent (`da63631a-7728-4cf8-9521-767f5a8
 - add a report note and smoke row.
 
 This directly addresses the blind-spot audit P0 finding that current scripted core baselines are pessimized for same-file and structural rows.
+
+## Execution log — 2026-06-11 checkpoint 4
+
+Atomicity slice landed in pi-blitz:
+
+- pi-blitz `a1f81e0` groups `blitz_edit` operations by file.
+- Same-file multi-op now uses one compact preview request and one compact apply request.
+- Cross-file calls preview all file groups before any apply, then apply per file; cross-file transaction remains explicitly non-atomic.
+- pi-blitz verification passed: `bun run typecheck`, `bun test`, `bun run build`, `git diff --check`.
+
+Fair optimized-core slice is still pending. D5/d5-fast hit the subagent queue bug, and cmd needed `--yolo` for file writes.
