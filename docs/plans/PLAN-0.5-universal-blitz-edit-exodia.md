@@ -148,3 +148,15 @@ New universal gate must run all configured scenarios/providers and produce one l
 2. Which providers/models are mandatory for universal v1: Zai + GPT-5.4-mini + GPT-5.5 low, or also Anthropic/Gemini?
 3. How large should unscripted/adversarial v1 be: 50, 100, or 200 rows per provider?
 4. Is any per-row exception allowed if aggregate/default-route wins, or must every accepted class/provider row beat core?
+
+## Execution log — 2026-06-11 checkpoint 1
+
+Started implementation slice 1 via D5 subagent (`fa7e3f09-d8ed-40c2-96b6-b38676af9a67`) to address reviewer P0/P1 accounting blockers before any natural/adversarial matrix work:
+
+- regenerate current OpenAI-compatible pi-blitz minimal profile dump;
+- record `extension`/`skill` provenance for `blitz-edit` rows;
+- count current schema/skill tokens for `blitz-edit` rows;
+- record Tokscale token-match booleans/deltas and fail/caveat mismatches;
+- add a concise report note and run verification gates.
+
+Next after slice 1 lands: fair optimized-core baseline, atomic `blitz_edit` batch semantics, then natural/adversarial route matrix.
