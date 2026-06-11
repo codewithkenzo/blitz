@@ -1,6 +1,6 @@
 # Blitz core-edit replacement gate — 2026-06-11
 
-Status: **candidate final pass pending reviewer audit after scale-up**
+Status: **final pass — D5 reviewer approved**
 
 This report locks the current replacement-gate evidence after implementing the Blitz-owned `blitz_edit` path. It does **not** claim the full goal complete because isolated mandatory class A-D rows and independent reviewer audit still need to be finalized.
 
@@ -105,7 +105,7 @@ This JSON lock records, for every accepted core/Blitz comparison row:
 | D4 Class D config/docs | class-d-config-docs-10 accepted, 85.11% savings, 10/10 correct | Pass |
 | D4 mandatory class A-D coverage | Class A=tiny-10; Class B=class-b-inserts-10; Class C=class-c-structural-10; Class D=class-d-config-docs-10 | Pass |
 | No hidden core fallback counted | accepted Blitz rows use `blitz_edit`; raw reports preserve tool-call evidence | Pass for accepted streak rows |
-| D5 reviewer audit | subagent reviewer failed due `Agent is already processing` | Missing |
+| D5 reviewer audit | `reports/D5-REVIEWER-AUDIT-20260611.md` strict final audit approved completion; no explicit goal criteria violated | Pass |
 
 ## Manual audit findings
 
@@ -116,8 +116,7 @@ This JSON lock records, for every accepted core/Blitz comparison row:
 
 ## Remaining work before goal completion
 
-1. Run reviewer audit through a working lane. Pi subagent reviewer previously failed with `Agent is already processing`; use manual reviewer lane, `cmd`, or alternate model audit.
-2. If reviewer accepts the artifact/maths/no-fallback evidence, call the goal complete. If not, remediate the named gap.
+None for the explicit goal gates. Nonblocking follow-up: keep private raw session paths available for future re-audit and optionally add extra stability rows beyond the required matrix.
 
 ## External critique / D5 status
 
@@ -128,7 +127,7 @@ Blocking gaps identified:
 - Superseded by the class-gate update and measurement lock below: Class A-D rows now exist, aggregate/median/p75 are complete, and `reports/REPLACEMENT-GATE-LOCK-20260611.json` locks raw artifacts.
 - Reviewer audit still required after this update.
 
-Therefore the earlier D5 verdict is superseded but final D5 remains pending until the updated report is audited.
+Therefore the earlier D5 verdict is superseded by the final D5 audit artifact: `reports/D5-REVIEWER-AUDIT-20260611.md`.
 
 
 ## Class-gate update after critique
@@ -150,7 +149,7 @@ The strict D5 audit rejected completion because Class B/D row counts and Class C
 - `class-b-inserts-10`: caveated, 10/10 final correctness but Pi exit timeout/caveat and Blitz `148,414` vs core `64,814`; not counted.
 - `class-c-structural-10`: caveated/failing, 0/10 correctness for current `rb` mapping and Blitz `190,753` vs core `64,625`; not counted.
 
-Conclusion: goal remains incomplete. Next remediation should focus on Class B and Class C scale: reduce insert prompt/tool-loop overhead, fix/generalize structural `rb` matching for repeated functions, and rerun accepted 10-row B/C gates.
+Conclusion: this intermediate failed scale-up was superseded by the accepted `*-rerun` 10-row Class B/C/D gates listed above.
 
 ## Final scale-up after D5 rejection
 
@@ -161,3 +160,39 @@ The D5 reviewer rejected the earlier 2/3-row Class B/C/D evidence. The final acc
 - Class D 10 config/docs edits: accepted, core `64,741` vs Blitz `9,642`, 10/10 correct.
 
 Earlier caveated scale attempts remain preserved but are superseded by the `*-rerun` accepted rows and are not counted.
+
+## Changed files / pushed commits
+
+Blitz repo (`/home/kenzo/dev/blitz`, branch `feat/blitz-0.4-token-core-profile`):
+
+- `src/apply/ir.zig`
+- `src/apply/mod.zig`
+- `src/apply/operations.zig`
+- `bench/true-streak.ts`
+- `bench/pi-matrix.ts`
+- `reports/REPLACEMENT-GATE-20260611.md`
+- `reports/REPLACEMENT-GATE-LOCK-20260611.json`
+- `reports/D5-REVIEWER-AUDIT-20260611.md`
+- accepted and preserved benchmark reports under `reports/pi-tmux-*20260611*` and accounting snapshots under `reports/pi-accounting-runs/*`.
+
+Key pushed Blitz commits:
+
+- `82bbcd3` — compact exact replace op `x`
+- `9ff6ffd` — true-streak `blitz_edit` gate harness
+- `b7c844b` — structural streak evidence
+- `4529eca` — class gate lock and scale attempts
+- `b74b84a` — final class scale gates
+
+pi-blitz repo (`/home/kenzo/dev/pi-blitz`, branch `feat/blitz-0.4-token-core-profile-canonical`):
+
+- `src/tools.ts`
+- `src/tool-profiles.ts`
+- `test/tool-profiles.test.ts`
+- `skills/pi-blitz/SKILL.md`
+- `reports/profile-dumps/minimal-blitz-edit-20260611.json`
+
+Key pushed pi-blitz commits:
+
+- `4bed2ef` — tiny `blitz_edit` profile
+- `de53948` — batched exact edits
+- `a998656` — structural `rb`/`ia` tuples
