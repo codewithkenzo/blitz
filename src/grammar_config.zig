@@ -110,6 +110,19 @@ pub fn targetKindMatches(target_kind: []const u8, node_kind: []const u8) bool {
         return std.mem.eql(u8, node_kind, "class_declaration") or
             std.mem.eql(u8, node_kind, "class_definition");
     }
+    if (std.mem.eql(u8, target_kind, "object")) return std.mem.eql(u8, node_kind, "variable_declarator");
+    // "section" is intentionally narrow: only named container declarations,
+    // plus object-valued variables after ast.zig verifies their value node.
+    // It must not degrade to "any" or match ordinary functions/variables.
+    if (std.mem.eql(u8, target_kind, "section")) {
+        return std.mem.eql(u8, node_kind, "class_declaration") or
+            std.mem.eql(u8, node_kind, "class_definition") or
+            std.mem.eql(u8, node_kind, "interface_declaration") or
+            std.mem.eql(u8, node_kind, "struct_item") or
+            std.mem.eql(u8, node_kind, "enum_item") or
+            std.mem.eql(u8, node_kind, "impl_item") or
+            std.mem.eql(u8, node_kind, "variable_declarator");
+    }
     if (std.mem.eql(u8, target_kind, "variable")) return std.mem.eql(u8, node_kind, "variable_declarator");
     if (std.mem.eql(u8, target_kind, "type")) {
         return std.mem.eql(u8, node_kind, "type_alias_declaration") or
