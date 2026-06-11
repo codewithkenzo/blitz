@@ -160,3 +160,15 @@ Started implementation slice 1 via D5 subagent (`fa7e3f09-d8ed-40c2-96b6-b38676a
 - add a concise report note and run verification gates.
 
 Next after slice 1 lands: fair optimized-core baseline, atomic `blitz_edit` batch semantics, then natural/adversarial route matrix.
+
+## Execution log — 2026-06-11 checkpoint 2
+
+Accounting/provenance remediation landed:
+
+- Blitz `89d0b42` records `extension`, `skill`, `profileDump`, schema tokens, skill tokens, and Tokscale token-match deltas in `bench/true-streak.ts`.
+- pi-blitz `95b4914` refreshes the minimal profile dump to the OpenAI-compatible schema.
+- Smoke proof: `reports/pi-tmux-true-streak-accounting-fix-tiny-10-blitz-edit-20260611-rerun.md` accepted with Tokscale match yes and all deltas 0.
+
+Started implementation slice 2 via D5 subagent (`e8ad1dbf-b086-4ced-b2be-f35fd9406c18`) in `/home/kenzo/dev/pi-blitz` to fix product `blitz_edit` same-file batch atomicity. Target: group same-file ops into one compact preview/apply request; document remaining cross-file transaction limitation if Blitz CLI cannot provide multi-file atomicity yet.
+
+Next after slice 2: implement fair optimized-core baseline in `bench/true-streak.ts`, then natural/unscripted route harness.
