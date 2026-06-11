@@ -123,13 +123,6 @@ pub fn targetKindMatches(target_kind: []const u8, node_kind: []const u8) bool {
             std.mem.eql(u8, node_kind, "impl_item") or
             std.mem.eql(u8, node_kind, "variable_declarator");
     }
-    if (std.mem.eql(u8, target_kind, "variable")) return std.mem.eql(u8, node_kind, "variable_declarator");
-    if (std.mem.eql(u8, target_kind, "type")) {
-        return std.mem.eql(u8, node_kind, "type_alias_declaration") or
-            std.mem.eql(u8, node_kind, "interface_declaration") or
-            std.mem.eql(u8, node_kind, "struct_item") or
-            std.mem.eql(u8, node_kind, "enum_item");
-    }
     return false;
 }
 
@@ -174,4 +167,18 @@ test "grammar config maps jsonc extension" {
     try std.testing.expectEqualStrings("jsonc", config.name);
     try std.testing.expectEqual(@as(usize, 1), config.extensions.len);
     try std.testing.expectEqualStrings(".jsonc", config.extensions[0]);
+}
+
+test "target kind matcher rejects non-v1 compact aliases" {
+    try std.testing.expect(!targetKindMatches("variable", "variable_declarator"));
+    try std.testing.expect(!targetKindMatches("type", "type_alias_declaration"));
+}
+
+test "target kind matcher preserves v1 compact kinds" {
+    try std.testing.expect(targetKindMatches("function", "function_declaration"));
+    try std.testing.expect(targetKindMatches("method", "method_definition"));
+    try std.testing.expect(targetKindMatches("class", "class_declaration"));
+    try std.testing.expect(targetKindMatches("object", "variable_declarator"));
+    try std.testing.expect(targetKindMatches("section", "class_definition"));
+    try std.testing.expect(targetKindMatches("any", "variable_declarator"));
 }

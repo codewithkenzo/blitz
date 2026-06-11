@@ -6,6 +6,7 @@ const ApplyError = error{
     UnsupportedOperation,
     UnsupportedLanguage,
     UnsupportedTargetRange,
+    UnsupportedTargetKind,
     MissingSymbol,
     MissingFile,
     MissingField,
@@ -358,6 +359,7 @@ fn parseCompactTupleOp(file: []const u8, items: std.json.Array) !ApplyRequest {
         else => return ApplyError.FieldTypeMismatch,
     } else null;
     const operation = try normalizeCompactOperation(op_raw);
+    try validateCompactTargetKind(kind);
     const target = ApplyTarget{ .symbol = name, .kind = kind, .occurrence = occ };
     return .{ .version = 1, .file = file, .operation = operation, .target = target, .edit = .{ .string = snippet }, .options = null };
 }
@@ -372,11 +374,22 @@ fn normalizeCompactOperation(raw: []const u8) ![]const u8 {
 fn parseCompactTarget(value: std.json.Value) !ApplyTarget {
     const obj = try expectObject(value);
     const kind = try requireOptionalString(obj, "k");
+    if (kind) |target_kind| try validateCompactTargetKind(target_kind);
     const symbol = try requireString(obj, "n");
     const parent = try requireOptionalString(obj, "p");
     const range = try requireOptionalString(obj, "range");
     const occurrence = try requireOptionalUsize(obj, "occ");
     return .{ .symbol = symbol, .kind = kind, .parent = parent, .range = range, .occurrence = occurrence };
+}
+
+fn validateCompactTargetKind(kind: []const u8) !void {
+    if (std.mem.eql(u8, kind, "function") or
+        std.mem.eql(u8, kind, "method") or
+        std.mem.eql(u8, kind, "class") or
+        std.mem.eql(u8, kind, "object") or
+        std.mem.eql(u8, kind, "section") or
+        std.mem.eql(u8, kind, "any")) return;
+    return ApplyError.UnsupportedTargetKind;
 }
 
 fn parseCompactGuard(value: std.json.Value) !ApplyGuard {
@@ -477,4 +490,37 @@ pub fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 
         .string => |str| str,
         else => return ApplyError.FieldTypeMismatch,
     };
+}
+
+test "compact target kind rejects non-v1 kinds" {
+    const cases = [_][]const u8{
+        \\{"v":1,"f":"sample.ts","ops":[{"op":"rb","t":{"k":"variable","n":"Config"},"s":"x"}]}
+        ,
+        \\{"v":1,"f":"sample.ts","ops":[{"op":"rb","t":{"k":"type","n":"Config"},"s":"x"}]}
+        ,
+        \\{"v":1,"f":"sample.ts","ops":[["rb","variable","Config","x"]]}
+        ,
+        \\{"v":1,"f":"sample.ts","ops":[["rb","type","Config","x"]]}
+        ,
+    };
+
+    for (cases) |request| {
+        const parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, request, .{});
+        defer parsed.deinit();
+        try std.testing.expectError(ApplyError.UnsupportedTargetKind, parseRequest(parsed.value));
+    }
+}
+
+test "compact target kind accepts v1 kinds" {
+    const kinds = [_][]const u8{ "function", "method", "class", "object", "section", "any" };
+
+    for (kinds) |kind| {
+        const request = try std.fmt.allocPrint(std.testing.allocator, "{{\"v\":1,\"f\":\"sample.ts\",\"ops\":[{{\"op\":\"rb\",\"t\":{{\"k\":\"{s}\",\"n\":\"Target\"}},\"s\":\"x\"}}]}}", .{kind});
+        defer std.testing.allocator.free(request);
+        const parsed = try std.json.parseFromSlice(std.json.Value, std.testing.allocator, request, .{});
+        defer parsed.deinit();
+        const req = try parseRequest(parsed.value);
+        try std.testing.expect(req.target != null);
+        try std.testing.expectEqualStrings(kind, req.target.?.kind.?);
+    }
 }

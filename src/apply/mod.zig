@@ -151,6 +151,7 @@ const ApplyError = error{
     UnsupportedOperation,
     UnsupportedLanguage,
     UnsupportedTargetRange,
+    UnsupportedTargetKind,
     MissingSymbol,
     MissingFile,
     MissingField,
