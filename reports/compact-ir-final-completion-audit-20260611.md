@@ -28,6 +28,7 @@ Build Blitz 0.4 into a real Pi core `edit` replacement candidate by:
 | Same-file compact `ops` batch with sequential rebasing and no partial writes | `1fbfe31 feat(apply): batch compact same-file ops` | Pass |
 | `t.k` kind filtering actually affects resolver | `a69d301 fix compact target kind and range resolution`; tests for class/function same-name disambiguation and wrong-kind no-write | Pass |
 | Required v1 target kinds implemented | `3942de4 Support compact object and section targets`; `targetKindMatches` supports `function`, `method`, `class`, `object`, `section`, `any`; `object` requires object-valued declarations, `section` is narrow named containers/object-valued vars | Pass |
+| Non-v1 target kinds fail closed | `ede0d5c Reject unsupported compact target kinds`; compact parser rejects object and tuple forms for `variable`/`type` with `INVALID_FIELD` before target resolution/write; CLI smoke confirmed no-write for both | Pass |
 | `t.range` enforced | `a69d301`; tests for `body` vs `node`; unsupported range fails closed | Pass |
 | Zig verification at final state | `zig fmt --check src/apply/ir.zig src/apply/mod.zig src/apply/errors.zig src/apply/target.zig src/ast.zig src/grammar_config.zig && zig build && zig build test` rerun after final report commit prep | Pass |
 | pi-blitz compact route exposed | pi-blitz `f0d2c7a feat: send compact op IR directly`; `pi_blitz_op` sends compact `{v:1,f,ops}` to `blitz apply --edit - --json`; minimal profile exposes only `pi_blitz_op` | Pass |
@@ -155,6 +156,22 @@ Evidence:
 - `section` kind resolves named containers and object-valued variables; functions reject.
 - bogus/unsupported kinds still fail closed.
 - focused unit tests and CLI smokes passed.
+
+### Non-v1 target kind fail-closed remediation
+
+Final blocker remediation commit:
+
+```text
+ede0d5c Reject unsupported compact target kinds
+```
+
+Evidence:
+
+- compact parser now allowlists only `function`, `method`, `class`, `object`, `section`, `any`.
+- object-form compact targets with `k:"variable"` and `k:"type"` reject with `INVALID_FIELD` / `unsupported target kind`.
+- tuple-form compact targets with `k:"variable"` and `k:"type"` reject with the same error.
+- `targetKindMatches("variable", "variable_declarator")` and `targetKindMatches("type", "type_alias_declaration")` return false.
+- main-agent CLI smoke confirmed both `k:"variable"` and `k:"type"` exited 1, returned `changed:false`, and left the file unchanged.
 
 ## Honest final verdict
 
