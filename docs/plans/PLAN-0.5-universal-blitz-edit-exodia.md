@@ -195,3 +195,13 @@ Atomicity slice landed in pi-blitz:
 - pi-blitz verification passed: `bun run typecheck`, `bun test`, `bun run build`, `git diff --check`.
 
 Fair optimized-core slice is still pending. D5/d5-fast hit the subagent queue bug, and cmd needed `--yolo` for file writes.
+
+## Execution log — 2026-06-11 checkpoint 5
+
+Fair optimized-core baseline expanded:
+
+- Blitz `3944591` added `core-optimized` lane and fair-core report.
+- Accepted Zai fair-core rows now exist for tiny-10, mixed-20, Class B inserts, Class C structural, and Class D config/docs.
+- Same-file fair-core row remains caveated: final file correct and Tokscale matched, but timeout/exit -1 after repeated core `edit` calls; not counted.
+
+Started implementation slice 4 via D5 subagent (`418aa278-5600-4c37-92b9-e63005393faf`) to add the first natural/unscripted benchmark harness slice with explicit route/outcome labels. Scope is Blitz only; no universal claim yet.
