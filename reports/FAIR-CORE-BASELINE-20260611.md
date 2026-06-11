@@ -55,3 +55,18 @@ A same-file multi `core-optimized` smoke was also preserved:
 - Observed behavior: the model did not complete as a single clean batched core edit; it repeatedly called `edit`.
 
 This is useful evidence: fair-core baselines must verify actual core tool batch support/model compliance instead of assuming `edits` array batching will be obeyed. Not counted as an accepted fair baseline.
+
+## Expanded Zai fair-core matrix
+
+Additional `core-optimized` rows were run under `zai/glm-4.5-air` with Tokscale required.
+
+| Scenario | Status | Total context | Correctness | Tool calls | Tokscale match | Notes |
+|---|---|---:|---:|---:|---|---|
+| tiny-10 | accepted | 62,299 | 10/10 | 10× `edit` | yes | accepted smoke |
+| mixed-20 | accepted | 38,322 | 20/20 | 20× `edit` | yes | fair-core accepted |
+| class-b-inserts-10 | accepted | 12,443 | 10/10 | 10× `edit` | yes | fair-core accepted |
+| class-c-structural-10 | accepted | 67,397 | final file correct | 11× `edit` | yes | fair-core accepted; model used one extra edit |
+| class-d-config-docs-10 | accepted | 61,147 | 10/10 | 10× `edit` | yes | fair-core accepted |
+| same-file-multi | caveated | 391,141 | final file correct | 48× `edit` | yes | timeout/exit -1; not accepted |
+
+Compared to accepted Blitz accounting rows, Blitz still beats the accepted fair-core rows for tiny, mixed, Class B, Class C, and Class D. Same-file remains unresolved because the core-optimized prompt did not produce one clean batched edit call; the model repeatedly called core `edit` until timeout. This row is preserved as evidence and not counted as accepted.
