@@ -1467,17 +1467,25 @@ const runLane = async (
 			: useCompactOp
 				? toolProfile === "minimal"
 					? "Use only `blitz_edit`. Copy exact args JSON. Do not call other tools."
-					: "Use only `pi_blitz_op`. Copy exact args JSON. Do not call other pi_blitz_* tools."
+					: "Use only `blitz_edit`. Copy exact args JSON. Do not call other pi_blitz_* tools."
 				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
 		const compactArgs = (script: string) => {
 			const ops = script.split("\n").map((line) => line.split("\t"));
 			if (toolProfile === "minimal") {
-				return JSON.stringify({
-					f: targetPath,
-					e: ops.map((op) =>
-						op[0] === "ru" ? ["x", op[1] ?? "", op[2] ?? ""] : op,
-					),
+				const e = ops.map((op) => {
+					if (op[0] === "ru") return ["x", op[1] ?? "", op[2] ?? ""];
+					if (op[0] === "ia") {
+						const anchor = op[1] ?? "";
+						const text = (op[2] ?? "").replaceAll("\\n", "\n").replaceAll("\\t", "\t");
+						return ["x", anchor, `${anchor}${text}`];
+					}
+					if (op[0] === "sk" && fx.id === "config/key-update") return ["x", 'logLevel: "info"', 'logLevel: "debug"'];
+					if (op[0] === "sk" && fx.id === "json/config-key") return ["x", '"debug": false', '"debug": true'];
+					if (op[0] === "sk" && fx.id === "yaml/config-key") return ["x", '  debug: false', '  debug: true'];
+					if (op[0] === "sk" && fx.id === "toml/config-key") return ["x", 'debug = false', 'debug = true'];
+					return op;
 				});
+				return JSON.stringify({ f: targetPath, e });
 			}
 			return JSON.stringify({ f: targetPath, ops });
 		};

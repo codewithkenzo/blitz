@@ -21,7 +21,7 @@ const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 
 type Lane = "core" | "router" | "blitz-edit";
-type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi" | "structural-3";
+type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi" | "structural-3" | "class-b-inserts" | "class-d-config-docs" | "class-b-inserts-10" | "class-c-structural-10" | "class-d-config-docs-10";
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
 
@@ -106,7 +106,7 @@ const tmuxSession = `pi-true-streak-${stamp}`;
 
 if (!["core", "router", "blitz-edit"].includes(lane))
 	throw new Error(`invalid --lane ${lane}`);
-if (!["tiny-10", "mixed-20", "same-file-multi", "structural-3"].includes(scenarioId))
+if (!["tiny-10", "mixed-20", "same-file-multi", "structural-3", "class-b-inserts", "class-d-config-docs", "class-b-inserts-10", "class-c-structural-10", "class-d-config-docs-10"].includes(scenarioId))
 	throw new Error(`invalid --scenario ${scenarioId}`);
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
@@ -202,6 +202,57 @@ const mixedScenario = (): Scenario => {
 };
 
 
+
+const classBInsertsScenario = (): Scenario => ({
+	id: "class-b-inserts",
+	title: "Class B small anchor inserts",
+	steps: [
+		{
+			id: "logging-timer",
+			path: "logging.ts",
+			before: `export function processOrder(orderId: string): void {\n  console.log(\`Processing order \${orderId}\`);\n  submit(orderId);\n}\n`,
+			after: `export function processOrder(orderId: string): void {\n  console.log(\`Processing order \${orderId}\`);\n  console.time(\`Processing order \${orderId}\`);\n  submit(orderId);\n}\n`,
+		},
+		{
+			id: "markdown-section",
+			path: "README.md",
+			before: `# Demo\n\n<!-- append-target -->\n`,
+			after: `# Demo\n\n<!-- append-target -->\n## Configuration Reference\n\nSee the \`blitz --help\` command.\n`,
+		},
+	],
+});
+
+const classDConfigDocsScenario = (): Scenario => ({
+	id: "class-d-config-docs",
+	title: "Class D config/docs exact edits",
+	steps: [
+		{
+			id: "ts-config-log-level",
+			path: "config.ts",
+			before: `export const config = {\n  logLevel: "info",\n  retries: 2,\n};\n`,
+			after: `export const config = {\n  logLevel: "debug",\n  retries: 2,\n};\n`,
+		},
+		{
+			id: "json-debug",
+			path: "config.json",
+			before: `{ "debug": false, "port": 3000 }\n`,
+			after: `{ "debug": true, "port": 3000 }\n`,
+		},
+		{
+			id: "toml-debug",
+			path: "config.toml",
+			before: `debug = false\nport = 3000\n`,
+			after: `debug = true\nport = 3000\n`,
+		},
+		{
+			id: "doc-status",
+			path: "NOTES.md",
+			before: `# Notes\n\nStatus: draft\n`,
+			after: `# Notes\n\nStatus: ready\n`,
+		},
+	],
+});
+
 const structuralScenario = (): Scenario => ({
 	id: "structural-3",
 	title: "3 structural symbol edits",
@@ -269,7 +320,11 @@ const scenario =
 			? sameFileScenario()
 			: scenarioId === "structural-3"
 				? structuralScenario()
-				: tinyScenario();
+				: scenarioId === "class-b-inserts"
+					? classBInsertsScenario()
+					: scenarioId === "class-d-config-docs"
+						? classDConfigDocsScenario()
+						: tinyScenario();
 
 const writeInitialFiles = async (workDir: string, steps: Step[]) => {
 	const seen = new Set<string>();
@@ -304,7 +359,18 @@ const exactChangedSpan = (before: string, after: string) => {
 		beforeEnd += 1;
 		afterEnd += 1;
 	}
-	return { oldText: before.slice(start, beforeEnd), newText: after.slice(start, afterEnd) };
+	let oldText = before.slice(start, beforeEnd);
+	let newText = after.slice(start, afterEnd);
+	if (oldText.length === 0) {
+		const anchorEnd = start;
+		const prevLineStart = before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
+		const anchor = before.slice(prevLineStart, anchorEnd);
+		if (anchor.length > 0) {
+			oldText = anchor;
+			newText = anchor + newText;
+		}
+	}
+	return { oldText, newText };
 };
 
 const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
@@ -315,6 +381,8 @@ const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
 				["rb", join(workDir, "structural.ts"), "function", "beta", "\n  return \"new\";\n"],
 				["ia", join(workDir, "structural.ts"), "function", "beta", "\n\nexport function gamma(): boolean { return true; }"],
 			]
+			: scenarioId === "class-c-structural-10"
+				? Array.from({ length: 10 }, (_, i) => ["rb", join(workDir, "structural-10.ts"), "function", `node${i + 1}`, `\n  return value * ${i + 2};\n`])
 			: steps.map((step) => {
 				const { oldText, newText } = exactChangedSpan(step.before, step.after);
 				return ["x", join(workDir, step.path), oldText, newText];

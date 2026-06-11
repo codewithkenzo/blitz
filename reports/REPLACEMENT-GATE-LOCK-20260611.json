@@ -1,0 +1,890 @@
+{
+  "generatedAt": "2026-06-11T19:41:48.836Z",
+  "productRoute": "pi-blitz minimal default blitz_edit; no accepted Blitz row counts core edit fallback",
+  "profileDump": {
+    "path": "/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json",
+    "sha256": "ecf4088ce2f05254d96042f3c56ee406b0983e544f0ef202b7a42538e3e5b2cd"
+  },
+  "skill": {
+    "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+    "sha256": "1c7efb7f038b48826a9815655a4ed83683ad7a8401d48aa8e393251470865c94"
+  },
+  "rows": [
+    {
+      "scenario": "tiny-10",
+      "classCoverage": "A tiny exact",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-tiny-10-core-20260611-rerun.json",
+        "sha256": "e38c001a188e41022afb668a6ab2a580153ec81d13b8eb87f9ced568184d381a",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/sessions/2026-06-11T18-38-12-756Z_019eb7fa-4514-7ee6-b2df-add8ee66963d.jsonl",
+            "sha256": "3ac7b3ae747c51904eb0c25237880e41041e4aeff4de739037920959a7321f3c",
+            "bytes": 21448
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-01.ts\",\"edits\":[{\"oldText\":\"export const label1 = \\\"old-1\\\";\\n\",\"newText\":\"export const label1 = \\\"new-1\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-02.ts\",\"edits\":[{\"oldText\":\"export const label2 = \\\"old-2\\\";\\n\",\"newText\":\"export const label2 = \\\"new-2\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-03.ts\",\"edits\":[{\"oldText\":\"export const label3 = \\\"old-3\\\";\\n\",\"newText\":\"export const label3 = \\\"new-3\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-04.ts\",\"edits\":[{\"oldText\":\"export const label4 = \\\"old-4\\\";\\n\",\"newText\":\"export const label4 = \\\"new-4\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-05.ts\",\"edits\":[{\"oldText\":\"export const label5 = \\\"old-5\\\";\\n\",\"newText\":\"export const label5 = \\\"new-5\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-06.ts\",\"edits\":[{\"oldText\":\"export const label6 = \\\"old-6\\\";\\n\",\"newText\":\"export const label6 = \\\"new-6\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-07.ts\",\"edits\":[{\"oldText\":\"export const label7 = \\\"old-7\\\";\\n\",\"newText\":\"export const label7 = \\\"new-7\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-08.ts\",\"edits\":[{\"oldText\":\"export const label8 = \\\"old-8\\\";\\n\",\"newText\":\"export const label8 = \\\"new-8\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-09.ts\",\"edits\":[{\"oldText\":\"export const label9 = \\\"old-9\\\";\\n\",\"newText\":\"export const label9 = \\\"new-9\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-10.ts\",\"edits\":[{\"oldText\":\"export const label10 = \\\"old-10\\\";\\n\",\"newText\":\"export const label10 = \\\"new-10\\\";\\n\"}]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-01.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-02.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-03.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-04.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-05.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-06.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-07.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-08.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-09.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-38-12-260Z/work/tiny-10.ts."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 1419,
+          "argTokens": 820,
+          "outputTokens": 1000,
+          "cacheRead": 58078,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 500,
+          "residualInputTokens": 4127,
+          "totalContextTokens": 64624
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-tiny-10-blitz-edit-20260611-span.json",
+        "sha256": "a4ef833f8260043b679d4bfc50f6308c1bf4f6f2affef35c6f2931b215915d7a",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-107Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-107Z/sessions/2026-06-11T18-54-09-637Z_019eb808-dee5-77be-8c2d-bbd03b699f18.jsonl",
+            "sha256": "8e6413498a98d0791f8894e76361a2d00a9a02db1d8b661973eb135fe8072533",
+            "bytes": 5018
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 574,
+            "argsPreview": "{\"e\":[[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-107Z/work/tiny-01.ts\",\"\\\"old-1\\\"\",\"\\\"new-1\\\"\"],[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-107Z/work/tiny-02.ts\",\"\\\""
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=10"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 604,
+          "argTokens": 574,
+          "outputTokens": 576,
+          "cacheRead": 8345,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 54,
+          "totalContextTokens": 9579
+        }
+      }
+    },
+    {
+      "scenario": "mixed-20",
+      "classCoverage": "mixed",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-mixed-20-core-20260611-rerun.json",
+        "sha256": "0a407321ef1f9adb0a3e3b9c33c0cbc9fd9ab30b4801d19ce280ceae434c31bd",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/sessions/2026-06-11T18-43-32-662Z_019eb7ff-26b6-723c-a9c5-1b61d3d3abac.jsonl",
+            "sha256": "161579738f87b4c27245302568e98a8a006ba76062a031f291b1fcd6f06642b7",
+            "bytes": 31451
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-01.ts\",\"edits\":[{\"oldText\":\"export const label1 = \\\"old-1\\\";\\n\",\"newText\":\"export const label1 = \\\"new-1\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-02.ts\",\"edits\":[{\"oldText\":\"export const label2 = \\\"old-2\\\";\\n\",\"newText\":\"export const label2 = \\\"new-2\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-03.ts\",\"edits\":[{\"oldText\":\"export const label3 = \\\"old-3\\\";\\n\",\"newText\":\"export const label3 = \\\"new-3\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-04.ts\",\"edits\":[{\"oldText\":\"export const label4 = \\\"old-4\\\";\\n\",\"newText\":\"export const label4 = \\\"new-4\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-05.ts\",\"edits\":[{\"oldText\":\"export const label5 = \\\"old-5\\\";\\n\",\"newText\":\"export const label5 = \\\"new-5\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-06.ts\",\"edits\":[{\"oldText\":\"export const label6 = \\\"old-6\\\";\\n\",\"newText\":\"export const label6 = \\\"new-6\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-07.ts\",\"edits\":[{\"oldText\":\"export const label7 = \\\"old-7\\\";\\n\",\"newText\":\"export const label7 = \\\"new-7\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-08.ts\",\"edits\":[{\"oldText\":\"export const label8 = \\\"old-8\\\";\\n\",\"newText\":\"export const label8 = \\\"new-8\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-09.ts\",\"edits\":[{\"oldText\":\"export const label9 = \\\"old-9\\\";\\n\",\"newText\":\"export const label9 = \\\"new-9\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 82,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-10.ts\",\"edits\":[{\"oldText\":\"export const label10 = \\\"old-10\\\";\\n\",\"newText\":\"export const label10 = \\\"new-10\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 85,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/package.json\",\"edits\":[{\"oldText\":\"{\\\"name\\\":\\\"demo\\\",\\\"version\\\":\\\"0.1.0\\\"}\\n\",\"newText\":\"{\\\"name\\\":\\\"demo\\\",\\\"version\\\":\\\"0.2.0\\\"}\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 72,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/README.md\",\"edits\":[{\"oldText\":\"# Demo\\n\\nStatus: draft\\n\",\"newText\":\"# Demo\\n\\nStatus: ready\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 79,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/style.css\",\"edits\":[{\"oldText\":\".header {\\n  color: red;\\n}\\n\",\"newText\":\".header {\\n  color: blue;\\n}\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 71,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/index.html\",\"edits\":[{\"oldText\":\"<title>Old</title>\\n\",\"newText\":\"<title>New</title>\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 67,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/config.yml\",\"edits\":[{\"oldText\":\"port: 3000\\n\",\"newText\":\"port: 4000\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 64,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/settings.toml\",\"edits\":[{\"oldText\":\"enabled = false\\n\",\"newText\":\"enabled = true\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 77,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/util.js\",\"edits\":[{\"oldText\":\"export function answer() { return 41; }\\n\",\"newText\":\"export function answer() { return 42; }\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 73,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/types.ts\",\"edits\":[{\"oldText\":\"export type Mode = \\\"dev\\\";\\n\",\"newText\":\"export type Mode = \\\"prod\\\";\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 64,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/notes.txt\",\"edits\":[{\"oldText\":\"alpha beta gamma\\n\",\"newText\":\"alpha delta gamma\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 66,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/.env.example\",\"edits\":[{\"oldText\":\"FEATURE_X=0\\n\",\"newText\":\"FEATURE_X=1\\n\"}]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-01.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-02.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-03.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-04.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-05.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-06.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-07.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-08.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-09.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 50,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/tiny-10.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/package.json."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/README.md."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/style.css."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/index.html."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/config.yml."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/settings.toml."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/util.js."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/types.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/notes.txt."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-43-32-138Z/work/.env.example."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 2641,
+          "argTokens": 1538,
+          "outputTokens": 1883,
+          "cacheRead": 11638,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 974,
+          "residualInputTokens": 1067,
+          "totalContextTokens": 17229
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260611-span.json",
+        "sha256": "d92268389d10d145a3b095d47e75457e2853e52f3baff23ff29b36a6e7224228",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-109Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-109Z/sessions/2026-06-11T18-54-09-651Z_019eb808-def3-7eee-9f72-d2332e769def.jsonl",
+            "sha256": "dbd59162e35b36dceb1122ee18f1c11eba00f3eb1711c4c2a89ce6ac41a98083",
+            "bytes": 7587
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 1056,
+            "argsPreview": "{\"e\":[[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-109Z/work/tiny-01.ts\",\"\\\"old-1\\\"\",\"\\\"new-1\\\"\"],[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-54-09-109Z/work/tiny-02.ts\",\"\\\""
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=20"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 1086,
+          "argTokens": 1056,
+          "outputTokens": 1071,
+          "cacheRead": 8296,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 1087,
+          "totalContextTokens": 11540
+        }
+      }
+    },
+    {
+      "scenario": "same-file-multi",
+      "classCoverage": "same-file multi",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-same-file-multi-core-20260611-rerun.json",
+        "sha256": "10d136921a1673f8f1977f4e1e8430fd47f0402298fb6a9d8a4d4829d1cc942c",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/sessions/2026-06-11T18-44-18-338Z_019eb7ff-d922-7795-a4ec-d149319f26ff.jsonl",
+            "sha256": "9420f637c202f82e3d770b2a3b2dbec3c0791a354354dff828777739e9e732b5",
+            "bytes": 8186
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 116,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts\",\"edits\":[{\"oldText\":\"export const a = \\\"old-a\\\";\\nexport const b = \\\"old-b\\\";\\nexport const c = \\\"old-c\\\";\\n\",\"newText\":\"export const a ="
+          },
+          {
+            "name": "edit",
+            "argTokens": 116,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts\",\"edits\":[{\"oldText\":\"export const a = \\\"new-a\\\";\\nexport const b = \\\"old-b\\\";\\nexport const c = \\\"old-c\\\";\\n\",\"newText\":\"export const a ="
+          },
+          {
+            "name": "edit",
+            "argTokens": 116,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts\",\"edits\":[{\"oldText\":\"export const a = \\\"new-a\\\";\\nexport const b = \\\"new-b\\\";\\nexport const c = \\\"old-c\\\";\\n\",\"newText\":\"export const a ="
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-742Z/work/same.ts."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 461,
+          "argTokens": 348,
+          "outputTokens": 412,
+          "cacheRead": 16785,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 144,
+          "residualInputTokens": 236,
+          "totalContextTokens": 17894
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-same-file-multi-blitz-edit-20260611-span2.json",
+        "sha256": "3bf660651d99a3b7d6b337422bdf0946b1f36b7a2726d27bbc27aacd1c4e28c6",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/sessions/2026-06-11T18-53-44-767Z_019eb808-7dbf-7d61-95e3-478936d581f3.jsonl",
+            "sha256": "b276002dba60c5160e734cf6a167397e85a73b591c88aff6ee21c3f218edb71d",
+            "bytes": 3066
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 163,
+            "argsPreview": "{\"e\":[[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work/same.ts\",\"\\\"old-a\\\"\",\"\\\"new-a\\\"\"],[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work/same.ts\",\"\\\"old-b\\"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=3"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 193,
+          "argTokens": 163,
+          "outputTokens": 181,
+          "cacheRead": 7565,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 76,
+          "totalContextTokens": 8015
+        }
+      }
+    },
+    {
+      "scenario": "structural-3",
+      "classCoverage": "C structural",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-structural-3-core-20260611.json",
+        "sha256": "e1924a88bb73415f42789350e201f9c121207473216c0dd8e4d36fc830a98266",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/sessions/2026-06-11T19-00-58-575Z_019eb80f-1c4f-7d5e-94a3-a8c726b9fcd6.jsonl",
+            "sha256": "c63185c0f31dc29b5dad19f54a827c1125b32bf387aefa0ee3a109e919dd1a21",
+            "bytes": 9155
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 138,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts\",\"edits\":[{\"oldText\":\"export function alpha(value: number): number {\\n  const doubled = value * 2;\\n  return doubled;\\n}\\n\\nexport f"
+          },
+          {
+            "name": "edit",
+            "argTokens": 131,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts\",\"edits\":[{\"oldText\":\"export function alpha(value: number): number {\\n  return value + 1;\\n}\\n\\nexport function beta(): string {\\n  "
+          },
+          {
+            "name": "edit",
+            "argTokens": 143,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts\",\"edits\":[{\"oldText\":\"export function alpha(value: number): number {\\n  return value + 1;\\n}\\n\\nexport function beta(): string {\\n  "
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 49,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 49,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 49,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-034Z/work/structural.ts."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 537,
+          "argTokens": 412,
+          "outputTokens": 474,
+          "cacheRead": 17116,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 147,
+          "residualInputTokens": 234,
+          "totalContextTokens": 18361
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-structural-3-blitz-edit-20260611-rerun2.json",
+        "sha256": "2b053bb5db0b9a7e9fc32920a00efa13bcc0089a6debdf1c4ac262a016cda445",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-02-40-675Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-02-40-675Z/sessions/2026-06-11T19-02-41-152Z_019eb810-ad00-77a7-b31b-1810447653f3.jsonl",
+            "sha256": "f152e0023ab014c50f709a7653e748559ee46e406aedd64bc411985776038f24",
+            "bytes": 3669
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 180,
+            "argsPreview": "{\"e\":[[\"rb\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-02-40-675Z/work/structural.ts\",\"function\",\"alpha\",\"\\n  return value + 1;\\n\"],[\"rb\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-02-40"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=3"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 210,
+          "argTokens": 180,
+          "outputTokens": 297,
+          "cacheRead": 7919,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 73,
+          "totalContextTokens": 8499
+        }
+      }
+    },
+    {
+      "scenario": "class-b-inserts",
+      "classCoverage": "B inserts",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-class-b-inserts-core-20260611.json",
+        "sha256": "45c1a80094767c0eeba1ceb09e06ad8fda718fc3640370d80afbec830be993c1",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z/sessions/2026-06-11T19-35-57-551Z_019eb82f-236f-7f6c-9bf6-f9a11b6af6b9.jsonl",
+            "sha256": "041dc60b79ec6adf1504d6929c7b5be9038472a7478506bcbe3d8acd859abfab",
+            "bytes": 6419
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 132,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z/work/logging.ts\",\"edits\":[{\"oldText\":\"export function processOrder(orderId: string): void {\\n  console.log(`Processing order ${orderId}`);\\n  submit(or"
+          },
+          {
+            "name": "edit",
+            "argTokens": 92,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z/work/README.md\",\"edits\":[{\"oldText\":\"# Demo\\n\\n<!-- append-target -->\\n\",\"newText\":\"# Demo\\n\\n<!-- append-target -->\\n## Configuration Reference\\n\\nSee"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z/work/logging.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-35-56-903Z/work/README.md."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 385,
+          "argTokens": 224,
+          "outputTokens": 261,
+          "cacheRead": 12021,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 96,
+          "residualInputTokens": 172,
+          "totalContextTokens": 12839
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-class-b-inserts-blitz-edit-20260611-rerun.json",
+        "sha256": "9fa5161e1adbfdabeecb1852ea63a51bc637d41cff50c7b4bd8ba6ebd93284a0",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-39-40-340Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-39-40-340Z/sessions/2026-06-11T19-39-40-860Z_019eb832-8bbc-74a1-bc58-86de05b990c4.jsonl",
+            "sha256": "49fe1ea605bec3415fd289728d79a93536dc2e11a8b316db1ee72bd443dcd945",
+            "bytes": 3098
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 136,
+            "argsPreview": "{\"e\":[[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-39-40-340Z/work/logging.ts\",\"submit\",\"console.time(`Processing order ${orderId}`);\\n  submit\"],[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-202"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=2"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 166,
+          "argTokens": 136,
+          "outputTokens": 157,
+          "cacheRead": 7789,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 70,
+          "totalContextTokens": 8182
+        }
+      }
+    },
+    {
+      "scenario": "class-d-config-docs",
+      "classCoverage": "D config/docs",
+      "core": {
+        "report": "reports/pi-tmux-true-streak-class-d-config-docs-core-20260611.json",
+        "sha256": "2c26f52b2dc8acea1c722425791537fc51e0bbbe0406d6e9ae7a252165f979bb",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/sessions/2026-06-11T19-34-59-632Z_019eb82e-412f-752e-b177-19e6e3bd157b.jsonl",
+            "sha256": "610632f6a7a833e7184a2a649a3259d733f8c6be4a58b86827e41eacbabd9884",
+            "bytes": 9523
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "edit",
+            "argTokens": 103,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.ts\",\"edits\":[{\"oldText\":\"export const config = {\\n  logLevel: \\\"info\\\",\\n  retries: 2,\\n};\\n\",\"newText\":\"export const config = {\\n  logLeve"
+          },
+          {
+            "name": "edit",
+            "argTokens": 83,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.json\",\"edits\":[{\"oldText\":\"{ \\\"debug\\\": false, \\\"port\\\": 3000 }\\n\",\"newText\":\"{ \\\"debug\\\": true, \\\"port\\\": 3000 }\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 76,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.toml\",\"edits\":[{\"oldText\":\"debug = false\\nport = 3000\\n\",\"newText\":\"debug = true\\nport = 3000\\n\"}]}"
+          },
+          {
+            "name": "edit",
+            "argTokens": 73,
+            "argsPreview": "{\"path\":\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/NOTES.md\",\"edits\":[{\"oldText\":\"# Notes\\n\\nStatus: draft\\n\",\"newText\":\"# Notes\\n\\nStatus: ready\\n\"}]}"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.ts."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 47,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.json."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 48,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/config.toml."
+          },
+          {
+            "toolName": "edit",
+            "resultPayloadTokens": 49,
+            "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-050Z/work/NOTES.md."
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 598,
+          "argTokens": 335,
+          "outputTokens": 412,
+          "cacheRead": 21846,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 191,
+          "residualInputTokens": 298,
+          "totalContextTokens": 23154
+        }
+      },
+      "blitz": {
+        "report": "reports/pi-tmux-true-streak-class-d-config-docs-blitz-edit-20260611.json",
+        "sha256": "9b71ff7f4a9cf0c738b9d96d82bedc22b055c3bb8fa3587df752bb2b5eefd6cc",
+        "status": "accepted",
+        "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-045Z",
+        "sessionJsonl": [
+          {
+            "path": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-045Z/sessions/2026-06-11T19-34-59-640Z_019eb82e-4138-7a54-b61d-5b6dbb9de1c6.jsonl",
+            "sha256": "0724bb08d592d36b30990f1f65242467db42b37396522de28280cdb2f0654984",
+            "bytes": 3276
+          }
+        ],
+        "tokScaleStatus": 0,
+        "toolCalls": [
+          {
+            "name": "blitz_edit",
+            "argTokens": 195,
+            "argsPreview": "{\"e\":[[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-045Z/work/config.ts\",\"\\\"info\\\"\",\"\\\"debug\\\"\"],[\"x\",\"/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-34-59-045Z/work/config.json\",\"fal"
+          }
+        ],
+        "toolResults": [
+          {
+            "toolName": "blitz_edit",
+            "resultPayloadTokens": 4,
+            "text": "ok c=4"
+          }
+        ],
+        "correct": true,
+        "totals": {
+          "schemaTokens": 0,
+          "skillTokens": 0,
+          "promptTokens": 225,
+          "argTokens": 195,
+          "outputTokens": 222,
+          "cacheRead": 7920,
+          "cacheWrite": 0,
+          "resultPayloadTokens": 4,
+          "residualInputTokens": 76,
+          "totalContextTokens": 8443
+        }
+      }
+    }
+  ]
+}
