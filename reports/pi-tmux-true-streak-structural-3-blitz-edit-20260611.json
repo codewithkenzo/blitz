@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-06-11T19:01:08.715Z",
+  "status": "caveated",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "structural-3",
+  "scenarioTitle": "3 structural symbol edits",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z",
+  "tmuxSession": "pi-true-streak-2026-06-11T19-00-58-028Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 3931,\n      \"output\": 225,\n      \"cacheRead\": 4252,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00116126\n    }\n  ],\n  \"totalInput\": 3931,\n  \"totalOutput\": 225,\n  \"totalCacheRead\": 4252,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00116126,\n  \"processingTimeMs\": 15\n}\n",
+    "stderr": ""
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 10146,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/sessions/2026-06-11T19-00-58-579Z_019eb80f-1c53-7f81-9c0e-ac0f19879db5.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/work"
+  },
+  "steps": [
+    {
+      "id": "structural.ts",
+      "path": "structural.ts",
+      "correct": false,
+      "expectedSha": "35851f15b9e12f02",
+      "actualSha": "def72122d3481413"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/work/structural.ts",
+            "function",
+            "alpha",
+            "\n  return value + 1;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/work/structural.ts",
+            "function",
+            "beta",
+            "\n  return \"new\";\n"
+          ],
+          [
+            "ia",
+            "/home/kenzo/dev/blitz/reports/pi-tmux-runs/true-streak-2026-06-11T19-00-58-028Z/work/structural.ts",
+            "function",
+            "beta",
+            "\nexport function gamma(): boolean { return true; }\n"
+          ]
+        ]
+      },
+      "argTokens": 180
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=3",
+      "resultPayloadTokens": 4
+    }
+  ],
+  "usage": {
+    "input": 3931,
+    "output": 225,
+    "cacheRead": 4252,
+    "cacheWrite": 0,
+    "totalTokens": 8408
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 210,
+    "argTokens": 180,
+    "outputTokens": 225,
+    "cacheRead": 4252,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 4,
+    "residualInputTokens": 3721,
+    "totalContextTokens": 8408
+  },
+  "caveats": [
+    "schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

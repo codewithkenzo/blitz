@@ -21,7 +21,7 @@ const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 
 type Lane = "core" | "router" | "blitz-edit";
-type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi";
+type ScenarioId = "tiny-10" | "mixed-20" | "same-file-multi" | "structural-3";
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
 
@@ -106,7 +106,7 @@ const tmuxSession = `pi-true-streak-${stamp}`;
 
 if (!["core", "router", "blitz-edit"].includes(lane))
 	throw new Error(`invalid --lane ${lane}`);
-if (!["tiny-10", "mixed-20", "same-file-multi"].includes(scenarioId))
+if (!["tiny-10", "mixed-20", "same-file-multi", "structural-3"].includes(scenarioId))
 	throw new Error(`invalid --scenario ${scenarioId}`);
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
@@ -201,6 +201,32 @@ const mixedScenario = (): Scenario => {
 	};
 };
 
+
+const structuralScenario = (): Scenario => ({
+	id: "structural-3",
+	title: "3 structural symbol edits",
+	steps: [
+		{
+			id: "replace-alpha-body",
+			path: "structural.ts",
+			before: `export function alpha(value: number): number {\n  const doubled = value * 2;\n  return doubled;\n}\n\nexport function beta(): string {\n  return "old";\n}\n`,
+			after: `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "old";\n}\n`,
+		},
+		{
+			id: "replace-beta-body",
+			path: "structural.ts",
+			before: `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "old";\n}\n`,
+			after: `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "new";\n}\n`,
+		},
+		{
+			id: "insert-after-beta",
+			path: "structural.ts",
+			before: `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "new";\n}\n`,
+			after: `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "new";\n}\n\nexport function gamma(): boolean { return true; }\n`,
+		},
+	],
+});
+
 const sameFileScenario = (): Scenario => {
 	const before = `export const a = "old-a";\nexport const b = "old-b";\nexport const c = "old-c";\n`;
 	return {
@@ -241,7 +267,9 @@ const scenario =
 		? mixedScenario()
 		: scenarioId === "same-file-multi"
 			? sameFileScenario()
-			: tinyScenario();
+			: scenarioId === "structural-3"
+				? structuralScenario()
+				: tinyScenario();
 
 const writeInitialFiles = async (workDir: string, steps: Step[]) => {
 	const seen = new Set<string>();
@@ -281,10 +309,16 @@ const exactChangedSpan = (before: string, after: string) => {
 
 const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
 	if (lane === "blitz-edit") {
-		const e = steps.map((step) => {
-			const { oldText, newText } = exactChangedSpan(step.before, step.after);
-			return ["x", join(workDir, step.path), oldText, newText];
-		});
+		const e = scenarioId === "structural-3"
+			? [
+				["rb", join(workDir, "structural.ts"), "function", "alpha", "\n  return value + 1;\n"],
+				["rb", join(workDir, "structural.ts"), "function", "beta", "\n  return \"new\";\n"],
+				["ia", join(workDir, "structural.ts"), "function", "beta", "\n\nexport function gamma(): boolean { return true; }"],
+			]
+			: steps.map((step) => {
+				const { oldText, newText } = exactChangedSpan(step.before, step.after);
+				return ["x", join(workDir, step.path), oldText, newText];
+			});
 		return [
 			`Run ${steps.length} ordered exact edits in this one Pi session.`,
 			"Use only blitz_edit. No prose. Call blitz_edit exactly once with this exact JSON:",
