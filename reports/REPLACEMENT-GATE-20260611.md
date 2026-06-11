@@ -100,3 +100,16 @@ Aggregate across accepted streak rows:
 2. Produce a final replacement-gate JSON/MD summary that includes raw artifact paths for all accepted rows.
 3. Run reviewer audit through a working lane. Pi subagent reviewer currently fails with `Agent is already processing`; use manual reviewer lane, `cmd`, or fix subagent runtime.
 4. Only after the reviewer accepts and every mandatory class has evidence, call the goal complete.
+
+## External critique / D5 status
+
+A strict external critique was run after this report. Verdict: **reject full goal completion / approve only partial gate**.
+
+Blocking gaps identified:
+
+- isolated mandatory class A-D rows are not yet separately locked;
+- reviewer audit for the full matrix is absent;
+- aggregate/median/p75 over the complete mandatory set is incomplete;
+- this report correctly says `partial pass / not final goal completion`.
+
+Therefore D5 is **not passed** and the goal must continue.
