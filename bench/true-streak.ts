@@ -22,7 +22,7 @@ const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 const DEFAULT_PI_BLITZ_PROFILE_DUMP =
 	"/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json";
 
-type Lane = "core" | "router" | "blitz-edit";
+type Lane = "core" | "router" | "blitz-edit" | "core-optimized";
 type ScenarioId =
 	| "tiny-10"
 	| "mixed-20"
@@ -120,7 +120,7 @@ const mdOut = resolve(
 const tokScaleRequired = hasFlag("--tokscale");
 const tmuxSession = `pi-true-streak-${stamp}`;
 
-if (!["core", "router", "blitz-edit"].includes(lane))
+if (!["core", "router", "blitz-edit", "core-optimized"].includes(lane))
 	throw new Error(`invalid --lane ${lane}`);
 if (
 	![
@@ -516,6 +516,57 @@ const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
 		].join("\n");
 	}
 
+	if (lane === "core-optimized") {
+		// same-file-multi: try one edit call with edits array if simple
+		if (
+			scenarioId === "same-file-multi" &&
+			steps.every((s) => s.path === steps[0].path)
+		) {
+			const spans = steps.map((step) => {
+				const { oldText, newText } = exactChangedSpan(
+					step.before,
+					step.after,
+				);
+				return { oldText, newText };
+			});
+			const allSimple = spans.every(
+				(s) => s.oldText.length < 200 && s.newText.length < 200,
+			);
+			if (allSimple) {
+				return [
+					`Run ${steps.length} ordered edits in this one Pi session on the same file.`,
+					"Use only edit. No prose. Call edit exactly once with this exact JSON:",
+					JSON.stringify({
+						path: join(workDir, steps[0].path),
+						edits: spans,
+					}),
+				].join("\n");
+			}
+		}
+		// Default: minimal spans per step
+		const lines = [
+			`Run ${steps.length} ordered edits in this one Pi session.`,
+			"Use only edit. No prose. Keep calling tools until every step is done. Then stop.",
+			"",
+			"Steps:",
+		];
+		steps.forEach((step, idx) => {
+			const file = join(workDir, step.path);
+			const { oldText, newText } = exactChangedSpan(step.before, step.after);
+			lines.push(
+				`${idx + 1}. Call edit with exact JSON: ${JSON.stringify({ path: file, oldText, newText })}`,
+			);
+		});
+		lines.push("", "Initial file contents:");
+		for (const [path] of finalExpectedByPath(steps)) {
+			lines.push(
+				`--- ${join(workDir, path)} ---`,
+				await readFile(join(workDir, path), "utf8"),
+			);
+		}
+		return lines.join("\n");
+	}
+
 	const lines = [
 		`Run ${steps.length} ordered edits in this one Pi session.`,
 		`Use only the available ${lane === "core" ? "edit" : "pi_blitz_route_edit"} tool.`,
@@ -560,7 +611,7 @@ const piArgs = (promptFile: string, sessionDir: string) => {
 		"--session-dir",
 		sessionDir,
 	];
-	if (lane === "core")
+	if (lane === "core" || lane === "core-optimized")
 		return [
 			...common,
 			"--no-skills",
@@ -778,7 +829,7 @@ const main = async () => {
 	const args = piArgs(promptFile, sessionDir);
 	await writeFile(
 		commandFile,
-		`#!/usr/bin/env bash\nset -u\nexport PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"\nexport PI_BLITZ_TOOL_PROFILE=${lane === "blitz-edit" ? "minimal" : "router"}\ncd ${shellQuote(workDir)}\nstart_ms=$(date +%s%3N)\nstatus=0\n${[piBin, ...args].map(shellQuote).join(" ")} > >(tee ${shellQuote(stdoutLog)}) 2> >(tee ${shellQuote(stderrLog)} >&2) || status=$?\nend_ms=$(date +%s%3N)\nprintf '{"status":%s,"wallMs":%s,"timedOut":false}\\n' "$status" "$((end_ms - start_ms))" > ${shellQuote(exitFile)}\nexit "$status"\n`,
+		`#!/usr/bin/env bash\nset -u\nexport PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"\nexport PI_BLITZ_TOOL_PROFILE=${lane === "blitz-edit" ? "minimal" : lane === "core-optimized" ? "" : "router"}\ncd ${shellQuote(workDir)}\nstart_ms=$(date +%s%3N)\nstatus=0\n${[piBin, ...args].map(shellQuote).join(" ")} > >(tee ${shellQuote(stdoutLog)}) 2> >(tee ${shellQuote(stderrLog)} >&2) || status=$?\nend_ms=$(date +%s%3N)\nprintf '{"status":%s,"wallMs":%s,"timedOut":false}\\n' "$status" "$((end_ms - start_ms))" > ${shellQuote(exitFile)}\nexit "$status"\n`,
 		"utf8",
 	);
 	await chmod(commandFile, 0o755);
