@@ -19,6 +19,8 @@ const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
+const DEFAULT_PI_BLITZ_PROFILE_DUMP =
+	"/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json";
 
 type Lane = "core" | "router" | "blitz-edit";
 type ScenarioId =
@@ -40,6 +42,7 @@ type UsageTotals = {
 	cacheRead: number;
 	cacheWrite: number;
 	totalTokens: number;
+	messages: number;
 };
 
 type ToolCallRecord = { name: string; arguments: unknown; argTokens: number };
@@ -82,6 +85,10 @@ const extension = argFlag(
 const skill = argFlag(
 	"--skill",
 	process.env.PI_BLITZ_SKILL ?? DEFAULT_PI_BLITZ_SKILL,
+);
+const profileDump = argFlag(
+	"--profile-dump",
+	process.env.PI_BLITZ_PROFILE_DUMP ?? DEFAULT_PI_BLITZ_PROFILE_DUMP,
 );
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runRoot = resolve(
@@ -643,6 +650,7 @@ const parseSession = async (sessionDir: string) => {
 		cacheRead: 0,
 		cacheWrite: 0,
 		totalTokens: 0,
+		messages: 0,
 	};
 	const toolCalls: ToolCallRecord[] = [];
 	const toolResults: ToolResultRecord[] = [];
@@ -660,6 +668,7 @@ const parseSession = async (sessionDir: string) => {
 			const msg = event.message;
 			const u = msg?.usage;
 			if (u) {
+				usage.messages += 1;
 				usage.input += Number(u.input ?? 0);
 				usage.output += Number(u.output ?? 0);
 				usage.cacheRead += Number(u.cacheRead ?? 0);
@@ -716,6 +725,41 @@ const runTokscale = (sessionDir: string) => {
 	};
 };
 
+const parseTokscaleTotals = (tokScale: ReturnType<typeof runTokscale> | null) => {
+	if (!tokScale?.stdout) return null;
+	try {
+		const parsed = JSON.parse(tokScale.stdout);
+		return {
+			input: Number(parsed.totalInput ?? 0),
+			output: Number(parsed.totalOutput ?? 0),
+			cacheRead: Number(parsed.totalCacheRead ?? 0),
+			cacheWrite: Number(parsed.totalCacheWrite ?? 0),
+			messages: Number(parsed.totalMessages ?? 0),
+		};
+	} catch {
+		return null;
+	}
+};
+
+const buildTokscaleMatch = (usage: UsageTotals, tokScale: ReturnType<typeof runTokscale> | null) => {
+	const totals = parseTokscaleTotals(tokScale);
+	if (!totals) {
+		return { matched: !tokScaleRequired, totals: null, deltas: null };
+	}
+	const deltas = {
+		input: usage.input - totals.input,
+		output: usage.output - totals.output,
+		cacheRead: usage.cacheRead - totals.cacheRead,
+		cacheWrite: usage.cacheWrite - totals.cacheWrite,
+		messages: usage.messages - totals.messages,
+	};
+	return {
+		matched: Object.values(deltas).every((value) => value === 0),
+		totals,
+		deltas,
+	};
+};
+
 const main = async () => {
 	const workDir = join(runRoot, "work");
 	const sessionDir = join(runRoot, "sessions");
@@ -752,15 +796,19 @@ const main = async () => {
 			actualSha: sha(actual),
 		});
 	}
-	const skillText =
-		lane === "router"
-			? await readFile(join(skill, "SKILL.md"), "utf8").catch(() => "")
-			: "";
+	const usesBlitzExtension = lane === "router" || lane === "blitz-edit";
+	const skillText = usesBlitzExtension
+		? await readFile(join(skill, "SKILL.md"), "utf8").catch(() => "")
+		: "";
+	const schemaText = lane === "blitz-edit"
+		? await readFile(profileDump, "utf8").catch(() => "")
+		: "";
 	const tokScale = tokScaleRequired ? runTokscale(sessionDir) : null;
 	if (tokScaleRequired && tokScale?.status !== 0)
 		console.error(tokScale?.stderr || tokScale?.stdout);
+	const tokScaleMatch = buildTokscaleMatch(parsed.usage, tokScale);
 	const totals = {
-		schemaTokens: 0,
+		schemaTokens: countTokens(schemaText),
 		skillTokens: countTokens(skillText),
 		promptTokens: countTokens(prompt),
 		argTokens: parsed.toolCalls.reduce((sum, t) => sum + t.argTokens, 0),
@@ -773,7 +821,7 @@ const main = async () => {
 		),
 		residualInputTokens: Math.max(
 			0,
-			parsed.usage.input - countTokens(prompt) - countTokens(skillText),
+			parsed.usage.input - countTokens(prompt) - countTokens(skillText) - countTokens(schemaText),
 		),
 		totalContextTokens:
 			parsed.usage.input +
@@ -784,7 +832,10 @@ const main = async () => {
 	const report = {
 		generatedAt: new Date().toISOString(),
 		status:
-			stepResults.every((s) => s.correct) && exit.status === 0 && !exit.timedOut
+			stepResults.every((s) => s.correct) &&
+			exit.status === 0 &&
+			!exit.timedOut &&
+			(!tokScaleRequired || (tokScale?.status === 0 && tokScaleMatch.matched))
 				? "accepted"
 				: "caveated",
 		provider,
@@ -796,10 +847,12 @@ const main = async () => {
 		runRoot,
 		tmuxSession,
 		piBin,
-		extension: lane === "router" ? extension : null,
-		skill: lane === "router" ? skill : null,
+		extension: usesBlitzExtension ? extension : null,
+		skill: usesBlitzExtension ? skill : null,
+		profileDump: lane === "blitz-edit" ? profileDump : null,
 		tokScaleMode: tokScaleRequired ? "required" : "not-run",
 		tokScale,
+		tokScaleMatch,
 		exit: {
 			status: exit.status,
 			wallMs: exit.wallMs,
@@ -821,13 +874,13 @@ const main = async () => {
 		usage: parsed.usage,
 		totals,
 		caveats: [
-			"schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+			"schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
 			"true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis.",
 		],
 	};
 	await mkdir(dirname(jsonOut), { recursive: true });
 	await writeFile(jsonOut, JSON.stringify(report, null, 2));
-	const md = `# Pi/tmux/Tokscale true sequential streak — ${scenario.id} ${lane}\n\nStatus: ${report.status}\nProvider/model: ${provider}/${model}\nRunner: tmux\nRun root: ${runRoot}\nTmux session: ${tmuxSession}\nTokscale: ${report.tokScaleMode}${tokScale ? ` (exit ${tokScale.status})` : ""}\n\n## Cumulative tokens\n\n| schema | skill | prompt | args | output | cache read | cache write | result payload | residual input | total context |\n|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n| ${totals.schemaTokens} | ${totals.skillTokens} | ${totals.promptTokens} | ${totals.argTokens} | ${totals.outputTokens} | ${totals.cacheRead} | ${totals.cacheWrite} | ${totals.resultPayloadTokens} | ${totals.residualInputTokens} | ${totals.totalContextTokens} |\n\n## Correctness\n\n| Step/file | Correct | Expected sha | Actual sha |\n|---|---|---:|---:|\n${stepResults.map((s) => `| ${s.path} | ${s.correct ? "yes" : "no"} | ${s.expectedSha} | ${s.actualSha} |`).join("\n")}\n\n## Caveats\n\n${report.caveats.map((c) => `- ${c}`).join("\n")}\n`;
+	const md = `# Pi/tmux/Tokscale true sequential streak — ${scenario.id} ${lane}\n\nStatus: ${report.status}\nProvider/model: ${provider}/${model}\nRunner: tmux\nRun root: ${runRoot}\nTmux session: ${tmuxSession}\nTokscale: ${report.tokScaleMode}${tokScale ? ` (exit ${tokScale.status}, match ${tokScaleMatch.matched ? "yes" : "no"})` : ""}\n\n## Cumulative tokens\n\n| schema | skill | prompt | args | output | cache read | cache write | result payload | residual input | total context |\n|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n| ${totals.schemaTokens} | ${totals.skillTokens} | ${totals.promptTokens} | ${totals.argTokens} | ${totals.outputTokens} | ${totals.cacheRead} | ${totals.cacheWrite} | ${totals.resultPayloadTokens} | ${totals.residualInputTokens} | ${totals.totalContextTokens} |\n\n## Tokscale match\n\nMatched: ${tokScaleMatch.matched ? "yes" : "no"}\n\nDeltas: ${JSON.stringify(tokScaleMatch.deltas)}\n\n## Correctness\n\n| Step/file | Correct | Expected sha | Actual sha |\n|---|---|---:|---:|\n${stepResults.map((s) => `| ${s.path} | ${s.correct ? "yes" : "no"} | ${s.expectedSha} | ${s.actualSha} |`).join("\n")}\n\n## Caveats\n\n${report.caveats.map((c) => `- ${c}`).join("\n")}\n`;
 	await writeFile(mdOut, md);
 	releaseTokenizer();
 	console.log(
