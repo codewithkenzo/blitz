@@ -52,3 +52,28 @@ Reports go to `reports/natural-edit-harness/natural-edit-<stamp>.json` and
 | `noop` | Idempotent scenario, files unchanged, exit 0 |
 | `decline_or_no_mutation` | Non-zero exit without timeout (model declined or tool errored) |
 | `incorrect` | Files don't match expected, or timed out |
+
+## First smoke result — Zai tiny-exact
+
+A first smoke was run:
+
+```bash
+bun bench/natural-edit.ts --provider zai --model glm-4.5-air --scenario tiny-exact --iters 1 --keep-temp --verbose
+```
+
+Report: `reports/natural-edit-harness/natural-edit-2026-06-11T21-34-44-939Z.md`
+
+Result: **not accepted**.
+
+- core lane: `decline_or_no_mutation`, exit `143`, 0/1 correct
+- blitz lane: `decline_or_no_mutation`, exit `143`, 0/1 correct
+- artifacts preserved under `reports/natural-edit-runs/`
+
+This smoke proves
+ the harness can launch and preserve artifacts, but it also exposes first remediation needs before rows can be counted:
+
+1. timeout/exit handling should mark `timedOut` consistently instead of only exit 143;
+2. file correctness collection appears to read an empty/missing output path after timeout (`gotSha` empty), so artifact path handling needs audit;
+3. natural prompt/tool configuration needs tuning so at least tiny exact completes under both lanes.
+
+These failed smoke rows are preserved as evidence and are not counted as accepted universal proof.
