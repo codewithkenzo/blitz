@@ -244,3 +244,22 @@ Universal gate report must include:
 3. Add provider/model matrix runner wrapper.
 4. Add route-system accounting that distinguishes Blitz success from explicit fallback.
 5. Run GPT-5.5 low scripted gate as first provider expansion.
+
+## Reviewer blind-spot audit findings to remediate
+
+Source: `reports/UNIVERSAL-BLITZ-BLIND-SPOT-AUDIT-20260611.md`.
+
+P0 blockers before any universal/exodia claim:
+
+1. Regenerate and lock current provider-compatible profile dump after pi-blitz schema fix; old lock points at a stale tuple-schema dump.
+2. Add natural unscripted route proof; current gates are exact-JSON scripted regression rows.
+3. Add fair optimized-core baselines using minimal changed spans and same-file batched `edits` where core supports it; current core baseline is pessimized in some rows.
+
+P1 blockers before final universal gate:
+
+1. Record Tokscale token-match booleans/deltas, not only Tokscale process exit.
+2. Count current skill/schema tokens for `blitz-edit` rows instead of hardcoding category fields to zero.
+3. Record extension/skill provenance for `blitz-edit` rows in JSON reports, not only command files.
+4. Make product `blitz_edit` batch apply atomic, not preview-all then sequential apply jobs if later job can fail after earlier mutation.
+
+These findings supersede any broad universal wording in earlier draft sections. Current evidence remains a strong scripted regression gate, not universal proof.
