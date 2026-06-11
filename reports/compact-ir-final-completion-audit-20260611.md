@@ -27,6 +27,7 @@ Build Blitz 0.4 into a real Pi core `edit` replacement candidate by:
 | Parent/ancestor target filter `p` | `411caca feat(apply): add compact parent target filter` | Pass |
 | Same-file compact `ops` batch with sequential rebasing and no partial writes | `1fbfe31 feat(apply): batch compact same-file ops` | Pass |
 | `t.k` kind filtering actually affects resolver | `a69d301 fix compact target kind and range resolution`; tests for class/function same-name disambiguation and wrong-kind no-write | Pass |
+| Required v1 target kinds implemented | `3942de4 Support compact object and section targets`; `targetKindMatches` supports `function`, `method`, `class`, `object`, `section`, `any`; `object` requires object-valued declarations, `section` is narrow named containers/object-valued vars | Pass |
 | `t.range` enforced | `a69d301`; tests for `body` vs `node`; unsupported range fails closed | Pass |
 | Zig verification at final state | `zig fmt --check src/apply/ir.zig src/apply/mod.zig src/apply/errors.zig src/apply/target.zig src/ast.zig src/grammar_config.zig && zig build && zig build test` rerun after final report commit prep | Pass |
 | pi-blitz compact route exposed | pi-blitz `f0d2c7a feat: send compact op IR directly`; `pi_blitz_op` sends compact `{v:1,f,ops}` to `blitz apply --edit - --json`; minimal profile exposes only `pi_blitz_op` | Pass |
@@ -134,8 +135,29 @@ Accepted rows:
 | marker merge | `marker-merge-valid__blitz` | compact `mn` row exits 0 and preserves/merges expected body lines |
 | fallback | `fallback-decline__router` | `pi_blitz_route_edit` declines no-payload request to apply_patch/core path without mutating file |
 
+### Object/section resolver remediation
+
+Final blocker remediation report:
+
+```text
+reports/compact-ir-object-section-remediation-20260611.md
+```
+
+Implementation commit:
+
+```text
+3942de4 Support compact object and section targets
+```
+
+Evidence:
+
+- `object` kind resolves only object-valued declarations; scalar variables reject.
+- `section` kind resolves named containers and object-valued variables; functions reject.
+- bogus/unsupported kinds still fail closed.
+- focused unit tests and CLI smokes passed.
+
 ## Honest final verdict
 
-The goal is complete as a candidate/proof slice: compact Zig IR exists, target semantics and safety gaps are fixed, pi-blitz exposes the route, and product-real Pi/tmux/Tokscale evidence covers body replace, insert-after, and same-file batch rows against core `edit`.
+The goal is complete as a candidate/proof slice: compact Zig IR exists, required target semantics and safety gaps are fixed, pi-blitz exposes the route, and product-real Pi/tmux/Tokscale evidence covers body replace, insert-after, same-file batch, tiny streak, mixed streak, marker merge, and explicit fallback rows.
 
-Blitz remains **fallback/candidate-only**, not default-ready. No token-savings claim is made: the accepted breadth rows did not consistently beat core on total model-visible context. The correct next phase is overhead reduction and larger locked matrices, not default enablement.
+Blitz remains **fallback/candidate-only**, not default-ready. No token-savings claim is made: accepted rows did not consistently beat core on total model-visible context. The correct next phase is overhead reduction and larger locked matrices, not default enablement.
