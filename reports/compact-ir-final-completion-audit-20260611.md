@@ -33,6 +33,10 @@ Build Blitz 0.4 into a real Pi core `edit` replacement candidate by:
 | pi-blitz verification | `bun run typecheck && bun test && bun run build` rerun at final state | Pass |
 | Product-real Pi/tmux/Tokscale row proves compact route invocation | Manual ZAI row root `reports/pi-tmux-runs/compact-zig-ir-manual-20260610T083926Z`; exact `pi_blitz_op` args used `[["rb","function","smallTarget",snippet]]` | Pass |
 | Broader successful product-real rows | Breadth root `reports/pi-tmux-runs/compact-zig-ir-breadth-20260611T154326Z`; accepted `tiny-rb`, `symbol-ia`, `same-file-batch` core+Blitz rows | Pass |
+| Tiny edit streak | `reports/pi-tmux-runs/compact-zig-ir-streak-20260611T155040Z`; `tiny-streak-1/2/3__blitz` each exit 0 with one `pi_blitz_op` and expected final file | Pass |
+| Mixed edit streak | `reports/pi-tmux-runs/compact-zig-ir-mixed-seq-20260611T155319Z`; sequential `mixed-seq-rb`, `mixed-seq-ia`, `mixed-seq-mn` product-real Blitz rows all exit 0 and save Tokscale | Pass |
+| Marker-merge compact row | `reports/pi-tmux-runs/compact-zig-ir-mn-fix-20260611T155221Z`; `marker-merge-valid__blitz` uses compact `mn` and exits 0 with expected merge | Pass |
+| Explicit fallback row | `reports/pi-tmux-runs/compact-zig-ir-streak-20260611T155040Z/fallback-decline__router`; `pi_blitz_route_edit` declines no-payload route to apply_patch/core without mutating file | Pass |
 | Benchmark/token report includes route labels, tool args, Tokscale accounting, correctness, caveats | `reports/pi-compact-zig-ir-exposure-2026-06-10.md`, `reports/compact-ir-auditor-remediation-20260611.md` | Pass |
 | No false token-savings/default-ready claim | Reports state compact route is real/correct but not default-ready; total model-visible context does not consistently beat core | Pass |
 
@@ -104,6 +108,31 @@ Accepted rows:
 | `same-file-batch` | `edit` | `pi_blitz_op` | same-file `ops` batch with `rb`, `rb`, `ia` | both exit 0/correct |
 
 Tokscale totals are saved in each row’s `tokscale-home.json`; exact tool calls and Pi usage are in the session JSONLs under each row’s `sessions/` directory.
+
+### Successful streak / marker / fallback addendum
+
+Detailed addendum:
+
+```text
+reports/compact-ir-streak-benchmark-20260611.md
+```
+
+Run roots:
+
+```text
+reports/pi-tmux-runs/compact-zig-ir-streak-20260611T155040Z
+reports/pi-tmux-runs/compact-zig-ir-mn-fix-20260611T155221Z
+reports/pi-tmux-runs/compact-zig-ir-mixed-seq-20260611T155319Z
+```
+
+Accepted rows:
+
+| requirement | rows | result |
+|---|---|---|
+| tiny edit streak | `tiny-streak-1/2/3__blitz` | each exit 0, one `pi_blitz_op`, expected final file, Tokscale saved |
+| mixed edit streak | `mixed-seq-rb__blitz`, `mixed-seq-ia__blitz`, `mixed-seq-mn__blitz` | each exit 0, one `pi_blitz_op`, expected final file, Tokscale saved |
+| marker merge | `marker-merge-valid__blitz` | compact `mn` row exits 0 and preserves/merges expected body lines |
+| fallback | `fallback-decline__router` | `pi_blitz_route_edit` declines no-payload request to apply_patch/core path without mutating file |
 
 ## Honest final verdict
 
