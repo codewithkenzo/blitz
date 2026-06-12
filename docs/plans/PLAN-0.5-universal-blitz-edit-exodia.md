@@ -205,3 +205,13 @@ Fair optimized-core baseline expanded:
 - Same-file fair-core row remains caveated: final file correct and Tokscale matched, but timeout/exit -1 after repeated core `edit` calls; not counted.
 
 Started implementation slice 4 via D5 subagent (`418aa278-5600-4c37-92b9-e63005393faf`) to add the first natural/unscripted benchmark harness slice with explicit route/outcome labels. Scope is Blitz only; no universal claim yet.
+
+## Execution log — 2026-06-12 checkpoint 6
+
+Natural/unscripted harness hardening landed:
+
+- Blitz `907b630` added audit identity, route-outcome accounting, session JSONL hash/provenance, Tokscale audit fields, `--tokscale` alias, fail-closed acceptance, and preserved natural run artifacts.
+- Blitz `6535fbf` added independent Pi session JSONL usage parsing for natural rows and compares parser totals to Tokscale totals with exact match/deltas before accepting validated rows.
+- Verification passed: `bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js`, `git diff --check`, and parser self-check on committed natural JSONL.
+
+Started implementation slice 5 via D5 subagent (`ba306c6e-6f8c-45c6-9aad-90dc3bab5e75`) to add the first adversarial/safety matrix slice to `bench/natural-edit.ts`: selectable adversarial scenarios, >=20 rows/provider when run, required safety categories, and a cheap non-provider coverage check. No long provider matrix yet.
