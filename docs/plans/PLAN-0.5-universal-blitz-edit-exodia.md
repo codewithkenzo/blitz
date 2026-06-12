@@ -215,3 +215,13 @@ Natural/unscripted harness hardening landed:
 - Verification passed: `bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js`, `git diff --check`, and parser self-check on committed natural JSONL.
 
 Started implementation slice 5 via D5 subagent (`ba306c6e-6f8c-45c6-9aad-90dc3bab5e75`) to add the first adversarial/safety matrix slice to `bench/natural-edit.ts`: selectable adversarial scenarios, >=20 rows/provider when run, required safety categories, and a cheap non-provider coverage check. No long provider matrix yet.
+
+## Execution log — 2026-06-12 checkpoint 7
+
+Natural coverage expansion slice prepared:
+
+- `bench/natural-edit.ts` natural group expanded from 6 to 25 natural/user-like scenarios.
+- Documented row semantics: at `--iters 1`, both default lanes (`core` + `blitz`) produce 50 natural rows/provider.
+- Required natural categories are covered: tiny, mixed code/docs/config, same-file multi, structural body, config/docs, TSX/JSX prop/text, import insertion/removal/order, local symbol rename/refactor, no-op/idempotence, and ambiguous/multi-match safety.
+- Added `reports/NATURAL-EDIT-COVERAGE-EXPANSION-20260612.md` with mandatory-provider full-matrix commands and cheap non-provider assertion.
+- No provider matrix run; this slice only proves harness coverage capacity.
