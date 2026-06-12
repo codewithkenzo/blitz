@@ -57,6 +57,8 @@ const tokscaleMode = tokscaleAlias
 const toolProfile = argFlag("--tool-profile", "");
 const keepTemp = argv.includes("--keep-temp");
 const verbose = argv.includes("--verbose");
+const selfCheckParser = argv.includes("--self-check-parser");
+const selfCheckSessionJsonl = argFlag("--session-jsonl", "");
 const piBin = argFlag("--pi-bin", process.env.PI_BIN ?? DEFAULT_PI_BIN);
 const extension = argFlag(
 	"--extension",
@@ -116,6 +118,17 @@ type SessionJsonl = {
 	path: string;
 	/** sha256(16) hex digest of file content. */
 	hash: string;
+	/** Independent parser totals from Pi session JSONL assistant messages. */
+	totals: SessionTotals;
+};
+
+type SessionTotals = {
+	input: number;
+	output: number;
+	cacheRead: number;
+	cacheWrite: number;
+	messages: number;
+	cost: number;
 };
 
 type TokscaleAudit = {
@@ -404,6 +417,116 @@ const tokFailure = (
 const numberFrom = (value: unknown): number | null =>
 	typeof value === "number" && Number.isFinite(value) ? value : null;
 
+type UsageShape = Record<string, unknown>;
+
+const usageNumber = (usage: UsageShape, keys: string[]): number => {
+	for (const key of keys) {
+		const value = usage[key];
+		if (typeof value === "number" && Number.isFinite(value)) return value;
+	}
+	return 0;
+};
+
+const usageCost = (usage: UsageShape): number => {
+	const direct = usage.cost;
+	if (typeof direct === "number" && Number.isFinite(direct)) return direct;
+	if (direct && typeof direct === "object") {
+		const total = (direct as Record<string, unknown>).total;
+		if (typeof total === "number" && Number.isFinite(total)) return total;
+	}
+	return 0;
+};
+
+const parseSessionJsonlTotals = (content: string): SessionTotals => {
+	const totals: SessionTotals = {
+		input: 0,
+		output: 0,
+		cacheRead: 0,
+		cacheWrite: 0,
+		messages: 0,
+		cost: 0,
+	};
+	for (const line of content.split("\n")) {
+		if (!line.trim()) continue;
+		let event: Record<string, unknown>;
+		try {
+			event = JSON.parse(line) as Record<string, unknown>;
+		} catch {
+			continue;
+		}
+		if (event.type !== "message") continue;
+		const message = event.message as Record<string, unknown> | undefined;
+		if (!message || message.role !== "assistant") continue;
+		totals.messages += 1;
+		const usage = message.usage as UsageShape | undefined;
+		if (!usage) continue;
+		totals.input += usageNumber(usage, [
+			"input",
+			"inputTokens",
+			"input_tokens",
+		]);
+		totals.output += usageNumber(usage, [
+			"output",
+			"outputTokens",
+			"output_tokens",
+		]);
+		totals.cacheRead += usageNumber(usage, [
+			"cacheRead",
+			"cache_read",
+			"cachedInputTokens",
+			"cached_input_tokens",
+		]);
+		totals.cacheWrite += usageNumber(usage, [
+			"cacheWrite",
+			"cache_write",
+			"cacheCreationInputTokens",
+			"cache_creation_input_tokens",
+		]);
+		totals.cost += usageCost(usage);
+	}
+	return totals;
+};
+
+if (selfCheckParser) {
+	if (!selfCheckSessionJsonl) {
+		console.error("--self-check-parser requires --session-jsonl <path>");
+		process.exit(2);
+	}
+	const content = await readFile(selfCheckSessionJsonl, "utf8");
+	console.log(
+		JSON.stringify(
+			{
+				path: selfCheckSessionJsonl,
+				totals: parseSessionJsonlTotals(content),
+			},
+			null,
+			2,
+		),
+	);
+	process.exit(0);
+}
+
+const tokDeltas = (
+	tokscaleTotals: Record<string, number | null>,
+	parserTotals: SessionTotals,
+): Record<string, number> => ({
+	input: (tokscaleTotals.input ?? 0) - parserTotals.input,
+	output: (tokscaleTotals.output ?? 0) - parserTotals.output,
+	cacheRead: (tokscaleTotals.cacheRead ?? 0) - parserTotals.cacheRead,
+	cacheWrite: (tokscaleTotals.cacheWrite ?? 0) - parserTotals.cacheWrite,
+	messages: (tokscaleTotals.messages ?? 0) - parserTotals.messages,
+});
+
+const tokMatch = (
+	tokscaleTotals: Record<string, number | null>,
+	parserTotals: SessionTotals,
+): boolean =>
+	tokscaleTotals.input === parserTotals.input &&
+	tokscaleTotals.output === parserTotals.output &&
+	tokscaleTotals.cacheRead === parserTotals.cacheRead &&
+	tokscaleTotals.cacheWrite === parserTotals.cacheWrite &&
+	tokscaleTotals.messages === parserTotals.messages;
+
 const runTokscale = async (
 	sessionJsonl: SessionJsonl | null,
 	cwd: string,
@@ -478,15 +601,31 @@ const runTokscale = async (
 			totals.cacheRead !== null &&
 			totals.cacheWrite !== null &&
 			totals.messages !== null;
+		if (!hasTokenTotals) {
+			return {
+				mode: tokscaleMode,
+				status: "mismatch",
+				match: false,
+				deltas: null,
+				totals,
+				details: "Tokscale missing required token totals",
+			};
+		}
+		const deltas = tokDeltas(totals, sessionJsonl.totals);
+		const match = tokMatch(totals, sessionJsonl.totals);
+		const details = match
+			? "Tokscale totals match Pi JSONL parser totals"
+			: `Tokscale totals mismatch parser totals: ${Object.entries(deltas)
+					.filter(([, delta]) => delta !== 0)
+					.map(([key, delta]) => `${key} delta=${delta}`)
+					.join("; ")}`;
 		return {
 			mode: tokscaleMode,
-			status: "mismatch",
-			match: false,
-			deltas: null,
+			status: match ? "ok" : "mismatch",
+			match,
+			deltas,
 			totals,
-			details: hasTokenTotals
-				? "Tokscale returned token totals, but natural harness has no independent parser totals yet; validation fails closed with no deltas invented"
-				: "Tokscale missing required token totals",
+			details,
 		};
 	} finally {
 		if (!keepTemp) await rm(home, { recursive: true, force: true });
@@ -506,7 +645,7 @@ const discoverSessionJsonl = async (
 		if (!jsonl) return null;
 		const path = join(dir, jsonl);
 		const content = await readFile(path, "utf8");
-		return { path, hash: sha256(content) };
+		return { path, hash: sha256(content), totals: parseSessionJsonlTotals(content) };
 	} catch {
 		return null;
 	}
