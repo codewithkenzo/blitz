@@ -1,0 +1,428 @@
+{
+  "generatedAt": "2026-06-11T22:16:47.191Z",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "timeoutMs": 60000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "scenarios": [
+    {
+      "id": "tiny-exact",
+      "title": "Tiny exact unique return-line replace",
+      "description": "Change the return of a 3-line function. Trivially unique match.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "small.ts",
+          "beforeSha": "c72c321648b699e2",
+          "afterSha": "551ba78d8ad12ba2"
+        }
+      ]
+    },
+    {
+      "id": "mixed-config-doc",
+      "title": "Mixed config/document edit across two files",
+      "description": "Update a TypeScript config key and an HTML title in the same session.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "config.ts",
+          "beforeSha": "e394b6e353049799",
+          "afterSha": "400c0601f2f18d51"
+        },
+        {
+          "path": "index.html",
+          "beforeSha": "8d8011623aad4962",
+          "afterSha": "d1bb8423970fd9df"
+        }
+      ]
+    },
+    {
+      "id": "same-file-multi",
+      "title": "Three edits in the same file",
+      "description": "Replace a return, insert a line after an anchor, wrap a function body in try/catch — all in multi.ts.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "multi.ts",
+          "beforeSha": "9cd83bf0733e224c",
+          "afterSha": "4125a5e1a3f04e55"
+        }
+      ]
+    },
+    {
+      "id": "structural-body",
+      "title": "Wrap function body in try/catch (structural)",
+      "description": "Wrap the ~280-line body of mediumCompute in try/catch without naming exact line text.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "medium.ts",
+          "beforeSha": "432f6832098c2436",
+          "afterSha": "509c8f102d3469af"
+        }
+      ]
+    },
+    {
+      "id": "no-op-idempotent",
+      "title": "No-op / idempotent — change already applied",
+      "description": "File already has the target change; model should detect nothing to do.",
+      "idempotent": true,
+      "files": [
+        {
+          "path": "small.ts",
+          "beforeSha": "551ba78d8ad12ba2",
+          "afterSha": "551ba78d8ad12ba2"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-repeated-anchor",
+      "title": "Ambiguous: replace only the last return in a function with multiple returns",
+      "description": "In classify, three return statements return different values. Model must replace only the last one (positive → other) without touching negative or zero.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "semantic.ts",
+          "beforeSha": "c4ed52b8489f1958",
+          "afterSha": "571bcf323ea18fcb"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "scenarioId": "tiny-exact",
+      "title": "Tiny exact unique return-line replace",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "tiny-exact",
+          "iter": 0,
+          "outcome": "blitz_mutated",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 7891.197567,
+          "exitCode": 0,
+          "timedOut": false,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "\ndone\n",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "small.ts",
+              "gotSha": "551ba78d8ad12ba2",
+              "expectedSha": "551ba78d8ad12ba2",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "blitz_mutated",
+      "outcomeLabel": "blitz_mutated"
+    },
+    {
+      "scenarioId": "mixed-config-doc",
+      "title": "Mixed config/document edit across two files",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "mixed-config-doc",
+          "iter": 0,
+          "outcome": "blitz_mutated",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 4676.951149,
+          "exitCode": 0,
+          "timedOut": false,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "\ndone\n",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/mixed-config-doc__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "config.ts",
+              "gotSha": "400c0601f2f18d51",
+              "expectedSha": "400c0601f2f18d51",
+              "match": true
+            },
+            {
+              "path": "index.html",
+              "gotSha": "d1bb8423970fd9df",
+              "expectedSha": "d1bb8423970fd9df",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "blitz_mutated",
+      "outcomeLabel": "blitz_mutated"
+    },
+    {
+      "scenarioId": "same-file-multi",
+      "title": "Three edits in the same file",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "same-file-multi",
+          "iter": 0,
+          "outcome": "incorrect",
+          "correct": false,
+          "filesMatch": false,
+          "wallMs": 60068.034289999996,
+          "exitCode": 143,
+          "timedOut": true,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/same-file-multi__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "multi.ts",
+              "gotSha": "9cd83bf0733e224c",
+              "expectedSha": "4125a5e1a3f04e55",
+              "match": false
+            }
+          ]
+        }
+      ],
+      "outcome": "incorrect",
+      "outcomeLabel": "incorrect"
+    },
+    {
+      "scenarioId": "structural-body",
+      "title": "Wrap function body in try/catch (structural)",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "structural-body",
+          "iter": 0,
+          "outcome": "incorrect",
+          "correct": false,
+          "filesMatch": false,
+          "wallMs": 60068.10542199999,
+          "exitCode": 143,
+          "timedOut": true,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/structural-body__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "medium.ts",
+              "gotSha": "432f6832098c2436",
+              "expectedSha": "509c8f102d3469af",
+              "match": false
+            }
+          ]
+        }
+      ],
+      "outcome": "incorrect",
+      "outcomeLabel": "incorrect"
+    },
+    {
+      "scenarioId": "no-op-idempotent",
+      "title": "No-op / idempotent — change already applied",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "no-op-idempotent",
+          "iter": 0,
+          "outcome": "noop",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 4760.885672000004,
+          "exitCode": 0,
+          "timedOut": false,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "\ndone\n",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/no-op-idempotent__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "small.ts",
+              "gotSha": "551ba78d8ad12ba2",
+              "expectedSha": "551ba78d8ad12ba2",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "noop",
+      "outcomeLabel": "noop"
+    },
+    {
+      "scenarioId": "ambiguous-repeated-anchor",
+      "title": "Ambiguous: replace only the last return in a function with multiple returns",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "ambiguous-repeated-anchor",
+          "iter": 0,
+          "outcome": "blitz_mutated",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 5415.251799999998,
+          "exitCode": 0,
+          "timedOut": false,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "\ndone\n",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/ambiguous-repeated-anchor__blitz__0__2026-06-11T22-14-24-292Z",
+          "files": [
+            {
+              "path": "semantic.ts",
+              "gotSha": "571bcf323ea18fcb",
+              "expectedSha": "571bcf323ea18fcb",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "blitz_mutated",
+      "outcomeLabel": "blitz_mutated"
+    }
+  ],
+  "runs": [
+    {
+      "lane": "blitz",
+      "scenarioId": "tiny-exact",
+      "iter": 0,
+      "outcome": "blitz_mutated",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 7891.197567,
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "\ndone\n",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "small.ts",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "match": true
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "mixed-config-doc",
+      "iter": 0,
+      "outcome": "blitz_mutated",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 4676.951149,
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "\ndone\n",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/mixed-config-doc__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "config.ts",
+          "gotSha": "400c0601f2f18d51",
+          "expectedSha": "400c0601f2f18d51",
+          "match": true
+        },
+        {
+          "path": "index.html",
+          "gotSha": "d1bb8423970fd9df",
+          "expectedSha": "d1bb8423970fd9df",
+          "match": true
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "same-file-multi",
+      "iter": 0,
+      "outcome": "incorrect",
+      "correct": false,
+      "filesMatch": false,
+      "wallMs": 60068.034289999996,
+      "exitCode": 143,
+      "timedOut": true,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/same-file-multi__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "multi.ts",
+          "gotSha": "9cd83bf0733e224c",
+          "expectedSha": "4125a5e1a3f04e55",
+          "match": false
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "structural-body",
+      "iter": 0,
+      "outcome": "incorrect",
+      "correct": false,
+      "filesMatch": false,
+      "wallMs": 60068.10542199999,
+      "exitCode": 143,
+      "timedOut": true,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/structural-body__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "medium.ts",
+          "gotSha": "432f6832098c2436",
+          "expectedSha": "509c8f102d3469af",
+          "match": false
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "no-op-idempotent",
+      "iter": 0,
+      "outcome": "noop",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 4760.885672000004,
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "\ndone\n",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/no-op-idempotent__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "small.ts",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "match": true
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "ambiguous-repeated-anchor",
+      "iter": 0,
+      "outcome": "blitz_mutated",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 5415.251799999998,
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "\ndone\n",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/ambiguous-repeated-anchor__blitz__0__2026-06-11T22-14-24-292Z",
+      "files": [
+        {
+          "path": "semantic.ts",
+          "gotSha": "571bcf323ea18fcb",
+          "expectedSha": "571bcf323ea18fcb",
+          "match": true
+        }
+      ]
+    }
+  ]
+}
