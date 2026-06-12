@@ -1,0 +1,14 @@
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ tiny-exact / core: core_mutated (1/1 correct)
+  ✗ tiny-exact / blitz: incorrect (0/1 correct)
+  ✓ mixed-config-doc / core: core_mutated (1/1 correct)
+  ✓ mixed-config-doc / blitz: blitz_mutated (1/1 correct)
+  ✓ same-file-multi / core: core_mutated (1/1 correct)
+  ✗ same-file-multi / blitz: incorrect (0/1 correct)
