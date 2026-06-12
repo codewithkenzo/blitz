@@ -1,0 +1,38 @@
+--- structural-body ---
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✗ structural-body / core: incorrect (0/1 correct)
+  ✗ structural-body / blitz: incorrect (0/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-15-14-626Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-15-14-626Z.md
+--- no-op/doc/guard ---
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+
+Report JSON: /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-16-51-773Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-16-51-773Z.md
+--- import/rename/safety ---
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+
+Report JSON: /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-16-51-796Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T06-16-51-796Z.md

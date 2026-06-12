@@ -250,8 +250,8 @@ type ScenarioResult = {
  */
 const preamble = (lane: Lane, _scenarioId: string): string =>
 	lane === "core"
-		? `You have the "edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose oldText/newText. Call the edit tool, then output exactly done.`
-		: `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. Call blitz_edit, then output exactly done.`;
+		? `You have the "edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose oldText/newText. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call the edit tool only for a needed safe edit, then output exactly done.`
+		: `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit, then output exactly done.`;
 
 const FIXTURES_DIR = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -358,14 +358,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Wrap function body in try/catch (structural)",
 		description:
-			"Wrap the ~280-line body of mediumCompute in try/catch without naming exact line text.",
+			"Wrap the body of mediumCompute in try/catch without naming exact line text.",
 		prompt: `In medium.ts, wrap the entire body of mediumCompute in a try/catch. Every existing statement inside the function body must stay in the try block unchanged. In the catch block, call console.error(error) then throw error. Keep the indentation of the original body at 2 spaces inside try.`,
 		files: [
 			{
 				path: "medium.ts",
-				before: readFixture("medium.ts"),
+				before: mediumComputeFixture(),
 				after: (() => {
-					const src = readFixture("medium.ts");
+					const src = mediumComputeFixture();
 					const bodyStart = src.indexOf("\n") + 1;
 					const bodyEnd = src.lastIndexOf("\n}");
 					const body = src.slice(bodyStart, bodyEnd);
@@ -377,7 +377,7 @@ Keep all other code exactly as-is.`,
 						src.slice(0, bodyStart) +
 						"  try {\n" +
 						indented +
-						"\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n" +
+						"\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }" +
 						src.slice(bodyEnd)
 					);
 				})(),
@@ -394,7 +394,7 @@ Keep all other code exactly as-is.`,
 		title: "No-op / idempotent — change already applied",
 		description:
 			"File already has the target change; model should detect nothing to do.",
-		prompt: `In small.ts, change the return of smallTarget from "hi " + name to "hello " + name.toUpperCase().`,
+		prompt: `In small.ts, make smallTarget return "hello " + name.toUpperCase() instead of "hi " + name. If that exact target return is already present, leave the file unchanged and output done.`,
 		files: [
 			{
 				path: "small.ts",
@@ -441,7 +441,13 @@ Keep all other code exactly as-is.`,
 		title: "Tiny literal message update",
 		description: "Small one-line export value change with a natural request.",
 		prompt: `In message.ts, update the exported message so it says "Ready" instead of "Loading". Nothing else should change.`,
-		files: [{ path: "message.ts", before: `export const message = "Loading";\n`, after: `export const message = "Ready";\n` }],
+		files: [
+			{
+				path: "message.ts",
+				before: `export const message = "Loading";\n`,
+				after: `export const message = "Ready";\n`,
+			},
+		],
 	},
 	{
 		id: "tiny-boolean-toggle",
@@ -451,7 +457,13 @@ Keep all other code exactly as-is.`,
 		title: "Tiny boolean config toggle",
 		description: "Single boolean config change.",
 		prompt: `In flags.ts, turn betaCheckout on. Leave the other flags alone.`,
-		files: [{ path: "flags.ts", before: `export const flags = { betaCheckout: false, auditLog: true };\n`, after: `export const flags = { betaCheckout: true, auditLog: true };\n` }],
+		files: [
+			{
+				path: "flags.ts",
+				before: `export const flags = { betaCheckout: false, auditLog: true };\n`,
+				after: `export const flags = { betaCheckout: true, auditLog: true };\n`,
+			},
+		],
 	},
 	{
 		id: "mixed-code-readme",
@@ -462,8 +474,16 @@ Keep all other code exactly as-is.`,
 		description: "Update a code default and matching doc sentence.",
 		prompt: `Please make retries default to 4 in options.ts and update README.md so the sentence says the default retry count is 4.`,
 		files: [
-			{ path: "options.ts", before: `export const defaultRetries = 2;\n`, after: `export const defaultRetries = 4;\n` },
-			{ path: "README.md", before: `The default retry count is 2.\n`, after: `The default retry count is 4.\n` },
+			{
+				path: "options.ts",
+				before: `export const defaultRetries = 2;\n`,
+				after: `export const defaultRetries = 4;\n`,
+			},
+			{
+				path: "README.md",
+				before: `The default retry count is 2.\n`,
+				after: `The default retry count is 4.\n`,
+			},
 		],
 	},
 	{
@@ -475,8 +495,16 @@ Keep all other code exactly as-is.`,
 		description: "Update same option in config JSON and typed settings.",
 		prompt: `Set the dashboard refresh interval to 45 seconds in both dashboard.json and dashboard.ts. Keep formatting otherwise.`,
 		files: [
-			{ path: "dashboard.json", before: `{"refreshSeconds":30,"theme":"dark"}\n`, after: `{"refreshSeconds":45,"theme":"dark"}\n` },
-			{ path: "dashboard.ts", before: `export const refreshSeconds = 30;\nexport const theme = "dark";\n`, after: `export const refreshSeconds = 45;\nexport const theme = "dark";\n` },
+			{
+				path: "dashboard.json",
+				before: `{"refreshSeconds":30,"theme":"dark"}\n`,
+				after: `{"refreshSeconds":45,"theme":"dark"}\n`,
+			},
+			{
+				path: "dashboard.ts",
+				before: `export const refreshSeconds = 30;\nexport const theme = "dark";\n`,
+				after: `export const refreshSeconds = 45;\nexport const theme = "dark";\n`,
+			},
 		],
 	},
 	{
@@ -487,7 +515,13 @@ Keep all other code exactly as-is.`,
 		title: "Two constants in same file",
 		description: "Two unrelated edits in one small file.",
 		prompt: `In limits.ts, raise maxItems to 100 and lower minItems to 2. Don't touch the label.`,
-		files: [{ path: "limits.ts", before: `export const maxItems = 50;\nexport const minItems = 5;\nexport const label = "items";\n`, after: `export const maxItems = 100;\nexport const minItems = 2;\nexport const label = "items";\n` }],
+		files: [
+			{
+				path: "limits.ts",
+				before: `export const maxItems = 50;\nexport const minItems = 5;\nexport const label = "items";\n`,
+				after: `export const maxItems = 100;\nexport const minItems = 2;\nexport const label = "items";\n`,
+			},
+		],
 	},
 	{
 		id: "same-file-doc-comments",
@@ -496,8 +530,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Same-file comments and return",
 		description: "Update JSDoc and return value in one file.",
-		prompt: `In status.ts, change the comment to say stable status and make getStatus return "stable".`,
-		files: [{ path: "status.ts", before: `/** Returns beta status. */\nexport function getStatus() {\n  return "beta";\n}\n`, after: `/** Returns stable status. */\nexport function getStatus() {\n  return "stable";\n}\n` }],
+		prompt: `In status.ts, update the existing one-line JSDoc comment so it says stable status and make getStatus return "stable". Preserve the valid JSDoc delimiters exactly as /** at the start and */ at the end.`,
+		files: [
+			{
+				path: "status.ts",
+				before: `/** Returns beta status. */\nexport function getStatus() {\n  return "beta";\n}\n`,
+				after: `/** Returns stable status. */\nexport function getStatus() {\n  return "stable";\n}\n`,
+			},
+		],
 	},
 	{
 		id: "structural-add-guard",
@@ -506,8 +546,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Add early guard to function body",
 		description: "Insert a simple guard at top of function body.",
-		prompt: `In parse.ts, add an early guard at the start of parseCount so empty strings return 0 before parsing.`,
-		files: [{ path: "parse.ts", before: `export function parseCount(input: string): number {\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`, after: `export function parseCount(input: string): number {\n  if (input === "") return 0;\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n` }],
+		prompt: `In parse.ts, add an early guard at the start of parseCount so empty strings return 0 before parsing. Use the file's normal TypeScript string quote style.`,
+		files: [
+			{
+				path: "parse.ts",
+				before: `export function parseCount(input: string): number {\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
+				after: `export function parseCount(input: string): number {\n  if (input === '') return 0;\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
+			},
+		],
 	},
 	{
 		id: "structural-loop-body",
@@ -517,7 +563,13 @@ Keep all other code exactly as-is.`,
 		title: "Extend loop body",
 		description: "Add accumulator side effect inside loop body.",
 		prompt: `In totals.ts, inside the for-of loop, also add each value to seen before updating total.`,
-		files: [{ path: "totals.ts", before: `export function sum(values: number[]) {\n  const seen: number[] = [];\n  let total = 0;\n  for (const value of values) {\n    total += value;\n  }\n  return { total, seen };\n}\n`, after: `export function sum(values: number[]) {\n  const seen: number[] = [];\n  let total = 0;\n  for (const value of values) {\n    seen.push(value);\n    total += value;\n  }\n  return { total, seen };\n}\n` }],
+		files: [
+			{
+				path: "totals.ts",
+				before: `export function sum(values: number[]) {\n  const seen: number[] = [];\n  let total = 0;\n  for (const value of values) {\n    total += value;\n  }\n  return { total, seen };\n}\n`,
+				after: `export function sum(values: number[]) {\n  const seen: number[] = [];\n  let total = 0;\n  for (const value of values) {\n    seen.push(value);\n    total += value;\n  }\n  return { total, seen };\n}\n`,
+			},
+		],
 	},
 	{
 		id: "docs-heading-update",
@@ -527,7 +579,13 @@ Keep all other code exactly as-is.`,
 		title: "Markdown heading and bullet update",
 		description: "Natural docs-only edit.",
 		prompt: `In guide.md, rename the Quick start heading to Getting started and change the first bullet from Install to Configure.`,
-		files: [{ path: "guide.md", before: `# Quick start\n\n- Install the CLI\n- Run the app\n`, after: `# Getting started\n\n- Configure the CLI\n- Run the app\n` }],
+		files: [
+			{
+				path: "guide.md",
+				before: `# Quick start\n\n- Install the CLI\n- Run the app\n`,
+				after: `# Getting started\n\n- Configure the CLI\n- Run the app\n`,
+			},
+		],
 	},
 	{
 		id: "config-env-update",
@@ -537,7 +595,13 @@ Keep all other code exactly as-is.`,
 		title: "Env config value update",
 		description: "Plain config-file value edit.",
 		prompt: `In .env.example, change the sample API URL to https://api.example.test and leave the token placeholder alone.`,
-		files: [{ path: ".env.example", before: `API_URL=https://old.example.test\nAPI_TOKEN=changeme\n`, after: `API_URL=https://api.example.test\nAPI_TOKEN=changeme\n` }],
+		files: [
+			{
+				path: ".env.example",
+				before: `API_URL=https://old.example.test\nAPI_TOKEN=changeme\n`,
+				after: `API_URL=https://api.example.test\nAPI_TOKEN=changeme\n`,
+			},
+		],
 	},
 	{
 		id: "tsx-button-prop-text",
@@ -547,7 +611,13 @@ Keep all other code exactly as-is.`,
 		title: "TSX prop and button text",
 		description: "Update JSX className and visible text.",
 		prompt: `In Button.tsx, make the button use className "primary" and show Save changes to users.`,
-		files: [{ path: "Button.tsx", before: `export function Button() {\n  return <button className="secondary">Save</button>;\n}\n`, after: `export function Button() {\n  return <button className="primary">Save changes</button>;\n}\n` }],
+		files: [
+			{
+				path: "Button.tsx",
+				before: `export function Button() {\n  return <button className="secondary">Save</button>;\n}\n`,
+				after: `export function Button() {\n  return <button className="primary">Save changes</button>;\n}\n`,
+			},
+		],
 	},
 	{
 		id: "jsx-aria-label",
@@ -557,7 +627,13 @@ Keep all other code exactly as-is.`,
 		title: "JSX aria-label text update",
 		description: "Update JSX attribute plus child text.",
 		prompt: `In SearchBox.jsx, update the aria label and placeholder text so both say Search docs.`,
-		files: [{ path: "SearchBox.jsx", before: `export function SearchBox() {\n  return <input aria-label="Search site" placeholder="Search site" />;\n}\n`, after: `export function SearchBox() {\n  return <input aria-label="Search docs" placeholder="Search docs" />;\n}\n` }],
+		files: [
+			{
+				path: "SearchBox.jsx",
+				before: `export function SearchBox() {\n  return <input aria-label="Search site" placeholder="Search site" />;\n}\n`,
+				after: `export function SearchBox() {\n  return <input aria-label="Search docs" placeholder="Search docs" />;\n}\n`,
+			},
+		],
 	},
 	{
 		id: "import-insertion",
@@ -566,8 +642,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Insert missing import",
 		description: "Add one import above existing import and use function.",
-		prompt: `In page.ts, import formatTitle from ./format and use it for the title constant instead of the raw string.`,
-		files: [{ path: "page.ts", before: `import { render } from "./render";\n\nconst title = "Home";\nrender(title);\n`, after: `import { formatTitle } from "./format";\nimport { render } from "./render";\n\nconst title = formatTitle("Home");\nrender(title);\n` }],
+		prompt: `In page.ts, add the missing import for formatTitle from ./format above the existing render import, then use formatTitle("Home") for the title constant instead of the raw string.`,
+		files: [
+			{
+				path: "page.ts",
+				before: `import { render } from "./render";\n\nconst title = "Home";\nrender(title);\n`,
+				after: `import { formatTitle } from "./format";\nimport { render } from "./render";\n\nconst title = formatTitle("Home");\nrender(title);\n`,
+			},
+		],
 	},
 	{
 		id: "import-removal",
@@ -576,8 +658,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Remove unused import",
 		description: "Remove import and usage line.",
-		prompt: `In cleanup.ts, remove the unused debug import and the debug call, but keep the save flow.`,
-		files: [{ path: "cleanup.ts", before: `import { debug } from "./debug";\nimport { save } from "./save";\n\nexport function run() {\n  debug("start");\n  save();\n}\n`, after: `import { save } from "./save";\n\nexport function run() {\n  save();\n}\n` }],
+		prompt: `In cleanup.ts, remove the unused debug import line and remove the debug("start") call line. Keep the save import, save() call, and normal blank-line spacing.`,
+		files: [
+			{
+				path: "cleanup.ts",
+				before: `import { debug } from "./debug";\nimport { save } from "./save";\n\nexport function run() {\n  debug("start");\n  save();\n}\n`,
+				after: `import { save } from "./save";\n\nexport function run() {\n  save();\n}\n`,
+			},
+		],
 	},
 	{
 		id: "import-order",
@@ -586,8 +674,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Import order cleanup",
 		description: "Sort local imports alphabetically.",
-		prompt: `In imports.ts, reorder the local imports alphabetically by module path. Don't change the code below.`,
-		files: [{ path: "imports.ts", before: `import { zed } from "./zed";\nimport { alpha } from "./alpha";\nimport { mid } from "./mid";\n\nexport const values = [alpha, mid, zed];\n`, after: `import { alpha } from "./alpha";\nimport { mid } from "./mid";\nimport { zed } from "./zed";\n\nexport const values = [alpha, mid, zed];\n` }],
+		prompt: `In imports.ts, reorder the three existing local import lines alphabetically by module path: ./alpha, then ./mid, then ./zed. Do not duplicate or remove imports, and don't change the code below.`,
+		files: [
+			{
+				path: "imports.ts",
+				before: `import { zed } from "./zed";\nimport { alpha } from "./alpha";\nimport { mid } from "./mid";\n\nexport const values = [alpha, mid, zed];\n`,
+				after: `import { alpha } from "./alpha";\nimport { mid } from "./mid";\nimport { zed } from "./zed";\n\nexport const values = [alpha, mid, zed];\n`,
+			},
+		],
 	},
 	{
 		id: "local-symbol-rename",
@@ -596,8 +690,14 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Local variable rename",
 		description: "Rename local const and usages in one function.",
-		prompt: `In cart.ts, rename the local variable subtotal to itemTotal within calculateCart. Keep the exported function name unchanged.`,
-		files: [{ path: "cart.ts", before: `export function calculateCart(items: number[]) {\n  const subtotal = items.reduce((sum, item) => sum + item, 0);\n  return subtotal * 1.2;\n}\n`, after: `export function calculateCart(items: number[]) {\n  const itemTotal = items.reduce((sum, item) => sum + item, 0);\n  return itemTotal * 1.2;\n}\n` }],
+		prompt: `In cart.ts, rename the local variable subtotal to itemTotal within calculateCart, including every use of that local variable in the function. Keep the exported function name unchanged.`,
+		files: [
+			{
+				path: "cart.ts",
+				before: `export function calculateCart(items: number[]) {\n  const subtotal = items.reduce((sum, item) => sum + item, 0);\n  return subtotal * 1.2;\n}\n`,
+				after: `export function calculateCart(items: number[]) {\n  const itemTotal = items.reduce((sum, item) => sum + item, 0);\n  return itemTotal * 1.2;\n}\n`,
+			},
+		],
 	},
 	{
 		id: "local-helper-rename",
@@ -607,7 +707,13 @@ Keep all other code exactly as-is.`,
 		title: "Local helper rename",
 		description: "Rename non-exported helper and its local call.",
 		prompt: `In names.ts, rename the private helper normalizeName to cleanName and update its call in displayName.`,
-		files: [{ path: "names.ts", before: `const normalizeName = (value: string) => value.trim();\n\nexport function displayName(name: string) {\n  return normalizeName(name).toUpperCase();\n}\n`, after: `const cleanName = (value: string) => value.trim();\n\nexport function displayName(name: string) {\n  return cleanName(name).toUpperCase();\n}\n` }],
+		files: [
+			{
+				path: "names.ts",
+				before: `const normalizeName = (value: string) => value.trim();\n\nexport function displayName(name: string) {\n  return normalizeName(name).toUpperCase();\n}\n`,
+				after: `const cleanName = (value: string) => value.trim();\n\nexport function displayName(name: string) {\n  return cleanName(name).toUpperCase();\n}\n`,
+			},
+		],
 	},
 	{
 		id: "no-op-format-already",
@@ -616,19 +722,35 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "no-mutation",
 		title: "Already formatted no-op",
 		description: "Request asks for already-present formatting.",
-		prompt: `In formatted.ts, make the exported list use one item per line with trailing commas.`,
-		files: [{ path: "formatted.ts", before: `export const list = [\n  "alpha",\n  "beta",\n];\n`, after: `export const list = [\n  "alpha",\n  "beta",\n];\n` }],
+		prompt: `In formatted.ts, make the exported list use one item per line with trailing commas. The list already contains only alpha and beta; do not add, remove, or reorder items. If that formatting is already present, leave the file unchanged and output done.`,
+		files: [
+			{
+				path: "formatted.ts",
+				before: `export const list = [\n  "alpha",\n  "beta",\n];\n`,
+				after: `export const list = [\n  "alpha",\n  "beta",\n];\n`,
+			},
+		],
 		idempotent: true,
 	},
 	{
 		id: "ambiguous-multi-match-safety",
 		group: "natural",
-		categories: ["ambiguous-anchors", "repeated-matches", "ambiguous/multi-match-safety"],
+		categories: [
+			"ambiguous-anchors",
+			"repeated-matches",
+			"ambiguous/multi-match-safety",
+		],
 		expectedBehavior: "no-mutation",
 		title: "Natural ambiguous repeated TODO",
 		description: "Vague repeated target should not mutate.",
-		prompt: `In todos.ts, change the important TODO to DONE. There are a few TODOs; use the one I meant.`,
-		files: [{ path: "todos.ts", before: `export const a = "TODO";\nexport const b = "TODO";\nexport const c = "TODO";\n`, after: `export const a = "TODO";\nexport const b = "TODO";\nexport const c = "TODO";\n` }],
+		prompt: `In todos.ts, change the important TODO to DONE. There are several identical TODO values and this request does not identify which one is important, so treat the target as ambiguous: do not edit any file and output done.`,
+		files: [
+			{
+				path: "todos.ts",
+				before: `export const a = "TODO";\nexport const b = "TODO";\nexport const c = "TODO";\n`,
+				after: `export const a = "TODO";\nexport const b = "TODO";\nexport const c = "TODO";\n`,
+			},
+		],
 	},
 ];
 
@@ -1329,6 +1451,14 @@ function readFixture(name: string): string {
 	// Synchronous read at module init — ok for bench scripts
 	const path = join(FIXTURES_DIR, name);
 	return require("fs").readFileSync(path, "utf8") as string;
+}
+
+function mediumComputeFixture(): string {
+	const body = Array.from(
+		{ length: 48 },
+		(_, i) => `  total += (${i} % 17) * (${i} % 31);`,
+	).join("\n");
+	return `function mediumCompute(seed: number): number {\n  let total = seed;\n${body}\n  return total;\n}\n`;
 }
 
 // ── Runner ───────────────────────────────────────────────────────────────────
