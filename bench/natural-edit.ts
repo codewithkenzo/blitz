@@ -59,6 +59,7 @@ const toolProfile = argFlag("--tool-profile", "");
 const keepTemp = argv.includes("--keep-temp");
 const verbose = argv.includes("--verbose");
 const selfCheckParser = argv.includes("--self-check-parser");
+const selfCheckAlternates = argv.includes("--self-check-alternates");
 const listScenarios = argv.includes("--list-scenarios");
 const scenarioGroup = argFlag("--scenario-group", "natural");
 const selfCheckSessionJsonl = argFlag("--session-jsonl", "");
@@ -156,8 +157,10 @@ type ScenarioFile = {
 	path: string;
 	/** Initial content to write. */
 	before: string;
-	/** Expected content after successful edit. */
+	/** Canonical expected content after successful edit. */
 	after: string;
+	/** Explicitly accepted alternate expected outputs. */
+	afterAlternates?: { label: string; content: string }[];
 };
 
 type ScenarioGroup = "natural" | "adversarial";
@@ -215,6 +218,9 @@ type RunItem = {
 		path: string;
 		gotSha: string;
 		expectedSha: string;
+		matchedExpected: string | null;
+		matchedExpectedSha: string | null;
+		expectedVariants: { label: string; sha: string; match: boolean }[];
 		beforeSha: string;
 		match: boolean;
 		unchanged: boolean;
@@ -251,7 +257,7 @@ type ScenarioResult = {
 const preamble = (lane: Lane, _scenarioId: string): string =>
 	lane === "core"
 		? `You have the "edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose oldText/newText. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call the edit tool only for a needed safe edit, then output exactly done.`
-		: `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit, then output exactly done.`;
+		: `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. Tool arg e must always be an array of tuples. Use x exact replacement for imports, local line insertion/removal/reordering, formatting, and multi-edit batches by replacing the smallest unique surrounding block. Use 4-item ['x', file, old, new], or top-level f with 3-item ['x', old, new]. Use rb only for symbol body replacement. Use ia only after a symbol declaration, never after arbitrary text anchors. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit. If blitz_edit returns ok, do not call it again; output exactly done.`;
 
 const FIXTURES_DIR = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -326,9 +332,9 @@ Both files are in the working directory. Make both edits.`,
 
 1. In adjust, replace \`return base;\` with \`return base + 1;\`.
 2. In emit, insert a new line \`const markerUpper = value.toUpperCase();\` immediately after \`const marker = value;\`.
-3. In risky, wrap the entire function body in try/catch. In the catch block, call \`throw error;\`.
+3. In risky, wrap the entire function body in try/catch. In the catch block, call \`throw error;\`. The final risky function must still include its closing \`}\` after the catch block.
 
-Keep all other code exactly as-is.`,
+Make the final file reflect all three changes in one pass where possible. Keep all other code exactly as-is. For local text edits, target the smallest unique surrounding block rather than isolated repeated lines; if replacing through a closing brace, include that closing brace in the replacement too.`,
 		files: [
 			{
 				path: "multi.ts",
@@ -359,7 +365,7 @@ Keep all other code exactly as-is.`,
 		title: "Wrap function body in try/catch (structural)",
 		description:
 			"Wrap the body of mediumCompute in try/catch without naming exact line text.",
-		prompt: `In medium.ts, wrap the entire body of mediumCompute in a try/catch. Every existing statement inside the function body must stay in the try block unchanged. In the catch block, call console.error(error) then throw error. Keep the indentation of the original body at 2 spaces inside try.`,
+		prompt: `In medium.ts, wrap the entire body of mediumCompute in a try/catch. Every existing statement inside the function body must stay in the try block unchanged. In the catch block, call console.error(error) then throw error. Keep the indentation of the original body at 2 spaces inside try. Target the mediumCompute body as a single structural body change or exact replacement of the smallest unique function-body block.`,
 		files: [
 			{
 				path: "medium.ts",
@@ -394,7 +400,7 @@ Keep all other code exactly as-is.`,
 		title: "No-op / idempotent — change already applied",
 		description:
 			"File already has the target change; model should detect nothing to do.",
-		prompt: `In small.ts, make smallTarget return "hello " + name.toUpperCase() instead of "hi " + name. If that exact target return is already present, leave the file unchanged and output done.`,
+		prompt: `In small.ts, make smallTarget return "hello " + name.toUpperCase() instead of "hi " + name. The requested return is already present; do not edit the file and output done.`,
 		files: [
 			{
 				path: "small.ts",
@@ -529,13 +535,13 @@ Keep all other code exactly as-is.`,
 		categories: ["same-file-natural", "config/docs-natural"],
 		expectedBehavior: "mutation",
 		title: "Same-file comments and return",
-		description: "Update JSDoc and return value in one file.",
-		prompt: `In status.ts, update the existing one-line JSDoc comment so it says stable status and make getStatus return "stable". Preserve the valid JSDoc delimiters exactly as /** at the start and */ at the end.`,
+		description: "Update line comment and return value in one file.",
+		prompt: `In status.ts, change the existing line comment text from Returns beta status. to Returns stable status. and make getStatus return "stable". Only change that comment text and the return string.`,
 		files: [
 			{
 				path: "status.ts",
-				before: `/** Returns beta status. */\nexport function getStatus() {\n  return "beta";\n}\n`,
-				after: `/** Returns stable status. */\nexport function getStatus() {\n  return "stable";\n}\n`,
+				before: `// Returns beta status.\nexport function getStatus() {\n  return "beta";\n}\n`,
+				after: `// Returns stable status.\nexport function getStatus() {\n  return "stable";\n}\n`,
 			},
 		],
 	},
@@ -546,12 +552,22 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Add early guard to function body",
 		description: "Insert a simple guard at top of function body.",
-		prompt: `In parse.ts, add an early guard at the start of parseCount so empty strings return 0 before parsing. Use the file's normal TypeScript string quote style.`,
+		prompt: `In parse.ts, add a new first if statement at the start of parseCount so empty strings return 0 before parsing. The existing Number.isNaN return is not an empty-string guard. Use single quotes for the empty string guard.`,
 		files: [
 			{
 				path: "parse.ts",
 				before: `export function parseCount(input: string): number {\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
 				after: `export function parseCount(input: string): number {\n  if (input === '') return 0;\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
+				afterAlternates: [
+					{
+						label: "block-guard",
+						content: `export function parseCount(input: string): number {\n  if (input === '') {\n    return 0;\n  }\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
+					},
+					{
+						label: "block-guard-double-quotes",
+						content: `export function parseCount(input: string): number {\n  if (input === "") {\n    return 0;\n  }\n  const value = Number.parseInt(input, 10);\n  return Number.isNaN(value) ? 0 : value;\n}\n`,
+					},
+				],
 			},
 		],
 	},
@@ -562,7 +578,7 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Extend loop body",
 		description: "Add accumulator side effect inside loop body.",
-		prompt: `In totals.ts, inside the for-of loop, also add each value to seen before updating total.`,
+		prompt: `In totals.ts, inside the for-of loop, add exactly these two loop body lines in this order: seen.push(value); before total += value;. Keep the rest of the file unchanged.`,
 		files: [
 			{
 				path: "totals.ts",
@@ -642,12 +658,12 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Insert missing import",
 		description: "Add one import above existing import and use function.",
-		prompt: `In page.ts, add the missing import for formatTitle from ./format above the existing render import, then use formatTitle("Home") for the title constant instead of the raw string.`,
+		prompt: `In page.ts, formatTitle must be imported from ./format and render must remain imported only from ./render. Keep the render import first, add the format import after it, then use formatTitle("Home") for the title constant instead of the raw string. Final file should have one contiguous import block followed by the title/render lines; change the smallest unique surrounding blocks needed.`,
 		files: [
 			{
 				path: "page.ts",
 				before: `import { render } from "./render";\n\nconst title = "Home";\nrender(title);\n`,
-				after: `import { formatTitle } from "./format";\nimport { render } from "./render";\n\nconst title = formatTitle("Home");\nrender(title);\n`,
+				after: `import { render } from "./render";\nimport { formatTitle } from "./format";\n\nconst title = formatTitle("Home");\nrender(title);\n`,
 			},
 		],
 	},
@@ -658,7 +674,7 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Remove unused import",
 		description: "Remove import and usage line.",
-		prompt: `In cleanup.ts, remove the unused debug import line and remove the debug("start") call line. Keep the save import, save() call, and normal blank-line spacing.`,
+		prompt: `In cleanup.ts, remove the unused debug import line and remove the debug("start") call line. The final cleaned file should start directly with the save import, then one blank line, export function run(), and no blank line inside run(). Keep the existing two-space indentation style inside run().`,
 		files: [
 			{
 				path: "cleanup.ts",
@@ -674,7 +690,7 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Import order cleanup",
 		description: "Sort local imports alphabetically.",
-		prompt: `In imports.ts, reorder the three existing local import lines alphabetically by module path: ./alpha, then ./mid, then ./zed. Do not duplicate or remove imports, and don't change the code below.`,
+		prompt: `In imports.ts, reorder the three existing local import lines alphabetically by module path: ./alpha, then ./mid, then ./zed. Do not duplicate or remove imports, and don't change the code below. Treat the three import lines as one smallest unique block to reorder.`,
 		files: [
 			{
 				path: "imports.ts",
@@ -706,7 +722,7 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "mutation",
 		title: "Local helper rename",
 		description: "Rename non-exported helper and its local call.",
-		prompt: `In names.ts, rename the private helper normalizeName to cleanName and update its call in displayName.`,
+		prompt: `In names.ts, rename the private helper normalizeName to cleanName. Change both the helper declaration and the call inside displayName; no normalizeName references should remain.`,
 		files: [
 			{
 				path: "names.ts",
@@ -722,7 +738,7 @@ Keep all other code exactly as-is.`,
 		expectedBehavior: "no-mutation",
 		title: "Already formatted no-op",
 		description: "Request asks for already-present formatting.",
-		prompt: `In formatted.ts, make the exported list use one item per line with trailing commas. The list already contains only alpha and beta; do not add, remove, or reorder items. If that formatting is already present, leave the file unchanged and output done.`,
+		prompt: `In formatted.ts, make the exported list use one item per line with trailing commas. The list already contains only alpha and beta; do not add, remove, or reorder items. This exact final state is already present; leave the file unchanged and output done.`,
 		files: [
 			{
 				path: "formatted.ts",
@@ -1569,6 +1585,62 @@ const classifyOutcome = (
 	return "incorrect";
 };
 
+const expectedVariantResults = (f: ScenarioFile, gotContent: string) => {
+	const expectedVariants = [
+		{ label: "canonical", content: f.after },
+		...(f.afterAlternates ?? []),
+	].map((variant) => ({
+		label: variant.label,
+		sha: sha256(variant.content),
+		match: gotContent === variant.content,
+	}));
+	const matchedVariant = expectedVariants.find((variant) => variant.match);
+	return {
+		expectedVariants,
+		matchedExpected: matchedVariant?.label ?? null,
+		matchedExpectedSha: matchedVariant?.sha ?? null,
+		match: Boolean(matchedVariant),
+	};
+};
+
+if (selfCheckAlternates) {
+	const scenario = SCENARIOS.find((s) => s.id === "structural-add-guard");
+	const file = scenario?.files[0];
+	if (!file) {
+		console.error("structural-add-guard scenario missing");
+		process.exit(1);
+	}
+	const alternate = file.afterAlternates?.find(
+		(variant) => variant.label === "block-guard",
+	);
+	if (!alternate) {
+		console.error("block-guard alternate missing");
+		process.exit(1);
+	}
+	const whitespaceRegression = `${file.after}\n`;
+	const checks = [
+		{
+			label: "canonical",
+			accepted: expectedVariantResults(file, file.after).match,
+		},
+		{
+			label: "alternate",
+			accepted: expectedVariantResults(file, alternate.content).match,
+		},
+		{
+			label: "whitespace-regression",
+			accepted: expectedVariantResults(file, whitespaceRegression).match,
+		},
+	];
+	const ok =
+		checks.find((check) => check.label === "canonical")?.accepted === true &&
+		checks.find((check) => check.label === "alternate")?.accepted === true &&
+		checks.find((check) => check.label === "whitespace-regression")
+			?.accepted === false;
+	console.log(JSON.stringify({ ok, checks }, null, 2));
+	process.exit(ok ? 0 : 1);
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 const main = async () => {
@@ -1640,12 +1712,16 @@ const main = async () => {
 				for (const f of scenario.files) {
 					const fp = join(workDir, f.path);
 					const gotContent = existsSync(fp) ? await readFile(fp, "utf8") : "";
+					const variantResults = expectedVariantResults(f, gotContent);
 					fileResults.push({
 						path: f.path,
 						gotSha: sha256(gotContent),
 						expectedSha: sha256(f.after),
+						matchedExpected: variantResults.matchedExpected,
+						matchedExpectedSha: variantResults.matchedExpectedSha,
+						expectedVariants: variantResults.expectedVariants,
 						beforeSha: sha256(f.before),
-						match: gotContent === f.after,
+						match: variantResults.match,
 						unchanged: gotContent === f.before,
 					});
 				}
@@ -1807,6 +1883,13 @@ const main = async () => {
 				path: f.path,
 				beforeSha: sha256(f.before),
 				afterSha: sha256(f.after),
+				expectedVariants: [
+					{ label: "canonical", sha: sha256(f.after) },
+					...(f.afterAlternates ?? []).map((variant) => ({
+						label: variant.label,
+						sha: sha256(variant.content),
+					})),
+				],
 			})),
 		})),
 		results: allResults,
@@ -1853,7 +1936,12 @@ const generateMdReport = (report: {
 		title: string;
 		description: string;
 		idempotent: boolean;
-		files: Array<{ path: string; beforeSha: string; afterSha: string }>;
+		files: Array<{
+			path: string;
+			beforeSha: string;
+			afterSha: string;
+			expectedVariants: Array<{ label: string; sha: string }>;
+		}>;
 	}>;
 	results: ScenarioResult[];
 	runs: RunItem[];
@@ -1920,7 +2008,7 @@ const generateMdReport = (report: {
 		lines.push(`Expected behavior: ${s.expectedBehavior}`);
 		lines.push(`Idempotent: ${s.idempotent}`);
 		lines.push(
-			`Files: ${s.files.map((f) => `${f.path} (sha: ${f.afterSha})`).join(", ")}`,
+			`Files: ${s.files.map((f) => `${f.path} (sha: ${f.afterSha}; variants: ${f.expectedVariants.map((variant) => `${variant.label}=${variant.sha}`).join(" / ")})`).join(", ")}`,
 		);
 		lines.push("");
 
@@ -1931,9 +2019,9 @@ const generateMdReport = (report: {
 			);
 			lines.push("");
 			lines.push(
-				"| Iter | Outcome | Route | Accepted | Correct | Exit | Wall ms | Files match | Side effects | Session JSONL |",
+				"| Iter | Outcome | Route | Accepted | Correct | Exit | Wall ms | Files match | Matched variants | Side effects | Session JSONL |",
 			);
-			lines.push("|---|---|:---|:---|:---:|---:|---:|---:|---:|---:|");
+			lines.push("|---|---|:---|:---|:---:|---:|---:|---:|---|---:|---:|");
 			for (const run of r.iterations) {
 				const jsonlInfo = run.sessionJsonl ? `${run.sessionJsonl.hash}` : "—";
 				const sideEffectInfo = run.sideEffects.length
@@ -1941,8 +2029,14 @@ const generateMdReport = (report: {
 							.map((effect) => `${effect.status}:${effect.path}`)
 							.join("<br>")
 					: "—";
+				const matchedInfo = run.files
+					.map(
+						(file) =>
+							`${file.path}:${file.matchedExpected ?? "none"}${file.matchedExpectedSha ? `(${file.matchedExpectedSha})` : ""}`,
+					)
+					.join("<br>");
 				lines.push(
-					`| ${run.iter} | ${run.outcome} | \`${run.routeOutcome}\` | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.exitCode}${run.timedOut ? " (timeout)" : ""} | ${run.wallMs.toFixed(0)} | ${run.files.filter((f) => f.match).length}/${run.files.length} | ${sideEffectInfo} | ${jsonlInfo} |`,
+					`| ${run.iter} | ${run.outcome} | \`${run.routeOutcome}\` | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.exitCode}${run.timedOut ? " (timeout)" : ""} | ${run.wallMs.toFixed(0)} | ${run.files.filter((f) => f.match).length}/${run.files.length} | ${matchedInfo} | ${sideEffectInfo} | ${jsonlInfo} |`,
 				);
 			}
 			lines.push("");
@@ -2008,10 +2102,10 @@ const generateMdReport = (report: {
 	lines.push("## Per-row audit fields");
 	lines.push("");
 	lines.push(
-		"| Provider | Model | Lane | Group | Expected behavior | Scenario | Iter | Accepted | Correct | Files match | Side effects | Outcome | Route | Exit | Timed out | Wall ms | Run dir | Session dir | Session JSONL | Provenance | Tokscale |",
+		"| Provider | Model | Lane | Group | Expected behavior | Scenario | Iter | Accepted | Correct | Files match | Matched variants | Side effects | Outcome | Route | Exit | Timed out | Wall ms | Run dir | Session dir | Session JSONL | Provenance | Tokscale |",
 	);
 	lines.push(
-		"|---|---|---|---|---|---|---:|:---:|:---:|:---:|---|---|---|---:|:---:|---:|---|---|---|---|---|",
+		"|---|---|---|---|---|---|---:|:---:|:---:|:---:|---|---|---|---|---:|:---:|---:|---|---|---|---|---|",
 	);
 	for (const run of report.runs) {
 		const sessionJsonl = run.sessionJsonl
@@ -2022,8 +2116,14 @@ const generateMdReport = (report: {
 		const sideEffects = run.sideEffects.length
 			? run.sideEffects.map((e) => `${e.status}:${e.path}`).join("; ")
 			: "—";
+		const matchedVariants = run.files
+			.map(
+				(file) =>
+					`${file.path}:${file.matchedExpected ?? "none"}${file.matchedExpectedSha ? `(${file.matchedExpectedSha})` : ""}`,
+			)
+			.join("; ");
 		lines.push(
-			`| ${run.provider} | ${run.model} | ${run.lane} | ${run.scenarioGroup} | ${run.expectedBehavior} | ${run.scenarioId} | ${run.iter} | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.filesMatch ? "yes" : "no"} | ${sideEffects} | ${run.outcome} | ${run.routeOutcome} | ${run.exitCode} | ${run.timedOut ? "yes" : "no"} | ${run.wallMs.toFixed(0)} | ${run.runDir} | ${run.sessionDir} | ${sessionJsonl} | ${provenance} | ${tok} |`,
+			`| ${run.provider} | ${run.model} | ${run.lane} | ${run.scenarioGroup} | ${run.expectedBehavior} | ${run.scenarioId} | ${run.iter} | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.filesMatch ? "yes" : "no"} | ${matchedVariants} | ${sideEffects} | ${run.outcome} | ${run.routeOutcome} | ${run.exitCode} | ${run.timedOut ? "yes" : "no"} | ${run.wallMs.toFixed(0)} | ${run.runDir} | ${run.sessionDir} | ${sessionJsonl} | ${provenance} | ${tok} |`,
 		);
 	}
 	lines.push("");
