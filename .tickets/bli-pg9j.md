@@ -149,3 +149,11 @@ landed: committed+pushed mini route remediation pass evidence. Latest blitz comm
 **2026-06-16T01:49:48Z**
 
 verified: GPT-5.5 adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-46-21-353Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router, top profile router.
+
+**2026-06-16T01:54:06Z**
+
+natural route failure: GPT-5.4-mini natural route report reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias , route declined as UNSUPPORTED_OPERATION/no internal fallback. This is product/schema/prompt remediation input; preserve artifacts.
+
+**2026-06-16T01:54:13Z**
+
+natural route failure detail: GPT-5.4-mini natural route report reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias replace, route declined as UNSUPPORTED_OPERATION/no internal fallback. Product/schema/prompt remediation needed; artifacts preserved next.
