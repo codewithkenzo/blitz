@@ -4,7 +4,7 @@ Use this as the next `/goal` or new-chat start prompt.
 
 ## Goal prompt
 
-Make Blitz become a core-edit replacement by reducing context-window/token overhead and proving token savings with real Pi/Tokscale benchmarks. Start with Phase 0 measurement and Phase 1 minimal tool profile from `docs/plans/PLAN-0.4-context-token-optimization.md`.
+Make Blitz become a default-cheaper Pi edit path by reducing context-window/token overhead and proving cumulative savings over realistic edit streaks with real Pi/Tokscale benchmarks. Start with Phase 0 measurement and Phase 1 minimal tool profile from `docs/plans/PLAN-0.4-context-token-optimization.md`.
 
 ## Required context before planning
 
@@ -23,35 +23,35 @@ If implementation touches `@codewithkenzo/pi-blitz`, also read its local `AGENTS
 
 This project is nothing without token savings. Do not optimize for raw speed first. Speed is a guardrail; context/token savings are the product.
 
-Blitz is **not core edit today**. This goal exists to make it core only if evidence proves it can be default-cheaper or can route cheaper alternatives correctly.
+Blitz is **not core edit today**. This goal exists to make it default-cheaper only if evidence over realistic edit streaks proves it beats Pi core `edit` or routes to Pi core when core is cheaper.
 
-## Required first slice
 
-Deliver **only Phase 0 + Phase 1** before broad implementation. Do not require `pi_blitz_op`, compact IR, or router-selected replacement results in this first slice; those belong to Phase 2 and Phase 6.
+## 2026-06-10 goal tweak
 
-1. Measurement harness records exact token/context breakdown:
-   - visible tools
-   - Pi-serialized registered tool specs per profile
-   - exact token count for serialized registered tool specs
-   - exact resident skill text used by the run
-   - exact token count for resident skill text
-   - prompt/input/cache tokens
-   - tool arg tokens
-   - model output tokens
-   - result payload tokens
-   - total model-visible context
-   - correctness status
-   - route/tool profile
-2. Raw accounting artifacts are preserved:
-   - serialized tool-spec JSON per profile
-   - resident skill text snapshot
-   - tokenizer/model used for counts
-   - Tokscale/session JSON used for reconciliation
-   - residual analysis between local counts and provider/Tokscale input/cache totals
-3. `PI_BLITZ_TOOL_PROFILE=minimal|semantic|structural|admin|full` exists in `@codewithkenzo/pi-blitz`.
-4. Phase 1 `minimal` is a registration/profile slice only: it may expose the smallest existing useful Blitz edit/apply surface before `pi_blitz_op` exists. Phase 2 replaces or aliases it to `pi_blitz_op`.
-5. Current full/narrow profile remains available for backcompat/debugging.
-6. Same 12-pair GPT matrix can compare core, current Blitz full/narrow, and Phase 1 profile variants. Router-selected replacement claims wait until Phase 6.
+Interpret this start prompt under current narrowed objective:
+
+- Pi core `edit` is the only required baseline/fallback. Do not add or require Codex/OpenAI `apply_patch` parity for this slice.
+- Primary evidence is cumulative model-visible context across realistic edit streaks, not isolated structural wins.
+- Required streak reports should include 10+ tiny edits, 20+ mixed language/config/markdown/code edits, one same-file multi-edit scenario, and representative single rows.
+- Huge structural rows are secondary capability evidence.
+- Benchmark-only route-selected core choices must be labeled as synthesis, not product-real `pi_blitz_route_edit` fallback.
+
+## Current next slice — 2026-06-10 compact apply IR
+
+Phase 0/1/profile evidence exists and shows the current router/Blitz route still loses to Pi core `edit` on realistic streaks. The next slice is now the Zig-side compact engine, not more wrapper-only trimming.
+
+Deliver the compact IR v1 inside `/home/kenzo/dev/blitz` by extending existing `blitz apply --edit - --json`:
+
+1. Preserve verbose apply IR compatibility.
+2. Add compact JSON object and tuple forms.
+3. Support at minimum `rb`/`replace_body`/`set_body` and `ia`/`insert_after_symbol`; add `mn`/`merge_body_chunk` and same-file `ops` batch only if they fit the safe slice.
+4. Target shape: `{"k":"function|method|class|object|section|any","n":"name","p":"optional parent","occ":0,"range":"body|node"}`.
+5. Fail closed for zero matches, ambiguous matches without occurrence/parent, unknown aliases, parse failure, and guard/hash/range mismatch.
+6. Plan all same-file ops in memory, parse-after validate before atomic write, and avoid partial writes.
+7. Add compact output mode for compact requests after correctness: tiny `ok`/ranges/parse status, with verbose JSON still available.
+8. Required checks before benchmark claims: `zig build`, `zig build test`, and focused CLI compact fixtures.
+
+Do **not** start with `pi_blitz_op`, new `blitz edit-ir apply` command, daemon/warm state, `/home/kenzo/dev/pi-blitz` edits, Codex/apply_patch parity, or product-real default replacement claims. Pi core `edit` remains baseline/fallback.
 
 ## Implementation direction
 
@@ -61,7 +61,7 @@ After Phase 0/1 evidence, proceed only where data points:
 - If simple rows lose from arg/output size: add compact op IR/freeform DSL.
 - If semantic rows repeat too much code: add AST target + deterministic chunk-local merge.
 - Runtime routing integration must be explicit before replacement claims: Pi extension facade/core-tool wrapper/skill-level route contract, not benchmark-only routing.
-- If a Blitz route is not cheaper: route to core/apply_patch and record reason.
+- If a Blitz route is not cheaper: route to Pi core `edit` and record reason.
 
 ## Acceptance gates
 
@@ -74,7 +74,7 @@ Do not call goal done until all are true:
 - Correctness is 100% for accepted savings rows.
 - Resident tool/skill overhead is measured; target reduction is >=70% for common lanes.
 - Structural rows preserve current large token wins.
-- Simple both-correct rows either beat/tie core after overhead or router chooses core/apply_patch with explicit token proof.
+- Simple both-correct rows either beat/tie Pi core `edit` after overhead or route-selected evidence chooses core with explicit token proof.
 - Report lists failed/skipped rows and caveats; no hidden failures.
 
 ## Builder routing

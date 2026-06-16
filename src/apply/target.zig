@@ -57,6 +57,34 @@ pub fn resolveEditableSymbol(source: []const u8, root: bindings.Node, symbol: []
     return ast.resolveEditableSymbol(source, root, symbol);
 }
 
+pub fn resolveEditableSymbolWithKind(source: []const u8, root: bindings.Node, symbol: []const u8, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolWithKind(source, root, symbol, target_kind);
+}
+
+pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrence(source, root, symbol, occurrence);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithKind(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrenceWithKind(source, root, symbol, occurrence, target_kind);
+}
+
+pub fn resolveEditableSymbolWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolWithParent(source, root, symbol, parent);
+}
+
+pub fn resolveEditableSymbolWithParentAndKind(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolWithParentAndKind(source, root, symbol, parent, target_kind);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrenceWithParent(source, root, symbol, parent, occurrence);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParentAndKind(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    return ast.resolveEditableSymbolOccurrenceWithParentAndKind(source, root, symbol, parent, occurrence, target_kind);
+}
+
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
     return ast.countEditableSymbolMatches(source, root, symbol);
 }

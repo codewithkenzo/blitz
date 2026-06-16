@@ -1,0 +1,2 @@
+
+The edit has been successfully applied to the file. The `pickLabel` function now returns "unknown" instead of "idle" when the active parameter is false.

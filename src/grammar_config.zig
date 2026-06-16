@@ -95,6 +95,37 @@ pub fn isDeclarationKind(kind: []const u8) bool {
     return false;
 }
 
+pub fn targetKindMatches(target_kind: []const u8, node_kind: []const u8) bool {
+    if (std.mem.eql(u8, target_kind, "any")) return isDeclarationKind(node_kind);
+    if (std.mem.eql(u8, target_kind, "function")) {
+        return std.mem.eql(u8, node_kind, "function_declaration") or
+            std.mem.eql(u8, node_kind, "function_definition") or
+            std.mem.eql(u8, node_kind, "function_item");
+    }
+    if (std.mem.eql(u8, target_kind, "method")) {
+        return std.mem.eql(u8, node_kind, "method_declaration") or
+            std.mem.eql(u8, node_kind, "method_definition");
+    }
+    if (std.mem.eql(u8, target_kind, "class")) {
+        return std.mem.eql(u8, node_kind, "class_declaration") or
+            std.mem.eql(u8, node_kind, "class_definition");
+    }
+    if (std.mem.eql(u8, target_kind, "object")) return std.mem.eql(u8, node_kind, "variable_declarator");
+    // "section" is intentionally narrow: only named container declarations,
+    // plus object-valued variables after ast.zig verifies their value node.
+    // It must not degrade to "any" or match ordinary functions/variables.
+    if (std.mem.eql(u8, target_kind, "section")) {
+        return std.mem.eql(u8, node_kind, "class_declaration") or
+            std.mem.eql(u8, node_kind, "class_definition") or
+            std.mem.eql(u8, node_kind, "interface_declaration") or
+            std.mem.eql(u8, node_kind, "struct_item") or
+            std.mem.eql(u8, node_kind, "enum_item") or
+            std.mem.eql(u8, node_kind, "impl_item") or
+            std.mem.eql(u8, node_kind, "variable_declarator");
+    }
+    return false;
+}
+
 pub fn isBodyKind(kind: []const u8) bool {
     inline for (body_kinds) |candidate| {
         if (std.mem.eql(u8, kind, candidate)) return true;
@@ -136,4 +167,18 @@ test "grammar config maps jsonc extension" {
     try std.testing.expectEqualStrings("jsonc", config.name);
     try std.testing.expectEqual(@as(usize, 1), config.extensions.len);
     try std.testing.expectEqualStrings(".jsonc", config.extensions[0]);
+}
+
+test "target kind matcher rejects non-v1 compact aliases" {
+    try std.testing.expect(!targetKindMatches("variable", "variable_declarator"));
+    try std.testing.expect(!targetKindMatches("type", "type_alias_declaration"));
+}
+
+test "target kind matcher preserves v1 compact kinds" {
+    try std.testing.expect(targetKindMatches("function", "function_declaration"));
+    try std.testing.expect(targetKindMatches("method", "method_definition"));
+    try std.testing.expect(targetKindMatches("class", "class_declaration"));
+    try std.testing.expect(targetKindMatches("object", "variable_declarator"));
+    try std.testing.expect(targetKindMatches("section", "class_definition"));
+    try std.testing.expect(targetKindMatches("any", "variable_declarator"));
 }

@@ -27,14 +27,51 @@ pub fn findEditableSymbolNode(source: []const u8, root: bindings.Node, symbol: [
 }
 
 pub fn resolveEditableSymbol(source: []const u8, root: bindings.Node, symbol: []const u8) ResolveError!bindings.Node {
-    const count = countEditableSymbolMatches(source, root, symbol);
+    return resolveEditableSymbolWithKind(source, root, symbol, null);
+}
+
+pub fn resolveEditableSymbolWithKind(source: []const u8, root: bindings.Node, symbol: []const u8, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    const count = countEditableSymbolMatchesWithKind(source, root, symbol, target_kind);
     if (count == 0) return error.SymbolNotFound;
     if (count > 1) return error.AmbiguousSymbol;
-    return findDeclarationNode(source, root, symbol) orelse error.SymbolNotFound;
+    return findDeclarationNodeWithKind(source, root, symbol, target_kind) orelse error.SymbolNotFound;
+}
+
+pub fn resolveEditableSymbolOccurrence(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return resolveEditableSymbolOccurrenceWithKind(source, root, symbol, occurrence, null);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithKind(source: []const u8, root: bindings.Node, symbol: []const u8, occurrence: usize, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    var seen: usize = 0;
+    return findDeclarationNodeOccurrenceWithKind(source, root, symbol, occurrence, target_kind, &seen) orelse error.SymbolNotFound;
+}
+
+pub fn resolveEditableSymbolWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8) ResolveError!bindings.Node {
+    return resolveEditableSymbolWithParentAndKind(source, root, symbol, parent, null);
+}
+
+pub fn resolveEditableSymbolWithParentAndKind(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    const count = countDeclarationNodesWithParentAndKind(source, root, symbol, parent, target_kind, false);
+    if (count == 0) return error.SymbolNotFound;
+    if (count > 1) return error.AmbiguousSymbol;
+    return findDeclarationNodeWithParentAndKind(source, root, symbol, parent, target_kind, false) orelse error.SymbolNotFound;
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParent(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize) ResolveError!bindings.Node {
+    return resolveEditableSymbolOccurrenceWithParentAndKind(source, root, symbol, parent, occurrence, null);
+}
+
+pub fn resolveEditableSymbolOccurrenceWithParentAndKind(source: []const u8, root: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize, target_kind: ?[]const u8) ResolveError!bindings.Node {
+    var seen: usize = 0;
+    return findDeclarationNodeOccurrenceWithParentAndKind(source, root, symbol, parent, occurrence, target_kind, false, &seen) orelse error.SymbolNotFound;
 }
 
 pub fn countEditableSymbolMatches(source: []const u8, root: bindings.Node, symbol: []const u8) usize {
-    return countDeclarationNodes(source, root, symbol);
+    return countEditableSymbolMatchesWithKind(source, root, symbol, null);
+}
+
+pub fn countEditableSymbolMatchesWithKind(source: []const u8, root: bindings.Node, symbol: []const u8, target_kind: ?[]const u8) usize {
+    return countDeclarationNodesWithKind(source, root, symbol, target_kind);
 }
 
 pub fn findBodyNode(target: bindings.Node) ?bindings.Node {
@@ -61,6 +98,12 @@ pub fn findBodyNode(target: bindings.Node) ?bindings.Node {
 }
 
 pub fn bodyRangeFor(language: bindings.Language, source: []const u8, target: bindings.Node) ?ByteRange {
+    if (std.mem.eql(u8, target.kind(), "variable_declarator")) {
+        if (objectValueNode(target)) |object_value| {
+            return braceInteriorRange(source, @intCast(object_value.startByte()), @intCast(object_value.endByte()));
+        }
+    }
+
     const body = findBodyNode(target) orelse return null;
     const body_start: usize = @intCast(body.startByte());
     const body_end: usize = @intCast(body.endByte());
@@ -88,7 +131,40 @@ pub fn braceInteriorRange(source: []const u8, start: usize, end: usize) ?ByteRan
 }
 
 fn findDeclarationNode(source: []const u8, node: bindings.Node, symbol: []const u8) ?bindings.Node {
-    if (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+    return findDeclarationNodeWithKind(source, node, symbol, null);
+}
+
+fn declarationNodeMatchesKind(node: bindings.Node, target_kind: ?[]const u8) bool {
+    if (target_kind) |kind| {
+        if (!grammar_config.targetKindMatches(kind, node.kind())) return false;
+        if (std.mem.eql(u8, kind, "object")) return nodeHasObjectValue(node);
+        if (std.mem.eql(u8, kind, "section") and std.mem.eql(u8, node.kind(), "variable_declarator")) return nodeHasObjectValue(node);
+        return true;
+    }
+    return grammar_config.isDeclarationKind(node.kind());
+}
+
+fn nodeHasObjectValue(node: bindings.Node) bool {
+    return objectValueNode(node) != null;
+}
+
+fn objectValueNode(node: bindings.Node) ?bindings.Node {
+    var child_i: u32 = 0;
+    while (child_i < node.childCount()) : (child_i += 1) {
+        if (node.fieldNameForChild(child_i)) |field_name| {
+            if (!std.mem.eql(u8, field_name, "value")) continue;
+            const child = node.child(child_i) orelse return null;
+            if (std.mem.eql(u8, child.kind(), "object") or
+                std.mem.eql(u8, child.kind(), "object_pattern") or
+                std.mem.eql(u8, child.kind(), "object_type")) return child;
+            return null;
+        }
+    }
+    return null;
+}
+
+fn findDeclarationNodeWithKind(source: []const u8, node: bindings.Node, symbol: []const u8, target_kind: ?[]const u8) ?bindings.Node {
+    if (declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
         return node;
     }
 
@@ -96,7 +172,28 @@ fn findDeclarationNode(source: []const u8, node: bindings.Node, symbol: []const 
     var child_i: u32 = 0;
     while (child_i < child_count) : (child_i += 1) {
         if (node.namedChild(child_i)) |child| {
-            if (findDeclarationNode(source, child, symbol)) |found| return found;
+            if (findDeclarationNodeWithKind(source, child, symbol, target_kind)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn findDeclarationNodeOccurrence(source: []const u8, node: bindings.Node, symbol: []const u8, occurrence: usize, seen: *usize) ?bindings.Node {
+    return findDeclarationNodeOccurrenceWithKind(source, node, symbol, occurrence, null, seen);
+}
+
+fn findDeclarationNodeOccurrenceWithKind(source: []const u8, node: bindings.Node, symbol: []const u8, occurrence: usize, target_kind: ?[]const u8, seen: *usize) ?bindings.Node {
+    if (declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
+        if (seen.* == occurrence) return node;
+        seen.* += 1;
+    }
+
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeOccurrenceWithKind(source, child, symbol, occurrence, target_kind, seen)) |found| return found;
         }
     }
 
@@ -104,8 +201,12 @@ fn findDeclarationNode(source: []const u8, node: bindings.Node, symbol: []const 
 }
 
 fn countDeclarationNodes(source: []const u8, node: bindings.Node, symbol: []const u8) usize {
+    return countDeclarationNodesWithKind(source, node, symbol, null);
+}
+
+fn countDeclarationNodesWithKind(source: []const u8, node: bindings.Node, symbol: []const u8, target_kind: ?[]const u8) usize {
     var count: usize = 0;
-    if (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, symbol)) {
+    if (declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
         count += 1;
     }
 
@@ -113,7 +214,73 @@ fn countDeclarationNodes(source: []const u8, node: bindings.Node, symbol: []cons
     var child_i: u32 = 0;
     while (child_i < child_count) : (child_i += 1) {
         if (node.namedChild(child_i)) |child| {
-            count += countDeclarationNodes(source, child, symbol);
+            count += countDeclarationNodesWithKind(source, child, symbol, target_kind);
+            if (count > 1) return count;
+        }
+    }
+
+    return count;
+}
+
+fn findDeclarationNodeWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, ancestor_matches: bool) ?bindings.Node {
+    return findDeclarationNodeWithParentAndKind(source, node, symbol, parent, null, ancestor_matches);
+}
+
+fn findDeclarationNodeWithParentAndKind(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, target_kind: ?[]const u8, ancestor_matches: bool) ?bindings.Node {
+    if (ancestor_matches and declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
+        return node;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeWithParentAndKind(source, child, symbol, parent, target_kind, child_ancestor_matches)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn findDeclarationNodeOccurrenceWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize, ancestor_matches: bool, seen: *usize) ?bindings.Node {
+    return findDeclarationNodeOccurrenceWithParentAndKind(source, node, symbol, parent, occurrence, null, ancestor_matches, seen);
+}
+
+fn findDeclarationNodeOccurrenceWithParentAndKind(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, occurrence: usize, target_kind: ?[]const u8, ancestor_matches: bool, seen: *usize) ?bindings.Node {
+    if (ancestor_matches and declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
+        if (seen.* == occurrence) return node;
+        seen.* += 1;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            if (findDeclarationNodeOccurrenceWithParentAndKind(source, child, symbol, parent, occurrence, target_kind, child_ancestor_matches, seen)) |found| return found;
+        }
+    }
+
+    return null;
+}
+
+fn countDeclarationNodesWithParent(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, ancestor_matches: bool) usize {
+    return countDeclarationNodesWithParentAndKind(source, node, symbol, parent, null, ancestor_matches);
+}
+
+fn countDeclarationNodesWithParentAndKind(source: []const u8, node: bindings.Node, symbol: []const u8, parent: []const u8, target_kind: ?[]const u8, ancestor_matches: bool) usize {
+    var count: usize = 0;
+    if (ancestor_matches and declarationNodeMatchesKind(node, target_kind) and nodeHasSymbolName(source, node, symbol)) {
+        count += 1;
+    }
+
+    const child_ancestor_matches = ancestor_matches or (grammar_config.isDeclarationKind(node.kind()) and nodeHasSymbolName(source, node, parent));
+    const child_count = node.namedChildCount();
+    var child_i: u32 = 0;
+    while (child_i < child_count) : (child_i += 1) {
+        if (node.namedChild(child_i)) |child| {
+            count += countDeclarationNodesWithParentAndKind(source, child, symbol, parent, target_kind, child_ancestor_matches);
             if (count > 1) return count;
         }
     }
@@ -152,4 +319,90 @@ test "ast symbol resolver counts duplicate declarations" {
 
     try std.testing.expectEqual(@as(usize, 2), countEditableSymbolMatches(source, tree.rootNode(), "repeat"));
     try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbol(source, tree.rootNode(), "repeat"));
+}
+
+test "ast symbol resolver filters duplicate methods by parent declaration" {
+    const source =
+        \\const Alpha = {
+        \\  run() { return "alpha"; }
+        \\};
+        \\const Beta = {
+        \\  run() { return "beta"; }
+        \\};
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbol(source, tree.rootNode(), "run"));
+    const beta_run = try resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Beta");
+    const text = source[@intCast(beta_run.startByte())..@intCast(beta_run.endByte())];
+    try std.testing.expect(std.mem.indexOf(u8, text, "beta") != null);
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Missing"));
+}
+
+test "ast parent filter remains ambiguous within same parent until occurrence supplied" {
+    const source =
+        \\class Alpha {
+        \\  run() { return 1; }
+        \\  run() { return 2; }
+        \\}
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    try std.testing.expectError(error.AmbiguousSymbol, resolveEditableSymbolWithParent(source, tree.rootNode(), "run", "Alpha"));
+    const second = try resolveEditableSymbolOccurrenceWithParent(source, tree.rootNode(), "run", "Alpha", 1);
+    const text = source[@intCast(second.startByte())..@intCast(second.endByte())];
+    try std.testing.expect(std.mem.indexOf(u8, text, "2") != null);
+}
+
+test "ast kind filter object matches only object-valued declarations" {
+    const source =
+        \\const Config = { enabled: true };
+        \\const Count = 1;
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    const config = try resolveEditableSymbolWithKind(source, tree.rootNode(), "Config", "object");
+    try std.testing.expectEqualStrings("variable_declarator", config.kind());
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithKind(source, tree.rootNode(), "Count", "object"));
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithKind(source, tree.rootNode(), "Config", "function"));
+}
+
+test "ast kind filter section matches named containers but not functions" {
+    const source =
+        \\class Panel { render() { return 1; } }
+        \\const Settings = { theme: "dark" };
+        \\function helper() { return 1; }
+    ;
+
+    var parser = bindings.Parser.init();
+    defer parser.deinit();
+    try std.testing.expect(parser.setLanguage(.typescript));
+
+    var tree = try parseStrict(&parser, source);
+    defer tree.deinit();
+
+    const panel = try resolveEditableSymbolWithKind(source, tree.rootNode(), "Panel", "section");
+    try std.testing.expectEqualStrings("class_declaration", panel.kind());
+    const settings = try resolveEditableSymbolWithKind(source, tree.rootNode(), "Settings", "section");
+    try std.testing.expectEqualStrings("variable_declarator", settings.kind());
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithKind(source, tree.rootNode(), "helper", "section"));
+    try std.testing.expectError(error.SymbolNotFound, resolveEditableSymbolWithKind(source, tree.rootNode(), "Panel", "nonsense"));
 }

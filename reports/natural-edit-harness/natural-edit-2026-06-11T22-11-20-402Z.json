@@ -1,0 +1,204 @@
+{
+  "generatedAt": "2026-06-11T22:12:17.027Z",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "timeoutMs": 45000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "scenarios": [
+    {
+      "id": "tiny-exact",
+      "title": "Tiny exact unique return-line replace",
+      "description": "Change the return of a 3-line function. Trivially unique match.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "small.ts",
+          "beforeSha": "c72c321648b699e2",
+          "afterSha": "551ba78d8ad12ba2"
+        }
+      ]
+    },
+    {
+      "id": "mixed-config-doc",
+      "title": "Mixed config/document edit across two files",
+      "description": "Update a TypeScript config key and an HTML title in the same session.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "config.ts",
+          "beforeSha": "e394b6e353049799",
+          "afterSha": "400c0601f2f18d51"
+        },
+        {
+          "path": "index.html",
+          "beforeSha": "8d8011623aad4962",
+          "afterSha": "d1bb8423970fd9df"
+        }
+      ]
+    },
+    {
+      "id": "same-file-multi",
+      "title": "Three edits in the same file",
+      "description": "Replace a return, insert a line after an anchor, wrap a function body in try/catch — all in multi.ts.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "multi.ts",
+          "beforeSha": "9cd83bf0733e224c",
+          "afterSha": "4125a5e1a3f04e55"
+        }
+      ]
+    },
+    {
+      "id": "structural-body",
+      "title": "Wrap function body in try/catch (structural)",
+      "description": "Wrap the ~280-line body of mediumCompute in try/catch without naming exact line text.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "medium.ts",
+          "beforeSha": "432f6832098c2436",
+          "afterSha": "509c8f102d3469af"
+        }
+      ]
+    },
+    {
+      "id": "no-op-idempotent",
+      "title": "No-op / idempotent — change already applied",
+      "description": "File already has the target change; model should detect nothing to do.",
+      "idempotent": true,
+      "files": [
+        {
+          "path": "small.ts",
+          "beforeSha": "551ba78d8ad12ba2",
+          "afterSha": "551ba78d8ad12ba2"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-repeated-anchor",
+      "title": "Ambiguous: replace only the last return in a function with multiple returns",
+      "description": "In classify, three return statements return different values. Model must replace only the last one (positive → other) without touching negative or zero.",
+      "idempotent": false,
+      "files": [
+        {
+          "path": "semantic.ts",
+          "beforeSha": "c4ed52b8489f1958",
+          "afterSha": "571bcf323ea18fcb"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "scenarioId": "tiny-exact",
+      "title": "Tiny exact unique return-line replace",
+      "lane": "core",
+      "iterations": [
+        {
+          "lane": "core",
+          "scenarioId": "tiny-exact",
+          "iter": 0,
+          "outcome": "incorrect",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 45016.269610999996,
+          "exitCode": 143,
+          "timedOut": true,
+          "stderr": "",
+          "stdout": "",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__core__0__2026-06-11T22-11-20-402Z",
+          "files": [
+            {
+              "path": "small.ts",
+              "gotSha": "551ba78d8ad12ba2",
+              "expectedSha": "551ba78d8ad12ba2",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "incorrect",
+      "outcomeLabel": "incorrect"
+    },
+    {
+      "scenarioId": "tiny-exact",
+      "title": "Tiny exact unique return-line replace",
+      "lane": "blitz",
+      "iterations": [
+        {
+          "lane": "blitz",
+          "scenarioId": "tiny-exact",
+          "iter": 0,
+          "outcome": "blitz_mutated",
+          "correct": true,
+          "filesMatch": true,
+          "wallMs": 11598.958834999998,
+          "exitCode": 0,
+          "timedOut": false,
+          "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+          "stdout": "\ndone\n",
+          "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__blitz__0__2026-06-11T22-11-20-402Z",
+          "files": [
+            {
+              "path": "small.ts",
+              "gotSha": "551ba78d8ad12ba2",
+              "expectedSha": "551ba78d8ad12ba2",
+              "match": true
+            }
+          ]
+        }
+      ],
+      "outcome": "blitz_mutated",
+      "outcomeLabel": "blitz_mutated"
+    }
+  ],
+  "runs": [
+    {
+      "lane": "core",
+      "scenarioId": "tiny-exact",
+      "iter": 0,
+      "outcome": "incorrect",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 45016.269610999996,
+      "exitCode": 143,
+      "timedOut": true,
+      "stderr": "",
+      "stdout": "",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__core__0__2026-06-11T22-11-20-402Z",
+      "files": [
+        {
+          "path": "small.ts",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "match": true
+        }
+      ]
+    },
+    {
+      "lane": "blitz",
+      "scenarioId": "tiny-exact",
+      "iter": 0,
+      "outcome": "blitz_mutated",
+      "correct": true,
+      "filesMatch": true,
+      "wallMs": 11598.958834999998,
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "[pi-blitz] tool profile minimal-v0 registered\n",
+      "stdout": "\ndone\n",
+      "runDir": "/home/kenzo/dev/blitz/reports/natural-edit-runs/tiny-exact__blitz__0__2026-06-11T22-11-20-402Z",
+      "files": [
+        {
+          "path": "small.ts",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "match": true
+        }
+      ]
+    }
+  ]
+}

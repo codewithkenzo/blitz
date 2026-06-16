@@ -1,0 +1,2 @@
+
+Applied successfully. The return expression in the StatusBadge function has been replaced with `<strong className="badge">{label.toUpperCase()}</strong>`.

@@ -1,0 +1,1 @@
+export { computeScore } from "./score";

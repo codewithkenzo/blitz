@@ -1,0 +1,26 @@
+--- tiny-exact blitz smoke ---
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ tiny-exact / blitz: blitz_mutated (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T05-48-48-208Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T05-48-48-208Z.md
+--- same-file-multi blitz smoke ---
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 120000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✗ same-file-multi / blitz: incorrect (0/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T05-49-07-385Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/natural-edit-harness/natural-edit-2026-06-12T05-49-07-385Z.md

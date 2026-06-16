@@ -1,0 +1,6 @@
+
+The edit has been successfully applied to the `mediumCompute` function in the specified file. The changes include:
+1. A finite check after `let total = seed;` that throws a RangeError when the seed is not finite
+2. An early return when total is negative before the final return statement
+
+All original arithmetic statements have been preserved exactly as requested.

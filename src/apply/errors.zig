@@ -12,6 +12,7 @@ pub fn code(err: anyerror) []const u8 {
     if (std.mem.eql(u8, name, "UnsupportedOperation")) return "UNSUPPORTED_OPERATION";
     if (std.mem.eql(u8, name, "UnsupportedLanguage")) return "UNSUPPORTED_LANGUAGE";
     if (std.mem.eql(u8, name, "UnsupportedTargetRange")) return "INVALID_FIELD";
+    if (std.mem.eql(u8, name, "UnsupportedTargetKind")) return "INVALID_FIELD";
     if (std.mem.eql(u8, name, "MissingSymbol")) return "MISSING_FIELD";
     if (std.mem.eql(u8, name, "MissingFile")) return "MISSING_FIELD";
     if (std.mem.eql(u8, name, "MissingField")) return "MISSING_FIELD";
@@ -55,6 +56,7 @@ pub fn reason(err: anyerror) []const u8 {
     if (std.mem.eql(u8, name, "UnsupportedOperation")) return "unsupported operation";
     if (std.mem.eql(u8, name, "UnsupportedLanguage")) return "unsupported language";
     if (std.mem.eql(u8, name, "UnsupportedTargetRange")) return "invalid target range";
+    if (std.mem.eql(u8, name, "UnsupportedTargetKind")) return "unsupported target kind";
     if (std.mem.eql(u8, name, "MissingSymbol")) return "missing target symbol";
     if (std.mem.eql(u8, name, "MissingFile")) return "missing file";
     if (std.mem.eql(u8, name, "MissingField")) return "missing required field";
@@ -68,6 +70,7 @@ pub fn reason(err: anyerror) []const u8 {
     if (std.mem.eql(u8, name, "NoMatches")) return "no matching pattern";
     if (std.mem.eql(u8, name, "AmbiguousMatches")) return "ambiguous pattern match";
     if (std.mem.eql(u8, name, "OverlappingEdits")) return "overlapping edits";
+    if (std.mem.eql(u8, name, "HashMismatch")) return "guard range text mismatch";
     if (std.mem.eql(u8, name, "UnsupportedMultiEditOperation")) return "unsupported multi-body operation";
     if (std.mem.eql(u8, name, "ParseFailedBefore")) return "source did not parse before edit";
     if (std.mem.eql(u8, name, "ParseFailedAfter")) return "edited source did not parse";

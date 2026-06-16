@@ -45,6 +45,55 @@ const ApplyFailureResult = apply_ir.ApplyFailureResult;
 const PhaseMetricsResult = apply_ir.PhaseMetricsResult;
 const RouteDecision = apply_ir.RouteDecision;
 
+const CompactApplySuccess = struct {
+    ok: bool = true,
+    status: []const u8,
+    op: []const u8,
+    file: []const u8,
+    symbol: []const u8,
+    changed: bool,
+    parse: bool,
+    ranges: RangesResult,
+};
+
+const CompactBatchApplySuccess = struct {
+    ok: bool = true,
+    status: []const u8,
+    op: []const u8 = "batch",
+    file: []const u8,
+    symbol: []const u8,
+    changed: bool,
+    parse: bool,
+    count: usize,
+    ranges: RangesResult,
+};
+
+fn emitCompactApplySuccess(stdout: *Writer, result: ApplyResult) !void {
+    const compact = CompactApplySuccess{
+        .status = result.status,
+        .op = result.operation,
+        .file = result.file,
+        .symbol = result.symbol,
+        .changed = result.changed,
+        .parse = result.validation.parseAfterClean,
+        .ranges = result.ranges,
+    };
+    try stdout.print("{f}\n", .{std.json.fmt(compact, .{})});
+}
+
+fn emitCompactBatchApplySuccess(stdout: *Writer, result: ApplyResult, count: usize) !void {
+    const compact = CompactBatchApplySuccess{
+        .status = result.status,
+        .file = result.file,
+        .symbol = result.symbol,
+        .changed = result.changed,
+        .parse = result.validation.parseAfterClean,
+        .count = count,
+        .ranges = result.ranges,
+    };
+    try stdout.print("{f}\n", .{std.json.fmt(compact, .{})});
+}
+
 fn expectObject(value: std.json.Value) !std.json.ObjectMap {
     return switch (value) {
         .object => |obj| obj,
@@ -60,6 +109,36 @@ fn requireString(object: std.json.ObjectMap, field: []const u8) ![]const u8 {
     };
 }
 
+fn normalizeEscapedNewlines(allocator: Allocator, value: []const u8) ![]u8 {
+    return std.mem.replaceOwned(u8, allocator, value, "\\n", "\n");
+}
+
+fn validateGuard(source: []const u8, guard: apply_ir.ApplyGuard) !void {
+    if (guard.range.end > source.len) return ApplyError.HashMismatch;
+    if (!std.mem.eql(u8, source[guard.range.start..guard.range.end], guard.text)) return ApplyError.HashMismatch;
+}
+
+fn compactOpsCount(value: std.json.Value) ?usize {
+    const obj = switch (value) {
+        .object => |o| o,
+        else => return null,
+    };
+    if (obj.get("v") == null or obj.get("f") == null) return null;
+    const ops_value = obj.get("ops") orelse return null;
+    return switch (ops_value) {
+        .array => |arr| arr.items.len,
+        else => null,
+    };
+}
+
+fn readCompactDryRun(ops: []const ApplyRequest, cli_dry_run: bool) bool {
+    if (cli_dry_run) return true;
+    for (ops) |req| {
+        if (req.options) |opts| if (opts.dryRun orelse false) return true;
+    }
+    return false;
+}
+
 const MatchSpan = apply_ops.MatchSpan;
 const OpResult = apply_ops.OpResult;
 const MultiEdit = apply_ops.MultiEdit;
@@ -72,6 +151,7 @@ const ApplyError = error{
     UnsupportedOperation,
     UnsupportedLanguage,
     UnsupportedTargetRange,
+    UnsupportedTargetKind,
     MissingSymbol,
     MissingFile,
     MissingField,
@@ -85,6 +165,7 @@ const ApplyError = error{
     NoMatches,
     AmbiguousMatches,
     OverlappingEdits,
+    HashMismatch,
     UnsupportedMultiEditOperation,
     ParseFailedBefore,
     ParseFailedAfter,
@@ -115,6 +196,19 @@ pub fn run(
         return emitFailure(if (err == error.OutOfMemory) ApplyError.IoError else ApplyError.InvalidJson, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     };
     defer parsed.deinit();
+
+    if (compactOpsCount(parsed.value)) |count| {
+        if (count > 1) {
+            const obj = expectObject(parsed.value) catch |err| {
+                return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            };
+            const batch = apply_ir.parseCompactBatchRequest(allocator, obj) catch |err| {
+                return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            };
+            defer allocator.free(batch.ops);
+            return runCompactBatch(allocator, io, start, batch, request_bytes, json_output, stdout, stderr, readCompactDryRun(batch.ops, cli_dry_run), diff_requested);
+        }
+    }
 
     const req = apply_ir.parseRequest(parsed.value) catch |err| {
         return emitFailure(err, null, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
@@ -155,6 +249,10 @@ pub fn run(
     const read_ms = msSince(read_start, Io.Clock.awake.now(io));
     defer allocator.free(original);
 
+    if (req.guard) |guard| {
+        validateGuard(original, guard) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    }
+
     if (isDirectTextOperation(operation) and shouldExplain(route_option, dry_run, route_requested)) {
         const decision = estimateRouteDecision(operation, route_option);
         return emitExplainResult(allocator, io, start, req, request_bytes, json_output, stdout, stderr, real_path, original.len, read_ms, "text", decision, if (std.mem.eql(u8, decision.route, "core_edit")) "needs_host_merge" else "preview");
@@ -187,6 +285,10 @@ pub fn run(
                 .{ "yaml", "format_text_yaml_set_key" }
             else if (std.mem.eql(u8, ext, ".toml"))
                 .{ "toml", "format_text_toml_set_key" }
+            else if (std.mem.eql(u8, ext, ".ts"))
+                .{ "typescript", "format_text_typescript_set_key" }
+            else if (std.mem.eql(u8, ext, ".tsx"))
+                .{ "tsx", "format_text_typescript_set_key" }
             else
                 return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const decision = if (std.mem.eql(u8, route_option, "force-core")) estimateRouteDecision(operation, route_option) else formatTextRouteDecision(reason_code);
@@ -226,8 +328,15 @@ pub fn run(
     const target_resolve_start = Io.Clock.awake.now(io);
     const target_node: ?bindings.Node = if (operation == .multi_body or operation == .patch)
         null
+    else if (req.target.?.parent) |parent|
+        if (req.target.?.occurrence) |occurrence|
+            apply_target.resolveEditableSymbolOccurrenceWithParentAndKind(original, root, req.target.?.symbol, parent, occurrence, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else
+            apply_target.resolveEditableSymbolWithParentAndKind(original, root, req.target.?.symbol, parent, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+    else if (req.target.?.occurrence) |occurrence|
+        apply_target.resolveEditableSymbolOccurrenceWithKind(original, root, req.target.?.symbol, occurrence, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
     else
-        apply_target.resolveEditableSymbol(original, root, req.target.?.symbol) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        apply_target.resolveEditableSymbolWithKind(original, root, req.target.?.symbol, req.target.?.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const target_start: usize = if (target_node) |node| @intCast(node.startByte()) else 0;
     const target_end: usize = if (target_node) |node| @intCast(node.endByte()) else 0;
@@ -235,6 +344,8 @@ pub fn run(
         edit_support.ByteRange{ .start = target_start, .end = target_end }
     else if (operation == .patch)
         edit_support.ByteRange{ .start = 0, .end = 0 }
+    else if (target_range == .node)
+        edit_support.ByteRange{ .start = target_start, .end = target_end }
     else
         apply_target.bodyRangeFor(lang, original, target_node.?) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const target_resolve_ms = msSince(target_resolve_start, Io.Clock.awake.now(io));
@@ -284,9 +395,13 @@ pub fn run(
         .wrap_body => blk: {
             if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const edit_obj = try expectObject(req.edit);
-            const before = apply_ir.requireString(edit_obj, "before") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const before_raw = apply_ir.requireString(edit_obj, "before") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
             const keep = apply_ir.requireString(edit_obj, "keep") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
-            const after = apply_ir.requireString(edit_obj, "after") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const after_raw = apply_ir.requireString(edit_obj, "after") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const before = normalizeEscapedNewlines(allocator, before_raw) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(before);
+            const after = normalizeEscapedNewlines(allocator, after_raw) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(after);
             if (!std.mem.eql(u8, keep, "body")) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
             const indent = if (edit_obj.get("indentKeptBodyBy")) |indent_raw| switch (indent_raw) {
                 .integer => |v| if (v < 0) return emitFailure(ApplyError.InvalidOccurrence, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len) else @as(usize, @intCast(v)),
@@ -334,9 +449,35 @@ pub fn run(
                 .changed_after = compose.contents.len,
             };
         },
+        .merge_body_chunk => blk: {
+            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const snippet = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "snippet") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
+            const merge = mergeBodyChunk(
+                allocator,
+                original[body_range.start..body_range.end],
+                snippet,
+            ) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            defer allocator.free(merge);
+
+            const new_contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, merge);
+            break :blk OpResult{
+                .contents = new_contents,
+                .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
+                .single_match = true,
+                .changed_before = body_range.end - body_range.start,
+                .changed_after = merge.len,
+            };
+        },
         .insert_after_symbol => blk: {
-            const edit_obj = try expectObject(req.edit);
-            const code = apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const code = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, target_end, target_end, code),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end },
@@ -347,9 +488,11 @@ pub fn run(
         },
         .set_key => unreachable,
         .set_body => blk: {
-            if (target_range != .body) return emitFailure(ApplyError.UnsupportedTargetRange, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-            const edit_obj = try expectObject(req.edit);
-            const body = apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len);
+            const body = switch (req.edit) {
+                .string => |value| value,
+                .object => |edit_obj| apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, true, false, request_bytes.len),
+            };
             break :blk OpResult{
                 .contents = try apply_diff.spliceText(allocator, original, body_range.start, body_range.end, body),
                 .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end },
@@ -467,7 +610,175 @@ pub fn run(
         return 0;
     }
 
+    if (req.compact) {
+        try emitCompactApplySuccess(stdout, result);
+        return 0;
+    }
+
     try stdout.print("{f}\n", .{std.json.fmt(result, .{})});
+    return 0;
+}
+
+fn runCompactBatch(
+    allocator: Allocator,
+    io: Io,
+    start: anytype,
+    batch: apply_ir.CompactBatchRequest,
+    request_bytes: []const u8,
+    json_output: bool,
+    stdout: *Writer,
+    stderr: *Writer,
+    dry_run: bool,
+    diff_requested: bool,
+) !u8 {
+    _ = diff_requested;
+    if (batch.file.len == 0) return emitFailure(ApplyError.MissingFile, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+    const real_path = Dir.cwd().realPathFileAlloc(io, batch.file, allocator) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+    defer allocator.free(real_path);
+    workspace.enforce(real_path) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+
+    const read_start = Io.Clock.awake.now(io);
+    const original = Dir.cwd().readFileAlloc(io, real_path, allocator, .limited(MAX_SOURCE_BYTES)) catch |err| {
+        return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    };
+    const read_ms = msSince(read_start, Io.Clock.awake.now(io));
+    defer allocator.free(original);
+
+    const ext = std.fs.path.extension(batch.file);
+    const lang = grammar_config.languageForExtension(ext) orelse return emitFailure(ApplyError.UnsupportedLanguage, batch.ops[0], request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+    var current = try allocator.dupe(u8, original);
+    defer allocator.free(current);
+    var last_range = RangesResult{ .targetStart = 0, .targetEnd = 0, .bodyStart = null, .bodyEnd = null, .editStart = 0, .editEnd = 0 };
+    var changed_before: usize = 0;
+    var changed_after: usize = 0;
+    var target_resolve_ms: u64 = 0;
+    var plan_ms: u64 = 0;
+    var parse_after_ms: u64 = 0;
+    var parser_init_ms: u64 = 0;
+    var parse_before_ms: u64 = 0;
+
+    for (batch.ops) |req| {
+        if (req.guard) |guard| validateGuard(current, guard) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const operation = apply_ops.parseOperation(req.operation) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (operation != .set_body and operation != .insert_after_symbol) return emitFailure(ApplyError.UnsupportedOperation, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const target = req.target orelse return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        if (target.symbol.len == 0) return emitFailure(ApplyError.MissingSymbol, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+
+        const parser_init_start = Io.Clock.awake.now(io);
+        var parser = bindings.Parser.init();
+        defer parser.deinit();
+        if (!parser.setLanguage(lang)) return emitFailure(ApplyError.UnsupportedLanguage, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        parser_init_ms += msSince(parser_init_start, Io.Clock.awake.now(io));
+
+        const parse_before_start = Io.Clock.awake.now(io);
+        var source_tree = parser.parseString(current) orelse return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        defer source_tree.deinit();
+        const root = source_tree.rootNode();
+        if (root.isNull() or root.hasError()) return emitFailure(ApplyError.ParseFailedBefore, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        parse_before_ms += msSince(parse_before_start, Io.Clock.awake.now(io));
+
+        const target_resolve_start = Io.Clock.awake.now(io);
+        const target_node: bindings.Node = if (target.parent) |parent|
+            if (target.occurrence) |occurrence|
+                apply_target.resolveEditableSymbolOccurrenceWithParentAndKind(current, root, target.symbol, parent, occurrence, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+            else
+                apply_target.resolveEditableSymbolWithParentAndKind(current, root, target.symbol, parent, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else if (target.occurrence) |occurrence|
+            apply_target.resolveEditableSymbolOccurrenceWithKind(current, root, target.symbol, occurrence, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len)
+        else
+            apply_target.resolveEditableSymbolWithKind(current, root, target.symbol, target.kind) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const target_start: usize = @intCast(target_node.startByte());
+        const target_end: usize = @intCast(target_node.endByte());
+        const target_range = apply_target.parseTargetRange(target.range) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        const body_range = if (operation == .insert_after_symbol)
+            edit_support.ByteRange{ .start = target_start, .end = target_end }
+        else if (target_range == .node)
+            edit_support.ByteRange{ .start = target_start, .end = target_end }
+        else
+            apply_target.bodyRangeFor(lang, current, target_node) orelse return emitFailure(ApplyError.BodyNotFound, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        target_resolve_ms += msSince(target_resolve_start, Io.Clock.awake.now(io));
+
+        const plan_start = Io.Clock.awake.now(io);
+        const op_result = switch (operation) {
+            .insert_after_symbol => blk: {
+                const code = switch (req.edit) {
+                    .string => |value| value,
+                    .object => |edit_obj| apply_ir.requireString(edit_obj, "code") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                    else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                };
+                break :blk OpResult{ .contents = try apply_diff.spliceText(allocator, current, target_end, target_end, code), .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = target_start, .bodyEnd = target_end, .editStart = target_end, .editEnd = target_end }, .single_match = true, .changed_before = 0, .changed_after = code.len };
+            },
+            .set_body => blk: {
+                const body = switch (req.edit) {
+                    .string => |value| value,
+                    .object => |edit_obj| apply_ir.requireString(edit_obj, "body") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                    else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+                };
+                break :blk OpResult{ .contents = try apply_diff.spliceText(allocator, current, body_range.start, body_range.end, body), .range = .{ .targetStart = target_start, .targetEnd = target_end, .bodyStart = body_range.start, .bodyEnd = body_range.end, .editStart = body_range.start, .editEnd = body_range.end }, .single_match = true, .changed_before = body_range.end - body_range.start, .changed_after = body.len };
+            },
+            else => unreachable,
+        };
+        plan_ms += msSince(plan_start, Io.Clock.awake.now(io));
+
+        const parse_after_start = Io.Clock.awake.now(io);
+        const replacement_end = op_result.range.editStart + op_result.changed_after;
+        const parse_after_single_range: ?apply_validate.SingleRangeEdit = if (replacement_end > op_result.contents.len)
+            null
+        else
+            .{ .start = op_result.range.editStart, .end = op_result.range.editEnd, .replacement = op_result.contents[op_result.range.editStart..replacement_end] };
+        const parse_after = try apply_validate.parseAfterEdit(allocator, &parser, &source_tree, current, op_result.contents, false, parse_after_single_range);
+        parse_after_ms += msSince(parse_after_start, Io.Clock.awake.now(io));
+        if (!parse_after) {
+            allocator.free(op_result.contents);
+            return emitFailure(ApplyError.ParseFailedAfter, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+        }
+
+        allocator.free(current);
+        current = op_result.contents;
+        last_range = op_result.range;
+        changed_before += op_result.changed_before;
+        changed_after += op_result.changed_after;
+    }
+
+    const changed = !std.mem.eql(u8, original, current);
+    const write_start = Io.Clock.awake.now(io);
+    if (changed and !dry_run) {
+        var lock_guard = file_lock.acquire(allocator, io, real_path) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        defer lock_guard.release();
+        const cache_dir = backup.defaultCacheDir(allocator) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        defer allocator.free(cache_dir);
+        backup.store(allocator, io, cache_dir, real_path, original) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+        backup.atomicWrite(allocator, io, real_path, current) catch |err| return emitFailure(err, batch.ops[0], request_bytes, json_output, stdout, stderr, false, true, request_bytes.len);
+    }
+    const write_ms = msSince(write_start, Io.Clock.awake.now(io));
+    const total_ms = msSince(start, Io.Clock.awake.now(io));
+    const result = ApplyResult{
+        .status = if (dry_run) "planned" else "applied",
+        .operation = "batch",
+        .route = "blitz",
+        .routeReasonCode = "compact_batch",
+        .routeDecision = estimateRouteDecision(.set_body, "auto"),
+        .file = batch.file,
+        .symbol = "*",
+        .language = languageName(lang),
+        .dryRun = dry_run,
+        .changed = changed,
+        .validation = .{ .parseBeforeClean = true, .parseAfterClean = true, .singleMatch = true },
+        .ranges = last_range,
+        .metrics = .{ .fileBytesBefore = original.len, .fileBytesAfter = current.len, .requestBytes = request_bytes.len, .changedBytesBefore = changed_before, .changedBytesAfter = changed_after, .wallMs = total_ms, .phaseMs = .{ .read = read_ms, .parserInit = parser_init_ms, .parseBefore = parse_before_ms, .targetResolve = target_resolve_ms, .plan = plan_ms, .parseAfter = parse_after_ms, .write = write_ms, .total = total_ms } },
+        .diffSummary = "compact batch",
+    };
+    if (json_output) {
+        try emitCompactBatchApplySuccess(stdout, result, batch.ops.len);
+    } else {
+        try stdout.print("{s}: {s}\n", .{ result.status, result.file });
+    }
     return 0;
 }
 
@@ -487,9 +798,25 @@ fn runReplaceUnique(
     diff_requested: bool,
 ) !u8 {
     const plan_start = Io.Clock.awake.now(io);
-    const edit_obj = apply_ir.expectObject(req.edit) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const find = apply_ir.requireString(edit_obj, "find") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    const replace = apply_ir.requireString(edit_obj, "replace") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    const find, const replace = switch (req.edit) {
+        .object => |edit_obj| .{
+            apply_ir.requireString(edit_obj, "find") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            apply_ir.requireString(edit_obj, "replace") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+        },
+        .array => |items| blk: {
+            if (!req.compact or items.items.len != 3) return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+            const old = switch (items.items[1]) {
+                .string => |value| value,
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            };
+            const new = switch (items.items[2]) {
+                .string => |value| value,
+                else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+            };
+            break :blk .{ old, new };
+        },
+        else => return emitFailure(ApplyError.FieldTypeMismatch, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len),
+    };
     const match = apply_ops.selectMatch(original, find, .{ .kind = .only }, true) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const contents = apply_diff.spliceText(allocator, original, match.start, match.end, replace) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     defer allocator.free(contents);
@@ -545,6 +872,11 @@ fn runReplaceUnique(
 
     if (!json_output) {
         if (changed and !dry_run) try stdout.print("Applied {s}: {s}\n", .{ req.file, status }) else try stdout.print("No changes for {s}: {s}\n", .{ req.file, status });
+        return 0;
+    }
+
+    if (req.compact) {
+        if (changed) try stdout.print("ok c=1\n", .{}) else try stdout.print("noop\n", .{});
         return 0;
     }
 
@@ -1223,8 +1555,9 @@ fn findJsonTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
     return ApplyError.ParseFailedBefore;
 }
 
-fn validateSetKeyName(key: []const u8) !void {
-    if (key.len == 0 or std.mem.indexOfAny(u8, key, ".[]/") != null) return ApplyError.InvalidPosition;
+fn validateSetKeyName(key: []const u8, allow_dot: bool) !void {
+    if (key.len == 0 or std.mem.indexOfAny(u8, key, "[]/") != null) return ApplyError.InvalidPosition;
+    if (!allow_dot and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
 }
 
 fn canonicalJsonValue(allocator: Allocator, value: std.json.Value) ![]u8 {
@@ -1278,6 +1611,18 @@ const FormatSetKeyPlan = struct {
     reason_code: []const u8,
     single_match: bool,
 };
+
+const OneLevelPath = struct {
+    parent: []const u8,
+    child: []const u8,
+};
+
+fn splitOneLevelPath(key: []const u8) ?OneLevelPath {
+    const dot = std.mem.indexOfScalar(u8, key, '.') orelse return null;
+    if (dot == 0 or dot + 1 >= key.len) return null;
+    if (std.mem.indexOfScalarPos(u8, key, dot + 1, '.') != null) return null;
+    return .{ .parent = key[0..dot], .child = key[dot + 1 ..] };
+}
 
 fn parseTreeClean(lang: bindings.Language, source: []const u8) bool {
     var parser = bindings.Parser.init();
@@ -1367,6 +1712,60 @@ fn findYamlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
     return result;
 }
 
+fn findYamlOneLevelKey(allocator: Allocator, source: []const u8, path: OneLevelPath) !FormatKeyMatch {
+    var parent_seen = false;
+    var child_seen = std.StringHashMap(void).init(allocator);
+    defer child_seen.deinit();
+    var result = FormatKeyMatch{};
+    var in_parent = false;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#') {
+            const comment_at = findLineCommentStart(line);
+            const body = line[0..comment_at];
+            if (line.len != 0 and line[0] != ' ' and line[0] != '\t') {
+                in_parent = false;
+                if (std.mem.indexOfScalar(u8, body, ':')) |colon| {
+                    const key = trimAscii(body[0..colon]);
+                    if (std.mem.eql(u8, key, path.parent)) {
+                        if (parent_seen) return ApplyError.AmbiguousMatches;
+                        parent_seen = true;
+                        const value = trimAscii(body[colon + 1 ..]);
+                        if (value.len != 0) return ApplyError.UnsupportedLanguage;
+                        in_parent = true;
+                    }
+                }
+            } else if (in_parent) {
+                var indent: usize = 0;
+                while (indent < line.len and line[indent] == ' ') indent += 1;
+                if (indent == 0 or indent % 2 != 0 or (indent < line.len and line[indent] == '\t')) return ApplyError.UnsupportedLanguage;
+                if (indent == 2 and indent < body.len) {
+                    if (std.mem.indexOfScalar(u8, body[indent..], ':')) |colon_rel| {
+                        const colon = indent + colon_rel;
+                        const key = trimAscii(body[indent..colon]);
+                        if (key.len == 0) return ApplyError.ParseFailedBefore;
+                        try rememberTopLevelKey(&child_seen, key);
+                        if (std.mem.eql(u8, key, path.child)) {
+                            result.found = true;
+                            result.value_start = line_start + colon + 1;
+                            while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                            result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                        }
+                    }
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    if (!parent_seen) return ApplyError.NoMatches;
+    if (!result.found) return ApplyError.NoMatches;
+    return result;
+}
+
 fn findTomlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
     var seen = std.StringHashMap(void).init(allocator);
     defer seen.deinit();
@@ -1408,6 +1807,51 @@ fn findTomlTopLevelKey(allocator: Allocator, source: []const u8, wanted: []const
     return result;
 }
 
+fn findTomlTableKey(allocator: Allocator, source: []const u8, path: OneLevelPath) !FormatKeyMatch {
+    var seen = std.StringHashMap(void).init(allocator);
+    defer seen.deinit();
+    var result = FormatKeyMatch{};
+    var found_table = false;
+    var in_table = false;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (trimmed.len != 0 and trimmed[0] != '#') {
+            if (trimmed[0] == '[') {
+                if (trimmed.len > 1 and trimmed[1] == '[') return ApplyError.UnsupportedLanguage;
+                if (trimmed.len < 3 or trimmed[trimmed.len - 1] != ']') return ApplyError.ParseFailedBefore;
+                const table = trimAscii(trimmed[1 .. trimmed.len - 1]);
+                in_table = std.mem.eql(u8, table, path.parent);
+                if (in_table) {
+                    if (found_table) return ApplyError.AmbiguousMatches;
+                    found_table = true;
+                }
+            } else if (in_table) {
+                const comment_at = findLineCommentStart(line);
+                const body = line[0..comment_at];
+                if (std.mem.indexOfScalar(u8, body, '=')) |eq| {
+                    const key = trimAscii(body[0..eq]);
+                    if (key.len == 0 or std.mem.indexOfScalar(u8, key, '.') != null or std.mem.indexOfScalar(u8, key, '[') != null or std.mem.indexOfScalar(u8, key, ']') != null) return ApplyError.UnsupportedLanguage;
+                    try rememberTopLevelKey(&seen, key);
+                    if (std.mem.eql(u8, key, path.child)) {
+                        result.found = true;
+                        result.value_start = line_start + eq + 1;
+                        while (result.value_start < line_start + comment_at and (source[result.value_start] == ' ' or source[result.value_start] == '\t')) result.value_start += 1;
+                        result.value_end = trimRightSpaceEnd(source, result.value_start, line_start + comment_at);
+                    }
+                }
+            }
+        }
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    if (!found_table) return ApplyError.NoMatches;
+    if (!result.found) return ApplyError.NoMatches;
+    return result;
+}
+
 fn buildInsertedFlatKey(allocator: Allocator, source: []const u8, insert_at: usize, key: []const u8, sep: []const u8, encoded_value: []const u8) !JsonBuildResult {
     const has_final_newline = source.len > 0 and source[source.len - 1] == '\n';
     const needs_leading_newline = insert_at > 0 and source[insert_at - 1] != '\n';
@@ -1417,14 +1861,92 @@ fn buildInsertedFlatKey(allocator: Allocator, source: []const u8, insert_at: usi
     return .{ .contents = try apply_diff.spliceText(allocator, source, insert_at, insert_at, replacement), .edit_start = insert_at, .edit_end = insert_at };
 }
 
+fn isIdentByte(c: u8) bool {
+    return std.ascii.isAlphanumeric(c) or c == '_' or c == '$';
+}
+
+fn updateBraceDepthLine(line: []const u8, depth: *usize) void {
+    var quote: u8 = 0;
+    var escaped = false;
+    for (line) |c| {
+        if (quote != 0) {
+            if (escaped) {
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == quote) {
+                quote = 0;
+            }
+            continue;
+        }
+        if (c == '"' or c == '\'') {
+            quote = c;
+        } else if (c == '{') {
+            depth.* += 1;
+        } else if (c == '}') {
+            if (depth.* > 0) depth.* -= 1;
+        }
+    }
+}
+
+fn findTypeScriptTopLevelObjectKey(allocator: Allocator, source: []const u8, wanted: []const u8) !FormatKeyMatch {
+    _ = allocator;
+    var result = FormatKeyMatch{};
+    var depth: usize = 0;
+    var line_start: usize = 0;
+    while (line_start <= source.len) {
+        const depth_before = depth;
+        const nl = std.mem.indexOfScalarPos(u8, source, line_start, '\n');
+        const line_end = nl orelse source.len;
+        const line = source[line_start..line_end];
+        const trimmed = trimAscii(line);
+        if (depth_before == 1 and trimmed.len > wanted.len + 1 and std.mem.startsWith(u8, trimmed, wanted) and trimmed[wanted.len] == ':') {
+            var indent: usize = 0;
+            while (indent < line.len and (line[indent] == ' ' or line[indent] == '\t')) indent += 1;
+            if (indent != 2) return ApplyError.UnsupportedLanguage;
+            if ((wanted.len > 0 and isIdentByte(wanted[0]) and trimmed.len > wanted.len and isIdentByte(trimmed[wanted.len]))) return ApplyError.UnsupportedLanguage;
+            const colon_in_line = indent + wanted.len;
+            var value_start = line_start + colon_in_line + 1;
+            while (value_start < line_start + line.len and (source[value_start] == ' ' or source[value_start] == '\t')) value_start += 1;
+            var value_end = line_start + line.len;
+            if (std.mem.lastIndexOfScalar(u8, line[value_start - line_start ..], ',')) |comma_rel| value_end = value_start + comma_rel;
+            value_end = trimRightSpaceEnd(source, value_start, value_end);
+            if (value_start >= value_end) return ApplyError.UnsupportedLanguage;
+            if (result.found) return ApplyError.AmbiguousMatches;
+            result = .{ .found = true, .value_start = value_start, .value_end = value_end, .insert_at = 0 };
+        }
+        updateBraceDepthLine(line, &depth);
+        if (nl) |pos| line_start = pos + 1 else break;
+    }
+    return result;
+}
+
 fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8, key: []const u8, value: std.json.Value) !FormatSetKeyPlan {
+    if (std.mem.eql(u8, ext, ".ts") or std.mem.eql(u8, ext, ".tsx")) {
+        const lang: bindings.Language = if (std.mem.eql(u8, ext, ".tsx")) .tsx else .typescript;
+        if (!parseTreeClean(lang, original)) return ApplyError.ParseFailedBefore;
+        const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
+        defer allocator.free(encoded);
+        const match = try findTypeScriptTopLevelObjectKey(allocator, original, key);
+        if (!match.found) return ApplyError.NoMatches;
+        const built = JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end };
+        if (!parseTreeClean(lang, built.contents)) {
+            allocator.free(built.contents);
+            return ApplyError.ParseFailedAfter;
+        }
+        return .{ .contents = built.contents, .edit_start = built.edit_start, .edit_end = built.edit_end, .language = if (lang == .tsx) "tsx" else "typescript", .reason_code = "format_text_typescript_set_key", .single_match = true };
+    }
     if (std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml")) {
         if (!parseTreeClean(.yaml, original)) return ApplyError.ParseFailedBefore;
         const encoded = try canonicalSimpleScalar(allocator, value, .yaml);
         defer allocator.free(encoded);
-        const match = try findYamlTopLevelKey(allocator, original, key);
+        const path = splitOneLevelPath(key);
+        if (path == null and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
+        const match = if (path) |p| try findYamlOneLevelKey(allocator, original, p) else try findYamlTopLevelKey(allocator, original, key);
         const built = if (match.found)
             JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else if (path != null)
+            return ApplyError.NoMatches
         else
             try buildInsertedFlatKey(allocator, original, match.insert_at, key, ": ", encoded);
         if (!parseTreeClean(.yaml, built.contents)) {
@@ -1437,9 +1959,13 @@ fn buildFormatSetKey(allocator: Allocator, ext: []const u8, original: []const u8
         if (!parseTreeClean(.toml, original)) return ApplyError.ParseFailedBefore;
         const encoded = try canonicalSimpleScalar(allocator, value, .toml);
         defer allocator.free(encoded);
-        const match = try findTomlTopLevelKey(allocator, original, key);
+        const path = splitOneLevelPath(key);
+        if (path == null and std.mem.indexOfScalar(u8, key, '.') != null) return ApplyError.InvalidPosition;
+        const match = if (path) |p| try findTomlTableKey(allocator, original, p) else try findTomlTopLevelKey(allocator, original, key);
         const built = if (match.found)
             JsonBuildResult{ .contents = try apply_diff.spliceText(allocator, original, match.value_start, match.value_end, encoded), .edit_start = match.value_start, .edit_end = match.value_end }
+        else if (path != null)
+            return ApplyError.NoMatches
         else
             try buildInsertedFlatKey(allocator, original, match.insert_at, key, " = ", encoded);
         if (!parseTreeClean(.toml, built.contents)) {
@@ -1471,7 +1997,8 @@ fn runSetKey(
     const plan_start = Io.Clock.awake.now(io);
     const edit_obj = apply_ir.expectObject(req.edit) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const key = apply_ir.requireString(edit_obj, "key") catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
-    validateSetKeyName(key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
+    const allow_dotted_key = std.mem.eql(u8, ext, ".yaml") or std.mem.eql(u8, ext, ".yml") or std.mem.eql(u8, ext, ".toml");
+    validateSetKeyName(key, allow_dotted_key) catch |err| return emitFailure(err, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
     const value = edit_obj.get("value") orelse return emitFailure(ApplyError.MissingField, req, request_bytes, json_output, stdout, stderr, false, false, request_bytes.len);
 
     const built_plan: FormatSetKeyPlan = if (std.mem.eql(u8, ext, ".json")) blk: {
@@ -1629,7 +2156,7 @@ fn estimateRouteDecision(operation: ApplyOperation, route_option: []const u8) Ro
             .reasonCode = "core_favored_multi_body",
             .risk = .{ .correctnessRisk = 0.06, .unsupportedFormatRisk = 0, .retryRisk = 0.06 },
         },
-        .wrap_body, .insert_body_span, .compose_body => return .{
+        .wrap_body, .insert_body_span, .compose_body, .merge_body_chunk => return .{
             .route = "ast_narrow",
             .fallbackRoute = "core_edit",
             .confidence = 0.80,
@@ -1870,6 +2397,135 @@ fn composeBody(
     };
 }
 
+fn mergeBodyChunk(allocator: Allocator, body: []const u8, snippet: []const u8) ![]u8 {
+    const marker_span = findKeepMarker(snippet) orelse return ApplyError.FieldTypeMismatch;
+
+    const prefix = snippet[0..marker_span.start];
+    const suffix = snippet[marker_span.end..];
+    if (prefix.len == 0 or suffix.len == 0) return ApplyError.FieldTypeMismatch;
+
+    const prefix_anchor = lastNonEmptyLine(prefix) orelse return ApplyError.FieldTypeMismatch;
+    const suffix_anchor = firstNonEmptyLine(suffix) orelse return ApplyError.FieldTypeMismatch;
+    const prefix_match = try selectUniqueLineLiteral(body, prefix_anchor);
+    const suffix_match = try selectUniqueLineLiteral(body, suffix_anchor);
+    if (prefix_match.end > suffix_match.start) return ApplyError.InvalidPosition;
+
+    var out = std.ArrayList(u8).empty;
+    defer out.deinit(allocator);
+    try out.appendSlice(allocator, body[0..prefix_match.start]);
+    try out.appendSlice(allocator, prefix);
+    try out.appendSlice(allocator, body[prefix_match.end..suffix_match.start]);
+    try out.appendSlice(allocator, suffix);
+    try out.appendSlice(allocator, body[suffix_match.end..]);
+    return out.toOwnedSlice(allocator);
+}
+
+fn lastNonEmptyLine(text: []const u8) ?[]const u8 {
+    var line_start: usize = 0;
+    var last: ?[]const u8 = null;
+    while (line_start <= text.len) {
+        var line_end = line_start;
+        while (line_end < text.len and text[line_end] != '\n') : (line_end += 1) {}
+        const content_end = if (line_end > line_start and text[line_end - 1] == '\r') line_end - 1 else line_end;
+        if (std.mem.trim(u8, text[line_start..content_end], " \t").len != 0) {
+            const end = if (line_end < text.len) line_end + 1 else line_end;
+            last = text[line_start..end];
+        }
+        if (line_end >= text.len) break;
+        line_start = line_end + 1;
+    }
+    return last;
+}
+
+fn firstNonEmptyLine(text: []const u8) ?[]const u8 {
+    var line_start: usize = 0;
+    while (line_start <= text.len) {
+        var line_end = line_start;
+        while (line_end < text.len and text[line_end] != '\n') : (line_end += 1) {}
+        const content_end = if (line_end > line_start and text[line_end - 1] == '\r') line_end - 1 else line_end;
+        if (std.mem.trim(u8, text[line_start..content_end], " \t").len != 0) {
+            const end = if (line_end < text.len) line_end + 1 else line_end;
+            return text[line_start..end];
+        }
+        if (line_end >= text.len) break;
+        line_start = line_end + 1;
+    }
+    return null;
+}
+
+fn findKeepMarker(snippet: []const u8) ?EditSpan {
+    var found: ?EditSpan = null;
+    var line_start: usize = 0;
+    while (line_start <= snippet.len) {
+        var line_end = line_start;
+        while (line_end < snippet.len and snippet[line_end] != '\n' and snippet[line_end] != '\r') : (line_end += 1) {}
+
+        const line = std.mem.trim(u8, snippet[line_start..line_end], " \t");
+        if (std.mem.eql(u8, line, "//...") or std.mem.eql(u8, line, "#...")) {
+            if (found != null) return null;
+            var marker_end = line_end;
+            if (marker_end < snippet.len and snippet[marker_end] == '\r') marker_end += 1;
+            if (marker_end < snippet.len and snippet[marker_end] == '\n') marker_end += 1;
+            found = .{ .start = line_start, .end = marker_end };
+        } else if (std.mem.indexOf(u8, line, "...") != null) {
+            return null;
+        }
+
+        if (line_end >= snippet.len) break;
+        line_start = line_end;
+        if (line_start < snippet.len and snippet[line_start] == '\r') line_start += 1;
+        if (line_start < snippet.len and snippet[line_start] == '\n') line_start += 1;
+    }
+    return found;
+}
+
+fn selectUniqueLiteral(body: []const u8, literal: []const u8) !EditSpan {
+    if (literal.len == 0) return ApplyError.PatternEmpty;
+    var first: ?EditSpan = null;
+    var total: usize = 0;
+    var cursor: usize = 0;
+    while (std.mem.indexOfPos(u8, body, cursor, literal)) |start| {
+        if (first == null) first = .{ .start = start, .end = start + literal.len };
+        total += 1;
+        cursor = start + 1;
+    }
+    if (total == 0) return ApplyError.NoMatches;
+    if (total > 1) return ApplyError.AmbiguousMatches;
+    return first.?;
+}
+
+fn selectUniqueLineLiteral(body: []const u8, literal: []const u8) !EditSpan {
+    if (literal.len == 0) return ApplyError.PatternEmpty;
+    var first: ?EditSpan = null;
+    var total: usize = 0;
+    var line_start: usize = 0;
+    while (line_start <= body.len) {
+        var line_end = line_start;
+        while (line_end < body.len and body[line_end] != '\n') : (line_end += 1) {}
+        const has_newline = line_end < body.len;
+        const match_end = if (has_newline) line_end + 1 else line_end;
+        const line = body[line_start..match_end];
+        const line_without_newline = body[line_start..line_end];
+
+        const literal_matches_line = std.mem.eql(u8, line, literal) or
+            (!endsWithLineBreak(literal) and std.mem.eql(u8, line_without_newline, literal));
+        if (literal_matches_line) {
+            if (first == null) first = .{ .start = line_start, .end = line_start + literal.len };
+            total += 1;
+        }
+
+        if (!has_newline) break;
+        line_start = line_end + 1;
+    }
+    if (total == 0) return ApplyError.NoMatches;
+    if (total > 1) return ApplyError.AmbiguousMatches;
+    return first.?;
+}
+
+fn endsWithLineBreak(text: []const u8) bool {
+    return text.len != 0 and (text[text.len - 1] == '\n' or text[text.len - 1] == '\r');
+}
+
 fn languageName(lang: bindings.Language) []const u8 {
     return grammar_config.languageName(lang);
 }
@@ -1974,6 +2630,75 @@ test "apply set_key rejects duplicate JSON keys without mutation" {
     try std.testing.expectEqualStrings(original, post);
 }
 
+test "apply set_key updates TypeScript config object literal property" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export const CONFIG = {
+        \\  apiUrl: "https://api.example.com/v1",
+        \\  timeoutMs: 5000,
+        \\  retryCount: 3,
+        \\  logLevel: "info",
+        \\  featureFlags: {
+        \\    darkMode: true,
+        \\    analytics: false,
+        \\    betaFeatures: false,
+        \\  },
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "config.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "config.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"logLevel","value":"debug"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_typescript_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "config.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\export const CONFIG = {
+        \\  apiUrl: "https://api.example.com/v1",
+        \\  timeoutMs: 5000,
+        \\  retryCount: 3,
+        \\  logLevel: "debug",
+        \\  featureFlags: {
+        \\    darkMode: true,
+        \\    analytics: false,
+        \\    betaFeatures: false,
+        \\  },
+        \\};
+    , post);
+}
+
+test "apply set_key rejects duplicate TypeScript top-level object key without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\export const CONFIG = {
+        \\  logLevel: "info",
+        \\  logLevel: "warn",
+        \\};
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "dup.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"logLevel","value":"debug"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"AMBIGUOUS_MATCH\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "dup.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
 test "apply set_key updates existing YAML value preserving trailing comment" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
@@ -2052,6 +2777,52 @@ test "apply set_key rejects duplicate YAML key without mutation" {
     const post = try tmp.dir.readFileAlloc(io, "dup.yaml", allocator, .unlimited);
     defer allocator.free(post);
     try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply set_key updates YAML one-level mapping key and rejects duplicate child" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\app:
+        \\  name: blitz
+        \\  debug: false # keep me
+        \\limits:
+        \\  debug: false
+    ;
+    const duplicate =
+        \\app:
+        \\  debug: false
+        \\  debug: true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "nested.yaml", .data = original });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup-nested.yaml", .data = duplicate });
+    const path = try tmp.dir.realPathFileAlloc(io, "nested.yaml", allocator);
+    defer allocator.free(path);
+    const dup_path = try tmp.dir.realPathFileAlloc(io, "dup-nested.yaml", allocator);
+    defer allocator.free(dup_path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"app.debug","value":true}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_yaml_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "nested.yaml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\app:
+        \\  name: blitz
+        \\  debug: true # keep me
+        \\limits:
+        \\  debug: false
+    , post);
+    const dup_out = try runApplyTestExpectFailure(allocator, io, req, dup_path);
+    defer allocator.free(dup_out);
+    try std.testing.expect(std.mem.indexOf(u8, dup_out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, dup_out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const dup_post = try tmp.dir.readFileAlloc(io, "dup-nested.yaml", allocator, .unlimited);
+    defer allocator.free(dup_post);
+    try std.testing.expectEqualStrings(duplicate, dup_post);
 }
 
 test "apply set_key updates and inserts TOML top-level keys before tables" {
@@ -2144,6 +2915,52 @@ test "apply set_key rejects TOML duplicate dotted key and dry-run preserves file
     const dry_post = try tmp.dir.readFileAlloc(io, "dry.toml", allocator, .unlimited);
     defer allocator.free(dry_post);
     try std.testing.expectEqualStrings(dry_original, dry_post);
+}
+
+test "apply set_key updates TOML table key and rejects duplicate table child" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\[app]
+        \\name = "blitz"
+        \\debug = false # keep me
+        \\[limits]
+        \\debug = false
+    ;
+    const duplicate =
+        \\[app]
+        \\debug = false
+        \\debug = true
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "nested.toml", .data = original });
+    try tmp.dir.writeFile(io, .{ .sub_path = "dup-nested.toml", .data = duplicate });
+    const path = try tmp.dir.realPathFileAlloc(io, "nested.toml", allocator);
+    defer allocator.free(path);
+    const dup_path = try tmp.dir.realPathFileAlloc(io, "dup-nested.toml", allocator);
+    defer allocator.free(dup_path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"set_key","edit":{"key":"app.debug","value":true}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeReasonCode\":\"format_text_toml_set_key\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "nested.toml", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(
+        \\[app]
+        \\name = "blitz"
+        \\debug = true # keep me
+        \\[limits]
+        \\debug = false
+    , post);
+    const dup_out = try runApplyTestExpectFailure(allocator, io, req, dup_path);
+    defer allocator.free(dup_out);
+    try std.testing.expect(std.mem.indexOf(u8, dup_out, "\"code\":\"AMBIGUOUS_MATCH\"") != null or std.mem.indexOf(u8, dup_out, "\"code\":\"PARSE_ERROR_BEFORE\"") != null);
+    const dup_post = try tmp.dir.readFileAlloc(io, "dup-nested.toml", allocator, .unlimited);
+    defer allocator.free(dup_post);
+    try std.testing.expectEqualStrings(duplicate, dup_post);
 }
 
 test "apply set_key rejects non-json extension and nested key syntax" {
@@ -2341,6 +3158,232 @@ test "apply compose_body parse failure rejects without mutation" {
     try std.testing.expectEqualStrings(original, post);
 }
 
+test "apply merge_body_chunk preserves deterministic span between anchors" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function mergeable(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"mergeable"},"edit":{"snippet":"\n  const logged = true;\n  const base = value + 1;\n//...\n  return keep;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"merge_body_chunk\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const logged = true;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const base = value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "const keep = base * 2;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return keep;") != null);
+}
+
+test "apply merge_body_chunk preserves outer body around chunk anchors" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function outer(value: number): number {
+        \\  const before = value - 1;
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\  const after = value + 99;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"outer"},"edit":{"snippet":"\n  const logged = true;\n  const base = value + 1;\n//...\n  return keep;\n  const done = true;\n"}}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"merge_body_chunk\"") != null);
+    const expected =
+        \\function outer(value: number): number {
+        \\  const before = value - 1;
+        \\
+        \\  const logged = true;
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\  const done = true;
+        \\  const after = value + 99;
+        \\}
+    ;
+    try std.testing.expectEqualStrings(expected, post);
+}
+
+test "apply merge_body_chunk duplicate anchor rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function duplicateAnchor(value: number): number {
+        \\  const base = value + 1;
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"duplicateAnchor"},"edit":{"snippet":"\n  const base = value + 1;\n//...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "ambiguous pattern match") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk missing anchor rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function missingAnchor(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"missingAnchor"},"edit":{"snippet":"\n  const nope = value;\n//...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "no matching pattern") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk malformed marker rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function malformedMarker(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"malformedMarker"},"edit":{"snippet":"\n  const base = value + 1; //...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk absent marker rejects without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function absentMarker(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"absentMarker"},"edit":{"snippet":"\n  const base = value + 1;\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk duplicate standalone markers reject without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function duplicateMarker(value: number): number {
+        \\  const base = value + 1;
+        \\  const keep = base * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"duplicateMarker"},"edit":{"snippet":"\n  const base = value + 1;\n//...\n  const keep = base * 2;\n//...\n  return keep + 1;\n"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply merge_body_chunk anchors must match complete line slices" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function lineAnchors(value: number): number {
+        \\  const database = value + 1;
+        \\  const keep = database * 2;
+        \\  return keep;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"version":1,"file":"{FILE}","operation":"merge_body_chunk","target":{"symbol":"lineAnchors"},"edit":{"snippet":"\n  const base = value + 1;\n//...\n  return keep;"}}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "no matching pattern") != null);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings(original, post);
+}
+
 test "apply set_body replaces complete body" {
     var tmp = std.testing.tmpDir(.{});
     defer tmp.cleanup();
@@ -2365,9 +3408,466 @@ test "apply set_body replaces complete body" {
     try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"applied\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"operation\":\"set_body\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, out, "\"language\":\"typescript\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "function settable(value: number): number {") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
     try std.testing.expect(std.mem.indexOf(u8, post, "doubled") == null);
+}
+
+test "apply compact object rb replaces body" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function compact(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"compact"},"s":"\n  return value + 1;\n"}]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"set_body\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "value * 2") == null);
+}
+
+test "apply compact tuple x exact replace emits quiet success" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const label = "old";
+        \\const other = "keep";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","old","new"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expectEqualStrings("ok c=1\n", out);
+    try std.testing.expect(std.mem.indexOf(u8, post, "\"new\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "\"old\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "keep") != null);
+}
+
+test "apply compact tuple x rejects missing match without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const label = "old";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","missing","new"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "NO_MATCH") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact tuple x rejects multi match without mutation" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\const a = "old";
+        \\const b = "old";
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["x","old","new"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "AMBIGUOUS_MATCH") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact target kind disambiguates class and function with same name" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Dup {
+        \\  value = 1;
+        \\}
+        \\function Dup(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"Dup"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "class Dup") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "value = 1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 2") != null);
+}
+
+test "apply compact target wrong kind ignores cross-kind duplicate" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\class Dup {
+        \\  value = 1;
+        \\}
+        \\function Dup(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"method","n":"Dup"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "SYMBOL_NOT_FOUND") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact target range node replaces declaration while body keeps wrapper" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function nodeBody(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "body.ts", .data = original });
+    const body_path = try tmp.dir.realPathFileAlloc(io, "body.ts", allocator);
+    defer allocator.free(body_path);
+    const body_req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"nodeBody","range":"body"},"s":"\n  return 2;\n"}]}
+    ;
+    var out = try runApplyTest(allocator, io, body_req, body_path);
+    allocator.free(out);
+    const body_post = try tmp.dir.readFileAlloc(io, "body.ts", allocator, .unlimited);
+    defer allocator.free(body_post);
+    try std.testing.expect(std.mem.indexOf(u8, body_post, "function nodeBody(): number {") != null);
+    try std.testing.expect(std.mem.indexOf(u8, body_post, "return 2") != null);
+
+    try tmp.dir.writeFile(io, .{ .sub_path = "node.ts", .data = original });
+    const node_path = try tmp.dir.realPathFileAlloc(io, "node.ts", allocator);
+    defer allocator.free(node_path);
+    const node_req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"nodeBody","range":"node"},"s":"function nodeBody(): number {\n  return 3;\n}"}]}
+    ;
+    out = try runApplyTest(allocator, io, node_req, node_path);
+    allocator.free(out);
+    const node_post = try tmp.dir.readFileAlloc(io, "node.ts", allocator, .unlimited);
+    defer allocator.free(node_post);
+    try std.testing.expectEqualStrings("function nodeBody(): number {\n  return 3;\n}", node_post);
+}
+
+test "apply compact unsupported target range fails closed" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function badRange(): number {
+        \\  return 1;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"badRange","range":"signature"},"s":"\n  return 2;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"INVALID_FIELD\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "invalid target range") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact object guard range text match applies" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function guarded(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const expected = "return value * 2";
+    const start = std.mem.indexOf(u8, original, expected).?;
+    const end = start + expected.len;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[{{"op":"rb","t":{{"k":"function","n":"guarded"}},"s":"\n  return value + 1;\n","g":{{"range":[{d},{d}],"text":"{s}"}}}}]}}
+    , .{ start, end, expected });
+    defer allocator.free(req);
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return value + 1;") != null);
+}
+
+test "apply compact object guard mismatch rejects and leaves file unchanged" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function guarded(value: number): number {
+        \\  return value * 2;
+        \\}
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const start = std.mem.indexOf(u8, original, "return value * 2").?;
+    const end = start + "return value * 2".len;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[{{"op":"rb","t":{{"k":"function","n":"guarded"}},"s":"\n  return value + 1;\n","g":{{"range":[{d},{d}],"text":"return stale;"}}}}]}}
+    , .{ start, end });
+    defer allocator.free(req);
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"HASH_MISMATCH\"") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact tuple ia inserts after symbol" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function last(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"insert_after_symbol\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"routeDecision\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"metrics\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"diffSummary\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
+}
+
+test "apply compact batch rebases later op against updated same file" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"],["rb","function","second","\n  return 22;\n"]]}
+    ;
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"op\":\"batch\"") != null);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"count\":2") != null);
+    const inserted_at = std.mem.indexOf(u8, post, "function inserted").?;
+    const second_at = std.mem.indexOf(u8, post, "function second").?;
+    const updated_at = std.mem.indexOf(u8, post, "return 22;").?;
+    try std.testing.expect(inserted_at < second_at);
+    try std.testing.expect(second_at < updated_at);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 2;") == null);
+}
+
+test "apply compact batch second failure leaves file unchanged" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["ia","function","first","\nfunction inserted(): number { return 3; }\n"],["rb","function","missing","\n  return 22;\n"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expectEqualStrings(original, post);
+}
+
+test "apply compact batch guard validates sequential contents" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function first(): number { return 1; }
+        \\function second(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const inserted = "\nfunction inserted(): number { return 3; }\n";
+    const guarded_source = try std.mem.concat(allocator, u8, &.{ original[0..std.mem.indexOf(u8, original, "function second").?], inserted, original[std.mem.indexOf(u8, original, "function second").?..] });
+    defer allocator.free(guarded_source);
+    const guard_text = "function second";
+    const guard_start = std.mem.indexOf(u8, guarded_source, guard_text).?;
+    const req = try std.fmt.allocPrint(allocator,
+        \\{{"v":1,"f":"{{FILE}}","ops":[["ia","function","first","\nfunction inserted(): number {{ return 3; }}\n"],{{"op":"rb","t":{{"k":"function","n":"second"}},"s":"\n  return 22;\n","g":{{"range":[{d},{d}],"text":"{s}"}}}}]}}
+    , .{ guard_start, guard_start + guard_text.len, guard_text });
+    defer allocator.free(req);
+    const out = try runApplyTest(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"ok\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function inserted") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 22;") != null);
+}
+
+test "apply compact unknown alias rejects" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function x(): number { return 1; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[["xx","function","x","\n  return 2;\n"]]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"code\":\"UNSUPPORTED_OPERATION\"") != null);
+}
+
+test "apply compact duplicate ambiguity rejects unless occurrence selects" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function dupe(): number { return 1; }
+        \\function dupe(): number { return 2; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const ambiguous =
+        \\{"v":1,"f":"{FILE}","ops":[["rb","function","dupe","\n  return 9;\n"]]}
+    ;
+    const fail = try runApplyTestExpectFailure(allocator, io, ambiguous, path);
+    defer allocator.free(fail);
+    const after_fail = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(after_fail);
+    try std.testing.expectEqualStrings(original, after_fail);
+
+    const selected =
+        \\{"v":1,"f":"{FILE}","ops":[["rb","function","dupe","\n  return 9;\n",1]]}
+    ;
+    const out = try runApplyTest(allocator, io, selected, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, post, "function dupe(): number { return 1; }") != null);
+    try std.testing.expect(std.mem.indexOf(u8, post, "return 9;") != null);
+}
+
+test "apply compact parse-after failure does not write" {
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const io = std.testing.io;
+    const allocator = std.testing.allocator;
+    const original =
+        \\function invalid(): number { return 1; }
+    ;
+    try tmp.dir.writeFile(io, .{ .sub_path = "a.ts", .data = original });
+    const path = try tmp.dir.realPathFileAlloc(io, "a.ts", allocator);
+    defer allocator.free(path);
+    const req =
+        \\{"v":1,"f":"{FILE}","ops":[{"op":"rb","t":{"k":"function","n":"invalid"},"s":"\n  const = ;\n"}]}
+    ;
+    const out = try runApplyTestExpectFailure(allocator, io, req, path);
+    defer allocator.free(out);
+    const post = try tmp.dir.readFileAlloc(io, "a.ts", allocator, .unlimited);
+    defer allocator.free(post);
+    try std.testing.expect(std.mem.indexOf(u8, out, "\"status\":\"rejected\"") != null);
+    try std.testing.expectEqualStrings(original, post);
 }
 
 test "apply set_body invalid body type rejects without mutation" {

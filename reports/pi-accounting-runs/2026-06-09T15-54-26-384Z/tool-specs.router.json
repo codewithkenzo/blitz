@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-06-09T15:54:26.479Z",
+  "profile": "router",
+  "profileLabel": "router",
+  "tools": [
+    {
+      "name": "pi_blitz_route_edit",
+      "label": "blitz route edit",
+      "description": "Token-first edit router. Executes Blitz only with supported ops/s and proof/request; otherwise no-write decline to core/apply_patch.",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "f"
+        ],
+        "properties": {
+          "f": {
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "Absolute or repo-relative path to the source file.",
+            "type": "string"
+          },
+          "ops": {
+            "minItems": 1,
+            "maxItems": 64,
+            "description": "Blitz alias tuples. Missing ops/s declines to core/apply_patch.",
+            "type": "array",
+            "items": {
+              "minItems": 2,
+              "maxItems": 6,
+              "type": "array",
+              "items": {
+                "description": "Compact op tuple item.",
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          },
+          "s": {
+            "minLength": 1,
+            "maxLength": 524288,
+            "description": "Compact Blitz script, tab-separated.",
+            "type": "string"
+          },
+          "r": {
+            "description": "Route preference. auto fails closed without fallbackContextTokensExpected proof.",
+            "anyOf": [
+              {
+                "const": "auto",
+                "type": "string"
+              },
+              {
+                "const": "blitz",
+                "type": "string"
+              },
+              {
+                "const": "core",
+                "type": "string"
+              },
+              {
+                "const": "apply_patch",
+                "type": "string"
+              }
+            ]
+          },
+          "fallbackContextTokensExpected": {
+            "description": "Expected core/apply_patch context tokens for same edit.",
+            "type": "number"
+          },
+          "p": {
+            "description": "Preview/dry-run when Blitz selected.",
+            "type": "boolean"
+          },
+          "d": {
+            "description": "Include compact diff summary when Blitz selected.",
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  ]
+}

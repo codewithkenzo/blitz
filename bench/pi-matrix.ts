@@ -46,7 +46,9 @@ const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
+const DEFAULT_PI_BLITZ_PACKAGE = "/home/kenzo/dev/pi-blitz";
 const ALL_BLITZ_EDIT_TOOLS = [
+	"pi_blitz_op",
 	"pi_blitz_replace_body_span",
 	"pi_blitz_insert_body_span",
 	"pi_blitz_wrap_body",
@@ -96,6 +98,16 @@ const skill = argFlag(
 	process.env.PI_BLITZ_SKILL ?? DEFAULT_PI_BLITZ_SKILL,
 );
 const keepTemp = argv.includes("--keep-temp");
+const toolProfile = argFlag(
+	"--tool-profile",
+	process.env.PI_BLITZ_TOOL_PROFILE ?? "full",
+);
+const artifactProfilesArg = argFlag("--artifact-profiles", toolProfile);
+const piBlitzPackage = argFlag(
+	"--pi-blitz-package",
+	process.env.PI_BLITZ_PACKAGE ?? DEFAULT_PI_BLITZ_PACKAGE,
+);
+const artifactRootArg = argFlag("--artifact-root", "");
 const runner = argFlag("--runner", "spawn") as "spawn" | "tmux";
 if (runner !== "spawn" && runner !== "tmux") {
 	throw new Error(`invalid --runner ${runner}; expected spawn or tmux`);
@@ -107,6 +119,9 @@ const runRoot =
 		? runRootArg || join(REPO_ROOT, "reports/pi-tmux-runs", runStamp)
 		: runRootArg;
 const tmuxSession = `pi-bench-${runStamp}`;
+const artifactRoot = resolve(
+	artifactRootArg || join(REPO_ROOT, "reports/pi-accounting-runs", runStamp),
+);
 const tokScaleRequired = argv.includes("--tokscale");
 const tokScaleDisabled = argv.includes("--no-tokscale");
 if (tokScaleRequired && tokScaleDisabled) {
@@ -224,6 +239,67 @@ Goal: under the marker \`<!-- benchmark-smoke-list -->\`, add this bullet before
 Original file contents:
 ${src}`;
 
+const buildConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change logLevel from "info" to "debug". Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildLoggingIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: after the existing console.log line, add a new line: console.time(\`Processing order \${orderId}\`);
+Original file contents:
+${src}`;
+
+const buildLongSectionIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: replace the return statement at the end from \`return \`Invoice \${id} for \${customer}: $0.00\`;\` to \`return \`Invoice \${id} for \${customer}: $\${total.toFixed(2)}\`;\`.
+Original file contents:
+${src}`;
+
+const buildRenameIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: rename the function from computeScore to calculateAverage. Update both the function declaration and all references (there are none except the declaration).
+Original file contents:
+${src}`;
+
+const buildMarkdownAppendIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: under the marker \`<!-- append-target -->\`, add a new section. Append the following lines after that marker:
+\`## Configuration Reference\n\nSee the \`blitz --help\` command.\`
+Original file contents:
+${src}`;
+
+const buildJsonConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change "debug" from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildYamlConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change debug from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildTomlConfigIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change debug from false to true. Leave every other line unchanged.
+Original file contents:
+${src}`;
+
+const buildCssIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: in the .header rule, change the background color from "#333" to "#222".
+Original file contents:
+${src}`;
+
+const buildHtmlIntent = (filePath: string, src: string): string =>
+	`Apply this change to the file at ${filePath}. Use only the available edit tool. Do not output any prose, plan, or explanation: just call the edit tool exactly once.
+Goal: change the page title from "Blitz App" to "Blitz CLI".
+Original file contents:
+${src}`;
+
 const FIXTURES: Fixture[] = [
 	{
 		id: "small/wrap-tail",
@@ -248,7 +324,7 @@ const FIXTURES: Fixture[] = [
 		intent: (p: string) => buildWrapIntent(p, mediumSrc, "mediumCompute"),
 		expectedFile: "",
 		blitzGuidance:
-			'For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.',
+			"For this edit, call `pi_blitz_wrap_body`. Tool args must be exactly: symbol `mediumCompute`; before value is an actual newline character followed by two spaces and `try {`; after value is `  } catch (error) {`, newline, four spaces `console.error(error);`, newline, four spaces `throw error;`, newline, two spaces `}`, newline; indentKeptBodyBy `2`. Do not pass literal backslash-n text in `before` or `after`.",
 		recommendedLane: "blitz",
 		className: "medium_wrap_body",
 	},
@@ -365,6 +441,88 @@ const FIXTURES: Fixture[] = [
 		lanePolicy: "core-only",
 		recommendedLane: "core",
 		className: "markdown_core_only",
+	},
+	{
+		id: "config/key-update",
+		relPath: "config.ts",
+		intent: (p: string) => buildConfigIntent(p, configSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "config_key_update",
+	},
+	{
+		id: "logging/insert-timer",
+		relPath: "logging.ts",
+		intent: (p: string) => buildLoggingIntent(p, loggingSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "logging_insert_timer",
+	},
+	{
+		id: "long-section/replace-return",
+		relPath: "long-section.ts",
+		intent: (p: string) => buildLongSectionIntent(p, longSectionSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "long_section_replace_return",
+	},
+	{
+		id: "rename/function-name",
+		relPath: "rename.ts",
+		intent: (p: string) => buildRenameIntent(p, renameSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "rename_function_name",
+	},
+	{
+		id: "markdown/append-section",
+		relPath: "markdown-append.md",
+		intent: (p: string) => buildMarkdownAppendIntent(p, markdownAppendSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "markdown_append_section",
+	},
+	{
+		id: "json/config-key",
+		relPath: "config.json",
+		intent: (p: string) => buildJsonConfigIntent(p, jsonConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "json_config_key",
+	},
+	{
+		id: "yaml/config-key",
+		relPath: "config.yaml",
+		intent: (p: string) => buildYamlConfigIntent(p, yamlConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "yaml_config_key",
+	},
+	{
+		id: "toml/config-key",
+		relPath: "config.toml",
+		intent: (p: string) => buildTomlConfigIntent(p, tomlConfigSrc),
+		expectedFile: "",
+		recommendedLane: "core",
+		className: "toml_config_key",
+	},
+	{
+		id: "css/small-edit",
+		relPath: "style.css",
+		intent: (p: string) => buildCssIntent(p, cssSrc),
+		expectedFile: "",
+		lanePolicy: "core-only",
+		recommendedLane: "core",
+		className: "css_small_edit",
+	},
+	{
+		id: "html/small-edit",
+		relPath: "index.html",
+		intent: (p: string) => buildHtmlIntent(p, htmlSrc),
+		expectedFile: "",
+		lanePolicy: "core-only",
+		recommendedLane: "core",
+		className: "html_small_edit",
 	},
 ];
 
@@ -488,6 +646,69 @@ const readmeExpected = readmeSrc.replace(
 	"<!-- benchmark-smoke-list -->\n- Confirm README smoke path stays cheap.\n",
 );
 
+const configSrc = await readFile(join(fixtureDir, "config.ts"), "utf8");
+const configExpected = configSrc.replace(
+	'logLevel: "info"',
+	'logLevel: "debug"',
+);
+
+const loggingSrc = await readFile(join(fixtureDir, "logging.ts"), "utf8");
+const loggingExpected = loggingSrc.replace(
+	"  console.log(`Processing order ${orderId}`);\n",
+	"  console.log(`Processing order ${orderId}`);\n  console.time(`Processing order ${orderId}`);\n",
+);
+
+const longSectionSrc = await readFile(
+	join(fixtureDir, "long-section.ts"),
+	"utf8",
+);
+const longSectionExpected = longSectionSrc.replace(
+	"  return `Invoice ${id} for ${customer}: $0.00`;",
+	() => "  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;",
+);
+
+const renameSrc = await readFile(join(fixtureDir, "rename.ts"), "utf8");
+const renameExpected = renameSrc.replace(
+	"export function computeScore",
+	"export function calculateAverage",
+);
+
+const markdownAppendSrc = await readFile(
+	join(fixtureDir, "markdown-append.md"),
+	"utf8",
+);
+const markdownAppendExpected = markdownAppendSrc.replace(
+	"<!-- append-target -->\n",
+	"<!-- append-target -->\n## Configuration Reference\n\nSee the `blitz --help` command.\n",
+);
+
+const jsonConfigSrc = await readFile(join(fixtureDir, "config.json"), "utf8");
+const jsonConfigExpected = jsonConfigSrc.replace(
+	'"debug": false',
+	'"debug": true',
+);
+
+const yamlConfigSrc = await readFile(join(fixtureDir, "config.yaml"), "utf8");
+const yamlConfigExpected = yamlConfigSrc.replace(
+	"  debug: false",
+	"  debug: true",
+);
+
+const tomlConfigSrc = await readFile(join(fixtureDir, "config.toml"), "utf8");
+const tomlConfigExpected = tomlConfigSrc.replace(
+	"debug = false",
+	"debug = true",
+);
+
+const cssSrc = await readFile(join(fixtureDir, "style.css"), "utf8");
+const cssExpected = cssSrc.replace("background: #333;", "background: #222;");
+
+const htmlSrc = await readFile(join(fixtureDir, "index.html"), "utf8");
+const htmlExpected = htmlSrc.replace(
+	"<title>Blitz App</title>",
+	"<title>Blitz CLI</title>",
+);
+
 FIXTURES[0]!.expectedFile = smallExpected;
 FIXTURES[1]!.expectedFile = mediumExpected;
 FIXTURES[2]!.expectedFile = mediumWrapExpected;
@@ -502,10 +723,32 @@ FIXTURES[10]!.expectedFile = arrowReturnExpected;
 FIXTURES[11]!.expectedFile = nestedReturnExpected;
 FIXTURES[12]!.expectedFile = componentReturnExpected;
 FIXTURES[13]!.expectedFile = readmeExpected;
+FIXTURES[14]!.expectedFile = configExpected;
+FIXTURES[15]!.expectedFile = loggingExpected;
+FIXTURES[16]!.expectedFile = longSectionExpected;
+FIXTURES[17]!.expectedFile = renameExpected;
+FIXTURES[18]!.expectedFile = markdownAppendExpected;
+FIXTURES[19]!.expectedFile = jsonConfigExpected;
+FIXTURES[20]!.expectedFile = yamlConfigExpected;
+FIXTURES[21]!.expectedFile = tomlConfigExpected;
+FIXTURES[22]!.expectedFile = cssExpected;
+FIXTURES[23]!.expectedFile = htmlExpected;
 
-type Lane = "core" | "blitz";
-type Route = "core_edit" | "ast_narrow" | "ast_batch";
-type RouteReasonCode = "lane_core_edit" | "lane_blitz_structured_tool";
+type Lane = "core" | "blitz" | "router";
+type Route = "core_edit" | "ast_narrow" | "ast_batch" | "token_router";
+type RouteReasonCode =
+	| "lane_core_edit"
+	| "lane_blitz_structured_tool"
+	| "lane_router_facade";
+
+type TokenRouteDecision = {
+	contextSavingsPct: number | null;
+	schemaTokensExpected: number;
+	argTokensExpected: number;
+	outputTokensExpected: number;
+	fallbackContextTokensExpected: number | null;
+	selectedBecause: string;
+};
 
 const routeForLane = (
 	lane: Lane,
@@ -513,13 +756,15 @@ const routeForLane = (
 ): { route: Route; routeReasonCode: RouteReasonCode } =>
 	lane === "core"
 		? { route: "core_edit", routeReasonCode: "lane_core_edit" }
-		: {
-				route:
-					fx?.id.includes("multi/") || fx?.id.includes("patch")
-						? "ast_batch"
-						: "ast_narrow",
-				routeReasonCode: "lane_blitz_structured_tool",
-			};
+		: lane === "router"
+			? { route: "token_router", routeReasonCode: "lane_router_facade" }
+			: {
+					route:
+						fx?.id.includes("multi/") || fx?.id.includes("patch")
+							? "ast_batch"
+							: "ast_narrow",
+					routeReasonCode: "lane_blitz_structured_tool",
+				};
 
 const piArgs = (
 	lane: Lane,
@@ -591,6 +836,7 @@ const runPiSpawn = (
 	const env = {
 		...process.env,
 		PATH: `${BLITZ_BIN_DIR}:${process.env.PATH ?? ""}`,
+		PI_BLITZ_TOOL_PROFILE: lane === "router" ? "router" : toolProfile,
 	};
 	const r = spawnSync(piBin, args, {
 		cwd,
@@ -647,6 +893,7 @@ STDOUT_LOG="$RUN_DIR/stdout.log"
 STDERR_LOG="$RUN_DIR/stderr.log"
 EXIT_FILE="$RUN_DIR/exit.json"
 export PATH=${shellQuote(BLITZ_BIN_DIR)}":$PATH"
+export PI_BLITZ_TOOL_PROFILE=${shellQuote(lane === "router" ? "router" : toolProfile)}
 cd ${shellQuote(workDirAbs)}
 start_ms=$(date +%s%3N)
 status=0
@@ -849,7 +1096,7 @@ const parseSession = (file: string, lane: Lane): Promise<ParsedSession> =>
 				if (part?.type === "toolCall") {
 					if (
 						(lane === "core" && part.name === "edit") ||
-						(lane === "blitz" &&
+						((lane === "blitz" || lane === "router") &&
 							typeof part.name === "string" &&
 							part.name.startsWith("pi_blitz_"))
 					) {
@@ -890,6 +1137,7 @@ type TokScaleValidation = {
 type LaneResult = {
 	lane: Lane;
 	wallMs: number;
+	promptTokens: number;
 	session: ParsedSession;
 	tokScale: TokScaleValidation;
 	correct: boolean;
@@ -899,6 +1147,7 @@ type LaneResult = {
 	stdout: string;
 	runDir?: string;
 	sessionDir?: string;
+	sessionFile?: string;
 	commandFile?: string;
 	stdoutLog?: string;
 	stderrLog?: string;
@@ -916,6 +1165,169 @@ const emptyTokScale = (details: string): TokScaleValidation => ({
 	matchesParser: false,
 	details,
 });
+
+type ToolSpecArtifact = {
+	profile: string;
+	profileLabel: string;
+	visibleToolNames: string[];
+	serializedToolSpecsPath: string;
+	serializedToolSpecsTokens: number;
+	serializedToolSpecsBytes: number;
+};
+
+const ALL_TOOL_PROFILES = [
+	"minimal",
+	"router",
+	"semantic",
+	"structural",
+	"admin",
+	"full",
+] as const;
+
+const parseArtifactProfiles = (value: string): string[] => {
+	const requested =
+		value === "all"
+			? [...ALL_TOOL_PROFILES]
+			: value
+					.split(",")
+					.map((profile) => profile.trim())
+					.filter(Boolean);
+	if (!requested.includes(toolProfile)) requested.push(toolProfile);
+	return [...new Set(requested)];
+};
+
+const artifactProfiles = parseArtifactProfiles(artifactProfilesArg);
+
+let selectedVisibleToolNames = new Set<string>();
+
+const assertProfileSupportsTools = (toolsOverride: string | undefined) => {
+	if (!toolsOverride) return;
+	const requested = toolsOverride
+		.split(",")
+		.map((tool) => tool.trim())
+		.filter(Boolean);
+	const unavailable = requested.filter(
+		(tool) => !selectedVisibleToolNames.has(tool),
+	);
+	if (unavailable.length) {
+		throw new Error(
+			`tool profile ${toolProfile} does not expose requested Blitz tools: ${unavailable.join(",")}`,
+		);
+	}
+};
+
+type SkillArtifact = {
+	path: string;
+	snapshotPath: string;
+	tokens: number;
+	bytes: number;
+};
+
+type TokenizerMetadata = {
+	toolSpecTokenizer: string;
+	skillTokenizer: string;
+	toolCallArgTokenizer: string;
+	model: string;
+	provider: string;
+};
+
+const captureAccountingArtifacts = async (): Promise<{
+	artifactRoot: string;
+	toolSpec: ToolSpecArtifact | null;
+	toolSpecs: ToolSpecArtifact[];
+	skill: SkillArtifact;
+	tokenizer: TokenizerMetadata;
+	metadataPath: string;
+}> => {
+	await mkdir(artifactRoot, { recursive: true });
+	const tokenizer: TokenizerMetadata = {
+		toolSpecTokenizer: "cl100k_base via tiktoken",
+		skillTokenizer: "cl100k_base via tiktoken",
+		toolCallArgTokenizer: "cl100k_base via tiktoken",
+		model,
+		provider,
+	};
+	const skillText = await readFile(join(skill, "SKILL.md"), "utf8").catch(
+		() => "",
+	);
+	const skillSnapshotPath = join(artifactRoot, `skill.${toolProfile}.md`);
+	for (const profile of artifactProfiles) {
+		await writeFile(
+			join(artifactRoot, `skill.${profile}.md`),
+			skillText,
+			"utf8",
+		);
+	}
+	let toolSpec: ToolSpecArtifact | null = null;
+	const toolSpecs: ToolSpecArtifact[] = [];
+	for (const profile of [...new Set(artifactProfiles)]) {
+		const serializedToolSpecsPath = join(
+			artifactRoot,
+			`tool-specs.${profile}.json`,
+		);
+		const dump = spawnSync(
+			"bun",
+			[
+				"scripts/dump-tool-specs.ts",
+				"--profile",
+				profile,
+				"--out",
+				serializedToolSpecsPath,
+			],
+			{
+				cwd: piBlitzPackage,
+				env: { ...process.env, PI_BLITZ_TOOL_PROFILE: profile },
+				encoding: "utf8",
+				maxBuffer: 20 * 1024 * 1024,
+			},
+		);
+		if (dump.status !== 0) {
+			if (tokScaleMode === "required" || profile === toolProfile) {
+				throw new Error(
+					`tool spec dump failed for ${profile}: ${(dump.stderr || dump.stdout).trim()}`,
+				);
+			}
+			continue;
+		}
+		const text = await readFile(serializedToolSpecsPath, "utf8");
+		const parsed = JSON.parse(text) as {
+			profile: string;
+			profileLabel: string;
+			tools: Array<{ name: string }>;
+		};
+		const artifact = {
+			profile: parsed.profile,
+			profileLabel: parsed.profileLabel,
+			visibleToolNames: parsed.tools.map((tool) => tool.name),
+			serializedToolSpecsPath,
+			serializedToolSpecsTokens: countTokens(text),
+			serializedToolSpecsBytes: Buffer.byteLength(text, "utf8"),
+		};
+		toolSpecs.push(artifact);
+		if (profile === toolProfile) toolSpec = artifact;
+	}
+	const metadataPath = join(artifactRoot, `tokenizer.${toolProfile}.json`);
+	for (const profile of artifactProfiles) {
+		await writeFile(
+			join(artifactRoot, `tokenizer.${profile}.json`),
+			JSON.stringify({ ...tokenizer, profile }, null, 2),
+			"utf8",
+		);
+	}
+	return {
+		artifactRoot,
+		toolSpec,
+		toolSpecs,
+		skill: {
+			path: join(skill, "SKILL.md"),
+			snapshotPath: skillSnapshotPath,
+			tokens: countTokens(skillText),
+			bytes: Buffer.byteLength(skillText, "utf8"),
+		},
+		tokenizer,
+		metadataPath,
+	};
+};
 
 const tokScaleAvailable = () => {
 	const r = spawnSync("tokscale", ["--version"], {
@@ -1047,12 +1459,49 @@ const runLane = async (
 	await writeFile(targetPath, original, "utf8");
 
 	let prompt = fx.intent(targetPath);
-	if (lane === "blitz") {
-		let guidance =
-			"Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+	if (lane !== "core") {
+		const useRouter = lane === "router";
+		const useCompactOp = toolProfile === "minimal" || useRouter;
+		let guidance = useRouter
+			? "Use only `pi_blitz_route_edit`. Copy exact args JSON. Do not call other pi_blitz_* tools. Use route preference `blitz` for executable Blitz rows."
+			: useCompactOp
+				? toolProfile === "minimal"
+					? "Use only `blitz_edit`. Copy exact args JSON. Do not call other tools."
+					: "Use only `blitz_edit`. Copy exact args JSON. Do not call other pi_blitz_* tools."
+				: "Use the narrow pi_blitz_* structured tool that matches the edit. Do not repeat unchanged code. Pass symbol name only in `symbol`.";
+		const compactArgs = (script: string) => {
+			const ops = script.split("\n").map((line) => line.split("\t"));
+			if (toolProfile === "minimal") {
+				const e = ops.map((op) => {
+					if (op[0] === "ru") return ["x", op[1] ?? "", op[2] ?? ""];
+					if (op[0] === "ia") {
+						const anchor = op[1] ?? "";
+						const text = (op[2] ?? "").replaceAll("\\n", "\n").replaceAll("\\t", "\t");
+						return ["x", anchor, `${anchor}${text}`];
+					}
+					if (op[0] === "sk" && fx.id === "config/key-update") return ["x", 'logLevel: "info"', 'logLevel: "debug"'];
+					if (op[0] === "sk" && fx.id === "json/config-key") return ["x", '"debug": false', '"debug": true'];
+					if (op[0] === "sk" && fx.id === "yaml/config-key") return ["x", '  debug: false', '  debug: true'];
+					if (op[0] === "sk" && fx.id === "toml/config-key") return ["x", 'debug = false', 'debug = true'];
+					return op;
+				});
+				return JSON.stringify({ f: targetPath, e });
+			}
+			return JSON.stringify({ f: targetPath, ops });
+		};
+		const routeArgs = (script: string, fallback = 5000, route = "blitz") =>
+			JSON.stringify({
+				f: targetPath,
+				r: route,
+				s: script,
+				fallbackContextTokensExpected: fallback,
+			});
 		if (fx.id.includes("wrap-body")) {
-			guidance +=
-				' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs("wb\tmediumCompute\t\\n  try {\t  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n\t2")}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: {"f":${JSON.stringify(targetPath)},"ops":[["wb","mediumCompute","\\n  try {","  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n",2]]}.`
+					: ' For this edit, call `pi_blitz_wrap_body`. Copy exact tool args JSON: {"symbol":"mediumCompute","before":"\\n  try {","after":"  } catch (error) {\\n    console.error(error);\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}. `before` starts with newline escape `\\n` and has no trailing newline. `after` has no leading newline and MUST end with newline escape `\\n`. JSON escapes must decode to newline chars; do not pass literal backslash-n text.';
 		} else if (fx.id.includes("compose-preserve-islands")) {
 			guidance +=
 				' For this edit, call `pi_blitz_compose_body` with symbol `mediumCompute` and segments: [ { keep: { afterKeep: `  let total = seed;`, includeAfter: true, occurrence: "only" } }, { text: `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError(\\"seed must be finite\\");\\n  }\\n` }, { keep: { beforeKeep: `  let total = seed;`, afterKeep: `  return total;`, includeBefore: false, includeAfter: false, occurrence: "last" } }, { text: `  if (total < 0) {\\n    return 0;\\n  }\\n\\n` }, { keep: { beforeKeep: `  return total;`, includeBefore: true, occurrence: "last" } } ].';
@@ -1060,8 +1509,13 @@ const runLane = async (
 			guidance +=
 				' For this edit, call `pi_blitz_insert_body_span` with symbol `mediumCompute`, anchor `let total = seed;`, position `after`, text `\\n  if (!Number.isFinite(total)) {\\n    throw new RangeError("seed must be finite");\\n  }`, occurrence `only`.';
 		} else if (fx.id.includes("medium-10k/marker-tail")) {
-			guidance +=
-				" For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
+			const script =
+				"rb\tmediumCompute\treturn total;\treturn total + 1;\tlast";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, call `pi_blitz_replace_body_span` with symbol `mediumCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("multi/three-body-ops")) {
 			guidance +=
 				' For this edit, call `pi_blitz_multi_body`. Exact tool args JSON: {"edits":[{"symbol":"adjust","op":"replace_body_span","find":"return base;","replace":"return base + 1;","occurrence":"only"},{"symbol":"emit","op":"insert_body_span","anchor":"const marker = value;","position":"after","text":"\\n  const markerUpper = value.toUpperCase();","occurrence":"only"},{"symbol":"risky","op":"wrap_body","before":"\\n  try {","keep":"body","after":"  } catch (error) {\\n    throw error;\\n  }\\n","indentKeptBodyBy":2}]}. JSON escapes must decode to newline characters; do not pass literal backslash-n text. Emit insert text starts with newline escape `\\n`; risky `after` MUST end with newline escape `\\n`.';
@@ -1085,22 +1539,126 @@ const runLane = async (
 			guidance +=
 				" For this edit, call `pi_blitz_replace_body_span` with symbol `hugeCompute`, find `return total;`, replace `return total + 1;`, occurrence `last`.";
 		} else if (fx.id.includes("semantic/async-try-catch")) {
-			guidance +=
-				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+			const script = "tc\tloadUser\tconsole.error(error);\\nthrow error;\t2";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"loadUser","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/class-method-try-catch")) {
-			guidance +=
-				' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
+			const script = "tc\trenderScore\tconsole.error(error);\\nthrow error;\t2";
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this edit, call `pi_blitz_try_catch`. Exact tool args JSON: {"symbol":"renderScore","catchBody":"console.error(error);\\nthrow error;","indent":2}. JSON escape must decode to a newline character; do not pass catchBody as one line.';
 		} else if (fx.id.includes("semantic/arrow-replace-return")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
+			const script = 'rr\tpickLabel\t"unknown"\tlast';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `pickLabel`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"pickLabel","expr":"\\"unknown\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/nested-return-occurrence")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
+			const script = 'rr\tclassify\t"other"\tlast';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `classify`, occurrence `last`. IMPORTANT: `expr` must be JSON string value containing the quoted TypeScript string literal, not identifier text. Exact one-line tool args JSON: {"symbol":"classify","expr":"\\"other\\"","occurrence":"last"}.';
 		} else if (fx.id.includes("semantic/tsx-replace-return")) {
-			guidance +=
-				' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
-		} else if (fx.id.includes("small")) {
-			guidance += " For this edit, route to core oldText/newText.";
+			const script =
+				'rr\tStatusBadge\t<strong className="badge">{label.toUpperCase()}</strong>\tonly';
+			guidance += useRouter
+				? ` For this edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this edit, call `pi_blitz_replace_return` with symbol `StatusBadge`, occurrence `only`. Exact one-line tool args JSON: {"symbol":"StatusBadge","expr":"<strong className=\\"badge\\">{label.toUpperCase()}</strong>","occurrence":"only"}.';
+		} else if (fx.id === "config/key-update") {
+			const script = "sk\tlogLevel\tdebug";
+			guidance += useRouter
+				? ` For this TypeScript config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this TypeScript config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: ' For this TypeScript config fixture only, update top-level object-literal key `logLevel` to string literal `"debug"`.';
+		} else if (fx.id === "json/config-key") {
+			const script = "sk\tdebug\ttrue";
+			guidance += useRouter
+				? ` For this JSON config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this JSON config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this JSON config fixture only, set top-level key `debug` to boolean `true`.";
+		} else if (fx.id === "yaml/config-key") {
+			const script = "sk\tapp.debug\ttrue";
+			guidance += useRouter
+				? ` For this YAML config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this YAML config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this YAML config fixture only, set explicit mapping key `app.debug` to boolean `true`.";
+		} else if (fx.id === "toml/config-key") {
+			const script = "sk\tapp.debug\ttrue";
+			guidance += useRouter
+				? ` For this TOML config fixture only, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this TOML config fixture only, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this TOML config fixture only, set explicit table key `app.debug` to boolean `true`.";
+		} else if (fx.id === "small/wrap-tail") {
+			const script =
+				'ru\t  return "hi " + name;\t  return "hello " + name.toUpperCase();';
+			guidance += useRouter
+				? ` For this exact unique return-line edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this exact unique return-line edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "logging/insert-timer") {
+			const script =
+				"ia\t  console.log(`Processing order ${orderId}`);\t\\n  console.time(`Processing order ${orderId}`);";
+			guidance += useRouter
+				? ` For this exact anchor insert, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this exact anchor insert, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "long-section/replace-return") {
+			const script =
+				"ru\t  return `Invoice ${id} for ${customer}: $0.00`;\t  return `Invoice ${id} for ${customer}: $${total.toFixed(2)}`;";
+			guidance += useRouter
+				? ` For this exact unique return-line edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this exact unique return-line edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "rename/function-name") {
+			const script =
+				"ru\texport function computeScore\texport function calculateAverage";
+			guidance += useRouter
+				? ` For this declaration-only rename, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this declaration-only rename, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "markdown/append-section") {
+			const script =
+				"ia\t<!-- append-target -->\t\\n## Configuration Reference\\n\\nSee the `blitz --help` command.";
+			guidance += useRouter
+				? ` For this Markdown marker append, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this Markdown marker append, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "css/small-edit") {
+			const script = "ru\t  background: #333;\t  background: #222;";
+			guidance += useRouter
+				? ` For this exact CSS value edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this exact CSS value edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (fx.id === "html/small-edit") {
+			const script =
+				"ru\t  <title>Blitz App</title>\t  <title>Blitz CLI</title>";
+			guidance += useRouter
+				? ` For this exact HTML title edit, call \`pi_blitz_route_edit\` with exact args JSON: ${routeArgs(script)}.`
+				: useCompactOp
+					? ` For this exact HTML title edit, call \`pi_blitz_op\` with exact args JSON: ${compactArgs(script)}.`
+					: " For this edit, route to core oldText/newText.";
+		} else if (useRouter) {
+			guidance += ` This fixture has no valid compact Blitz alias yet. Be honest: call \`pi_blitz_route_edit\` once with exact no-write decline args JSON: ${routeArgs("", 5000, "apply_patch")}.`;
 		}
 		prompt = `${guidance}\n\n${prompt}`;
 	}
@@ -1112,21 +1670,26 @@ const runLane = async (
 		"semantic/tsx-replace-return": "pi_blitz_replace_return",
 	};
 	const toolsOverride =
-		lane !== "blitz"
+		lane === "core"
 			? undefined
-			: fx.id.includes("multi/large-structural")
-				? "pi_blitz_patch"
-				: fx.id.includes("multi/three-body-ops")
-					? "pi_blitz_multi_body"
-					: fx.id.includes("insert-body-span")
-						? "pi_blitz_insert_body_span"
-						: fx.id.includes("compose-preserve-islands")
-							? "pi_blitz_compose_body"
-							: fx.id.includes("wrap-body")
-								? "pi_blitz_wrap_body"
-								: fx.id.includes("marker-tail")
-									? "pi_blitz_replace_body_span"
-									: semanticTools[fx.id];
+			: lane === "router"
+				? "pi_blitz_route_edit"
+				: toolProfile === "minimal"
+					? "blitz_edit"
+					: fx.id.includes("multi/large-structural")
+						? "pi_blitz_patch"
+						: fx.id.includes("multi/three-body-ops")
+							? "pi_blitz_multi_body"
+							: fx.id.includes("insert-body-span")
+								? "pi_blitz_insert_body_span"
+								: fx.id.includes("compose-preserve-islands")
+									? "pi_blitz_compose_body"
+									: fx.id.includes("wrap-body")
+										? "pi_blitz_wrap_body"
+										: fx.id.includes("marker-tail")
+											? "pi_blitz_replace_body_span"
+											: semanticTools[fx.id];
+	assertProfileSupportsTools(toolsOverride);
 	const r =
 		runner === "tmux"
 			? await runPiTmux(lane, prompt, targetDir, fx, iter, toolsOverride)
@@ -1151,10 +1714,20 @@ const runLane = async (
 		editToolName: null,
 	};
 	if (sessionFile) parsed = await parseSession(sessionFile, lane);
+	const missingSessionAfterFailedRun =
+		!sessionFile && (r.status !== 0 || r.timedOut);
 	const tokScale = sessionFile
 		? await runTokScale(sessionFile, parsed, targetDir)
-		: emptyTokScale("no session jsonl");
-	if (tokScaleMode === "required" && !sessionFile) {
+		: emptyTokScale(
+				missingSessionAfterFailedRun
+					? "no session jsonl (run failed/timed out)"
+					: "no session jsonl",
+			);
+	if (
+		tokScaleMode === "required" &&
+		!sessionFile &&
+		!missingSessionAfterFailedRun
+	) {
 		throw new Error("tokscale validation required but no session jsonl found");
 	}
 
@@ -1167,6 +1740,7 @@ const runLane = async (
 	return {
 		lane,
 		wallMs: r.ms,
+		promptTokens: countTokens(prompt),
 		session: parsed,
 		tokScale,
 		correct,
@@ -1176,6 +1750,7 @@ const runLane = async (
 		stdout: r.stdout,
 		runDir: r.runDir,
 		sessionDir: r.sessionDir,
+		sessionFile: sessionFile || undefined,
 		commandFile: r.commandFile,
 		stdoutLog: r.stdoutLog,
 		stderrLog: r.stderrLog,
@@ -1209,11 +1784,30 @@ const main = async () => {
 	console.log(`Extension: ${extension}`);
 	console.log(`Skill: ${skill}`);
 	console.log(`Tokscale validation: ${tokScaleMode}`);
+	console.log(`Tool profile: ${toolProfile}`);
+	console.log(`Accounting artifact profiles: ${artifactProfiles.join(",")}`);
+	console.log(`Accounting artifact root: ${artifactRoot}`);
+	const accountingArtifacts = await captureAccountingArtifacts();
+	selectedVisibleToolNames = new Set(
+		accountingArtifacts.toolSpec?.visibleToolNames ?? [],
+	);
 	if (caseFilter) console.log(`Case filter: ${caseFilter}`);
 	if (laneFilter) console.log(`Lane filter: ${laneFilter}`);
 	console.log(
 		`Tokenizer: cl100k_base via tiktoken (for tool-call arg compare)`,
 	);
+	console.log(
+		`Visible Blitz tools: ${accountingArtifacts.toolSpec?.visibleToolNames.join(",") ?? "unavailable"}`,
+	);
+	console.log(
+		`Tool spec tokens: ${accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? "unavailable"}`,
+	);
+	console.log(`Skill tokens: ${accountingArtifacts.skill.tokens}`);
+	if (argv.includes("--dump-accounting-only")) {
+		console.log(JSON.stringify(accountingArtifacts, null, 2));
+		releaseTokenizer();
+		return;
+	}
 	console.log("");
 
 	type Row = {
@@ -1223,6 +1817,19 @@ const main = async () => {
 		lane: Lane;
 		route: Route;
 		routeReasonCode: RouteReasonCode;
+		toolProfile: string;
+		visibleToolNames: string[];
+		toolSpecTokens: number | null;
+		schemaTokens: number;
+		skillTokens: number;
+		promptTokens: number;
+		argTokens: number;
+		outputTokens: number;
+		cacheRead: number;
+		cacheWrite: number;
+		resultPayloadTokens: number;
+		residualInputTokens: number | null;
+		totalContextTokens: number;
 		toolName: string;
 		wallMsMedian: number;
 		inputMedian: number;
@@ -1247,16 +1854,41 @@ const main = async () => {
 		failure: string;
 	};
 	const rows: Row[] = [];
+	type ProfileCoverage = {
+		profile: string;
+		supportedFixtures: string[];
+		skippedFixtures: { fixture: string; reason: string }[];
+	};
+	type OverheadComparison = {
+		profile: string;
+		schemaTokens: number;
+		skillTokens: number;
+		combinedResidentTokens: number;
+		reductionVsFullPct: number | null;
+		meetsCommonLaneTarget: boolean | null;
+	};
 	type RunRecord = {
 		fixture: string;
 		lane: Lane;
 		route: Route;
 		routeReasonCode: RouteReasonCode;
 		iter: number;
+		toolProfile: string;
+		visibleToolNames: string[];
+		toolSpecTokens: number | null;
+		schemaTokens: number;
+		skillTokens: number;
+		promptTokens: number;
+		argTokens: number;
+		outputTokens: number;
+		cacheRead: number;
+		cacheWrite: number;
+		resultPayloadTokens: number;
+		residualInputTokens: number | null;
+		totalContextTokens: number;
 		toolName: string | null;
 		wallMs: number;
 		inputTokens: number;
-		outputTokens: number;
 		cacheReadTokens: number;
 		cacheWriteTokens: number;
 		toolCallArgTokens: number;
@@ -1275,8 +1907,10 @@ const main = async () => {
 		exitCode: number;
 		timedOut: boolean;
 		failure: string;
+		tokenRouteDecision: TokenRouteDecision;
 		runDir?: string;
 		sessionDir?: string;
+		sessionFile?: string;
 		commandFile?: string;
 		stdoutLog?: string;
 		stderrLog?: string;
@@ -1297,29 +1931,162 @@ const main = async () => {
 	if (selectedFixtures.length === 0)
 		throw new Error(`no fixtures match --case ${caseFilter}`);
 
+	const profileSupportsFixture = (profile: string, fx: Fixture): boolean => {
+		if (fx.lanePolicy === "core-only") return false;
+		if (profile === "full") return true;
+		if (profile === "router") return true;
+		if (profile === "minimal" || profile === "minimal-v0") {
+			return true;
+		}
+		if (profile === "semantic") return fx.id.startsWith("semantic/");
+		if (profile === "structural") {
+			return (
+				fx.id.startsWith("multi/") ||
+				fx.className === "medium_wrap_body" ||
+				fx.className === "insert_body_span" ||
+				fx.className === "compose_preserve_islands"
+			);
+		}
+		if (profile === "admin") return false;
+		return false;
+	};
+
+	const artifactProfileLabels = new Set<string>(
+		accountingArtifacts.toolSpecs.map((spec) => spec.profileLabel),
+	);
+	if (accountingArtifacts.toolSpec?.profileLabel) {
+		artifactProfileLabels.add(accountingArtifacts.toolSpec.profileLabel);
+	}
+	const profileCoverage: ProfileCoverage[] = [...artifactProfileLabels].map(
+		(profile) => {
+			const supportedFixtures = selectedFixtures
+				.filter((fx) => profileSupportsFixture(profile, fx))
+				.map((fx) => fx.id);
+			const skippedFixtures = selectedFixtures
+				.filter((fx) => !profileSupportsFixture(profile, fx))
+				.map((fx) => ({
+					fixture: fx.id,
+					reason:
+						fx.lanePolicy === "core-only"
+							? "core-only fixture"
+							: `unsupported by ${profile} registered tool profile`,
+				}));
+			return { profile, supportedFixtures, skippedFixtures };
+		},
+	);
+	const fullSpec = accountingArtifacts.toolSpecs.find(
+		(spec) => spec.profileLabel === "full" || spec.profile === "full",
+	);
+	const fullCombinedResidentTokens = fullSpec
+		? fullSpec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens
+		: null;
+	const overheadComparisons: OverheadComparison[] =
+		accountingArtifacts.toolSpecs.map((spec) => {
+			const combinedResidentTokens =
+				spec.serializedToolSpecsTokens + accountingArtifacts.skill.tokens;
+			const reductionVsFullPct = fullCombinedResidentTokens
+				? 100 * (1 - combinedResidentTokens / fullCombinedResidentTokens)
+				: null;
+			return {
+				profile: spec.profileLabel,
+				schemaTokens: spec.serializedToolSpecsTokens,
+				skillTokens: accountingArtifacts.skill.tokens,
+				combinedResidentTokens,
+				reductionVsFullPct,
+				meetsCommonLaneTarget:
+					reductionVsFullPct === null ? null : reductionVsFullPct >= 70,
+			};
+		});
+	const toolSpecForLane = (lane: Lane): ToolSpecArtifact | null => {
+		if (lane === "core") return null;
+		if (lane === "router") {
+			return (
+				accountingArtifacts.toolSpecs.find(
+					(spec) => spec.profileLabel === "router" || spec.profile === "router",
+				) ?? null
+			);
+		}
+		return accountingArtifacts.toolSpec;
+	};
+
 	const lanesForFixture = (fx: Fixture): Lane[] => {
 		if (laneFilter) return [laneFilter];
 		if (fx.lanePolicy === "core-only") return ["core"];
-		return ["core", "blitz"];
+		return ["core", "blitz", "router"];
 	};
 	for (const fx of selectedFixtures) {
 		for (const lane of lanesForFixture(fx)) {
 			const runs: LaneResult[] = [];
+			const laneToolSpec = toolSpecForLane(lane);
+			const schemaTokens =
+				lane !== "core" ? (laneToolSpec?.serializedToolSpecsTokens ?? 0) : 0;
+			const skillTokens =
+				lane !== "core" ? accountingArtifacts.skill.tokens : 0;
 			for (let i = 0; i < iters; i++) {
 				const r = await runLane(lane, fx, i);
+				const argTokens = r.session.editToolCallArgsTokens;
+				const outputTokens = r.session.totalOutputTokens;
+				const cacheRead = r.session.totalCacheRead;
+				const cacheWrite = r.session.totalCacheWrite;
+				const resultPayloadTokens = countTokens(r.stdout);
+				const residualInputTokens =
+					r.session.totalInputTokens - argTokens - schemaTokens - skillTokens;
+				const totalContextTokens =
+					schemaTokens +
+					skillTokens +
+					r.promptTokens +
+					r.session.totalInputTokens +
+					cacheRead +
+					cacheWrite +
+					argTokens +
+					outputTokens +
+					resultPayloadTokens;
+				const tokenRouteDecision: TokenRouteDecision = {
+					contextSavingsPct: null,
+					schemaTokensExpected: schemaTokens,
+					argTokensExpected: argTokens,
+					outputTokensExpected: outputTokens,
+					fallbackContextTokensExpected: null,
+					selectedBecause:
+						lane === "core"
+							? "core lane selected as baseline/fallback"
+							: "Blitz lane selected by explicit profile; paired core row required before savings claim",
+				};
 				runs.push(r);
 				runRecords.push({
 					fixture: fx.id,
 					lane,
 					...routeForLane(lane, fx),
 					iter: i,
+					toolProfile:
+						lane === "core"
+							? "core"
+							: lane === "router"
+								? "router"
+								: (laneToolSpec?.profileLabel ?? toolProfile),
+					visibleToolNames:
+						lane === "core"
+							? ["edit"]
+							: lane === "router"
+								? ["pi_blitz_route_edit"]
+								: (laneToolSpec?.visibleToolNames ?? []),
+					toolSpecTokens: schemaTokens,
+					schemaTokens,
+					skillTokens,
+					promptTokens: r.promptTokens,
+					argTokens,
+					outputTokens,
+					cacheRead,
+					cacheWrite,
+					resultPayloadTokens,
+					residualInputTokens,
+					totalContextTokens,
 					toolName: r.session.editToolName,
 					wallMs: r.wallMs,
 					inputTokens: r.session.totalInputTokens,
-					outputTokens: r.session.totalOutputTokens,
-					cacheReadTokens: r.session.totalCacheRead,
-					cacheWriteTokens: r.session.totalCacheWrite,
-					toolCallArgTokens: r.session.editToolCallArgsTokens,
+					cacheReadTokens: cacheRead,
+					cacheWriteTokens: cacheWrite,
+					toolCallArgTokens: argTokens,
 					cost: r.session.totalCost,
 					tokScaleInput: r.tokScale.input,
 					tokScaleOutput: r.tokScale.output,
@@ -1338,8 +2105,10 @@ const main = async () => {
 						r.exitCode === 0
 							? ""
 							: (r.stderr || r.stdout).trim().split("\n").slice(0, 3).join(" "),
+					tokenRouteDecision: tokenRouteDecision,
 					runDir: r.runDir,
 					sessionDir: r.sessionDir,
+					sessionFile: r.sessionFile,
 					commandFile: r.commandFile,
 					stdoutLog: r.stdoutLog,
 					stderrLog: r.stderrLog,
@@ -1362,12 +2131,55 @@ const main = async () => {
 					runs.map((r) => r.tokScale.details).filter((detail) => detail),
 				),
 			].join("; ");
+			const resultPayloadTokenValues = runs.map((r) => countTokens(r.stdout));
+			const residualInputTokenValues = runs.map(
+				(r) =>
+					r.session.totalInputTokens -
+					r.session.editToolCallArgsTokens -
+					schemaTokens -
+					skillTokens,
+			);
+			const totalContextTokenValues = runs.map(
+				(r, idx) =>
+					schemaTokens +
+					skillTokens +
+					r.promptTokens +
+					r.session.totalInputTokens +
+					r.session.totalCacheRead +
+					r.session.totalCacheWrite +
+					r.session.editToolCallArgsTokens +
+					r.session.totalOutputTokens +
+					resultPayloadTokenValues[idx]!,
+			);
 			rows.push({
 				fixture: fx.id,
 				className: fx.className ?? "",
 				recommendedLane: fx.recommendedLane ?? "",
 				lane,
 				...routeForLane(lane, fx),
+				toolProfile:
+					lane === "core"
+						? "core"
+						: lane === "router"
+							? "router"
+							: (laneToolSpec?.profileLabel ?? toolProfile),
+				visibleToolNames:
+					lane === "core"
+						? ["edit"]
+						: lane === "router"
+							? ["pi_blitz_route_edit"]
+							: (laneToolSpec?.visibleToolNames ?? []),
+				toolSpecTokens: schemaTokens,
+				schemaTokens,
+				skillTokens,
+				promptTokens: median(runs.map((r) => r.promptTokens)),
+				argTokens: median(runs.map((r) => r.session.editToolCallArgsTokens)),
+				outputTokens: median(runs.map((r) => r.session.totalOutputTokens)),
+				cacheRead: median(runs.map((r) => r.session.totalCacheRead)),
+				cacheWrite: median(runs.map((r) => r.session.totalCacheWrite)),
+				resultPayloadTokens: median(resultPayloadTokenValues),
+				residualInputTokens: medianNullable(residualInputTokenValues),
+				totalContextTokens: median(totalContextTokenValues),
 				toolName: toolNames.join(",") || "",
 				wallMsMedian: median(runs.map((r) => r.wallMs)),
 				inputMedian: median(runs.map((r) => r.session.totalInputTokens)),
@@ -1414,10 +2226,10 @@ const main = async () => {
 
 	const lines: string[] = [];
 	lines.push(
-		"| Fixture | Class | Recommended | Lane | route | tool | wall ms | input tok | output tok | cache read | cache write | edit args tok (cl100k) | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |",
+		"| Fixture | Class | Recommended | Lane | route | profile | visible tools | schema tok | skill tok | prompt tok | arg tok | output tok | cache read | cache write | result payload tok | residual input tok | total context tok | tool | wall ms | input tok | tokscale input | tokscale output | tokscale cache read | tokscale cache write | tokscale messages | tokscale ms | tokscale token match | correct | exit | failure | $ | tokscale $ |",
 	);
 	lines.push(
-		"|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|",
+		"|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|---:|---:|",
 	);
 	for (const r of rows) {
 		const failure = [r.failure, r.tokScaleDetails]
@@ -1425,7 +2237,7 @@ const main = async () => {
 			.join("; ")
 			.replaceAll("|", "\\|");
 		lines.push(
-			`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.route} | ${r.toolName} | ${r.wallMsMedian.toFixed(0)} | ${r.inputMedian} | ${r.outputMedian} | ${r.cacheReadMedian} | ${r.cacheWriteMedian} | ${r.argsTokensMedian} | ${formatNullable(r.tokScaleInputMedian)} | ${formatNullable(r.tokScaleOutputMedian)} | ${formatNullable(r.tokScaleCacheReadMedian)} | ${formatNullable(r.tokScaleCacheWriteMedian)} | ${formatNullable(r.tokScaleMessagesMedian)} | ${formatNullable(r.tokScaleProcessingTimeMsMedian)} | ${r.tokScaleTokenMatchesParser ? "yes" : "no"} | ${pct(r.correctRate * 100)} | ${r.exitCodes.join(",")} | ${failure} | ${r.costSum.toFixed(4)} | ${formatNullable(r.tokScaleCostSum, 4)} |`,
+			`| ${r.fixture} | ${r.className} | ${r.recommendedLane} | ${r.lane} | ${r.route} | ${r.toolProfile} | ${r.visibleToolNames.join(",")} | ${r.schemaTokens} | ${r.skillTokens} | ${r.promptTokens} | ${r.argTokens} | ${r.outputTokens} | ${r.cacheRead} | ${r.cacheWrite} | ${r.resultPayloadTokens} | ${formatNullable(r.residualInputTokens)} | ${r.totalContextTokens} | ${r.toolName} | ${r.wallMsMedian.toFixed(0)} | ${r.inputMedian} | ${formatNullable(r.tokScaleInputMedian)} | ${formatNullable(r.tokScaleOutputMedian)} | ${formatNullable(r.tokScaleCacheReadMedian)} | ${formatNullable(r.tokScaleCacheWriteMedian)} | ${formatNullable(r.tokScaleMessagesMedian)} | ${formatNullable(r.tokScaleProcessingTimeMsMedian)} | ${r.tokScaleTokenMatchesParser ? "yes" : "no"} | ${pct(r.correctRate * 100)} | ${r.exitCodes.join(",")} | ${failure} | ${r.costSum.toFixed(4)} | ${formatNullable(r.tokScaleCostSum, 4)} |`,
 		);
 	}
 
@@ -1437,14 +2249,20 @@ const main = async () => {
 			| "core_failed_blitz_correct"
 			| "blitz_failed"
 			| "incomplete";
+		acceptedRoute?: "core" | "blitz" | "none";
+		routeDecisionReason?: string;
+		savingsCounted: boolean;
 		outputSavingsPct?: number;
 		argsSavingsPct?: number;
+		totalContextSavingsPct?: number;
 		wallSavingsPct?: number;
 		costSavingsPct?: number;
 		coreOutputTokens?: number;
 		blitzOutputTokens?: number;
 		coreArgsTokens?: number;
 		blitzArgsTokens?: number;
+		coreTotalContextTokens?: number;
+		blitzTotalContextTokens?: number;
 		coreWallMs?: number;
 		blitzWallMs?: number;
 		coreCost?: number;
@@ -1472,7 +2290,13 @@ const main = async () => {
 			const core = rows.find((r) => r.fixture === fx.id && r.lane === "core");
 			const blitz = rows.find((r) => r.fixture === fx.id && r.lane === "blitz");
 			if (!core || !blitz) {
-				pairwise.push({ fixture: fx.id, status: "incomplete" });
+				pairwise.push({
+					fixture: fx.id,
+					status: "incomplete",
+					acceptedRoute: "none",
+					routeDecisionReason: "Pair missing lane; savings not counted",
+					savingsCounted: false,
+				});
 				continue;
 			}
 
@@ -1480,10 +2304,13 @@ const main = async () => {
 			const blitzCorrect = rowSucceeded(blitz);
 			const basePair = {
 				fixture: fx.id,
+				savingsCounted: false,
 				coreOutputTokens: core.outputMedian,
 				blitzOutputTokens: blitz.outputMedian,
 				coreArgsTokens: core.argsTokensMedian,
 				blitzArgsTokens: blitz.argsTokensMedian,
+				coreTotalContextTokens: core.totalContextTokens,
+				blitzTotalContextTokens: blitz.totalContextTokens,
 				coreWallMs: core.wallMsMedian,
 				blitzWallMs: blitz.wallMsMedian,
 				coreCost: core.costSum,
@@ -1503,20 +2330,37 @@ const main = async () => {
 					core.wallMsMedian,
 					blitz.wallMsMedian,
 				);
+				const totalContextSavingsPct = savingsPct(
+					core.totalContextTokens,
+					blitz.totalContextTokens,
+				);
 				const costSavingsPct = savingsPct(core.costSum, blitz.costSum);
+				const blitzWinsOrTiesContext =
+					blitz.totalContextTokens <= core.totalContextTokens;
 				pairwise.push({
 					...basePair,
 					status: "both_correct",
+					acceptedRoute: blitzWinsOrTiesContext ? "blitz" : "core",
+					routeDecisionReason: blitzWinsOrTiesContext
+						? `Blitz total context ${blitz.totalContextTokens} <= Pi core edit ${core.totalContextTokens}`
+						: `Pi core edit fallback: Blitz total context ${blitz.totalContextTokens} > core ${core.totalContextTokens}`,
+					savingsCounted: blitzWinsOrTiesContext,
 					outputSavingsPct,
 					argsSavingsPct,
+					totalContextSavingsPct,
 					wallSavingsPct,
 					costSavingsPct,
 				});
 				summaryLines.push(
-					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}`,
+					`${fx.id}: ${formatSavings("session output", outputSavingsPct)}, ${formatSavings("tool-call args", argsSavingsPct)}, ${formatSavings("total context", totalContextSavingsPct)}, ${formatSavings("wall time", wallSavingsPct)}, ${formatSavings("cost", costSavingsPct)}; route=${blitzWinsOrTiesContext ? "blitz" : "Pi core edit fallback"}; savings ${blitzWinsOrTiesContext ? "counted" : "not counted"}`,
 				);
 			} else if (!blitzCorrect) {
-				pairwise.push({ ...basePair, status: "blitz_failed" });
+				pairwise.push({
+					...basePair,
+					status: "blitz_failed",
+					acceptedRoute: coreCorrect ? "core" : "none",
+					routeDecisionReason: "Blitz failed; savings not counted",
+				});
 				summaryLines.push(
 					`${fx.id}: Blitz failed; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
 				);
@@ -1524,12 +2368,20 @@ const main = async () => {
 				pairwise.push({
 					...basePair,
 					status: "core_failed_blitz_correct",
+					acceptedRoute: "blitz",
+					routeDecisionReason:
+						"Blitz correctness win; token savings not counted because core row failed",
 				});
 				summaryLines.push(
 					`${fx.id}: correctness win; savings not counted (core output ${core.outputMedian}, blitz output ${blitz.outputMedian}, core args ${core.argsTokensMedian}, blitz args ${blitz.argsTokensMedian})`,
 				);
 			} else {
-				pairwise.push({ ...basePair, status: "incomplete" });
+				pairwise.push({
+					...basePair,
+					status: "incomplete",
+					acceptedRoute: "none",
+					routeDecisionReason: "Incomplete pair; savings not counted",
+				});
 				summaryLines.push(`${fx.id}: incomplete; savings not counted`);
 			}
 		}
@@ -1545,6 +2397,34 @@ const main = async () => {
 		summaryLines.push("", "## Core-only notes", ...coreOnlyNotes);
 	}
 
+	const coverageLines = [
+		"",
+		"## Profile coverage / skipped rows",
+		...profileCoverage.map(
+			(coverage) =>
+				`${coverage.profile}: supported ${coverage.supportedFixtures.length}/${selectedFixtures.length}; skipped ${coverage.skippedFixtures.length}${coverage.skippedFixtures.length ? ` (${coverage.skippedFixtures.map((row) => `${row.fixture}: ${row.reason}`).join("; ")})` : ""}`,
+		),
+	];
+	const overheadLines = [
+		"",
+		"## Resident overhead comparison",
+		...overheadComparisons.map((row) => {
+			const reduction =
+				row.reductionVsFullPct === null
+					? "unavailable"
+					: pct(row.reductionVsFullPct);
+			const target =
+				row.meetsCommonLaneTarget === null
+					? "unknown"
+					: row.meetsCommonLaneTarget
+						? "meets >=70% combined target"
+						: "below >=70% combined target";
+			return `${row.profile}: schema ${row.schemaTokens}, skill ${row.skillTokens}, combined ${row.combinedResidentTokens}, reduction vs full ${reduction}; ${target}`;
+		}),
+	];
+
+	console.log([...coverageLines, ...overheadLines].join("\n"));
+
 	console.log(summaryLines.join("\n"));
 	const payload = {
 		provider,
@@ -1558,6 +2438,23 @@ const main = async () => {
 		blitzBinPathPrepend: BLITZ_BIN_DIR,
 		extension,
 		skill,
+		toolProfile,
+		accountingArtifacts,
+		phase0Accounting: {
+			visibleTools: accountingArtifacts.toolSpec?.visibleToolNames ?? [],
+			serializedToolSpecsPath:
+				accountingArtifacts.toolSpec?.serializedToolSpecsPath ?? null,
+			serializedToolSpecsTokens:
+				accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? null,
+			residentSkillSnapshotPath: accountingArtifacts.skill.snapshotPath,
+			residentSkillTokens: accountingArtifacts.skill.tokens,
+			tokenizerMetadataPath: accountingArtifacts.metadataPath,
+			tokScaleSessionJsonPaths: runRecords
+				.map((record) => record.sessionFile)
+				.filter((path): path is string => Boolean(path)),
+		},
+		profileCoverage,
+		overheadComparisons,
 		tokScaleMode,
 		generatedAt: new Date().toISOString(),
 		rows,
@@ -1583,10 +2480,17 @@ const main = async () => {
 				`Blitz binary PATH prepend: ${BLITZ_BIN_DIR}`,
 				`Extension: ${extension}`,
 				`Skill: ${skill}`,
+				`Tool profile: ${toolProfile}`,
+				`Accounting artifact root: ${accountingArtifacts.artifactRoot}`,
+				`Visible Blitz tools: ${accountingArtifacts.toolSpec?.visibleToolNames.join(",") ?? "unavailable"}`,
+				`Serialized tool spec tokens: ${accountingArtifacts.toolSpec?.serializedToolSpecsTokens ?? "unavailable"}`,
+				`Resident skill tokens: ${accountingArtifacts.skill.tokens}`,
 				`Tokscale validation: ${tokScaleMode}`,
 				`Generated: ${payload.generatedAt}`,
 				``,
 				lines.join("\n"),
+				coverageLines.join("\n"),
+				overheadLines.join("\n"),
 				summaryLines.join("\n"),
 			].join("\n"),
 		);

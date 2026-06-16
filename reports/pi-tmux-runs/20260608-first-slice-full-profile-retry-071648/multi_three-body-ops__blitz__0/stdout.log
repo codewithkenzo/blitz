@@ -1,0 +1,8 @@
+
+The edits have been successfully applied to the multi.ts file. The three transformations were completed:
+
+1. The `adjust` function now returns `base + 1` instead of `base`
+2. The `emit` function now includes `const markerUpper = value.toUpperCase();` after the marker declaration
+3. The `risky` function body is now wrapped in a try/catch block with error rethrowing
+
+The operation completed successfully with a diff showing the changes applied.
