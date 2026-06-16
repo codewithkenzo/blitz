@@ -141,3 +141,11 @@ landed: committed+pushed route report accounting fix 5ee1897a. Fixes top-level t
 **2026-06-16T01:45:14Z**
 
 landed/verified: pi-blitz route unsupported/no-write remediation completed by D5 39c78f99. Commit 3dd5063 pushed to origin/feat/blitz-0.4-token-core-profile: unsupported compact aliases and UNSUPPORTED_OPERATION no-write errors become explicit route decline/noop with no internal core/apply_patch fallback. D5 verification passed typecheck/tests/build and focused 5 bad GPT-5.4-mini route scenarios. Main reran full GPT-5.4-mini adversarial route: reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json = 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router.
+
+**2026-06-16T01:46:08Z**
+
+landed: committed+pushed mini route remediation pass evidence. Latest blitz commit preserves focused five bad-row reruns and full GPT-5.4-mini adversarial route rerun reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router. Report top profile and MD Results route accounting verified as router/decline.
+
+**2026-06-16T01:49:48Z**
+
+verified: GPT-5.5 adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-46-21-353Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router, top profile router.
