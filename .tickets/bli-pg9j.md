@@ -109,3 +109,15 @@ verify: default route adversarial Zai lane passed 22/22 accepted/correct with To
 **2026-06-16T01:29:25Z**
 
 route evidence: D5 f0bb produced Zai adversarial route report reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match; visible profile pi_blitz_route_edit/router from /home/kenzo/dev/pi-blitz/dist/index.js; route counts decline=22, fallback=0. Needs integration/commit and interpretation: safety pass, but all-decline means no Blitz-success subset for adversarial.
+
+**2026-06-16T01:32:58Z**
+
+landed: committed+pushed Blitz adversarial route lane slice in /home/kenzo/dev/blitz. Commit adds route lane/tool provenance/session probing and preserves Zai adversarial route report reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json plus 22 raw route run dirs. Verification: diff check+bench build passed; report audit 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router.
+
+**2026-06-16T01:33:17Z**
+
+landed: pi-blitz atomicity remediation completed by D5 9426da2c. Commit ea515e5 pushed to origin/feat/blitz-0.4-token-core-profile: hard batch failures roll back, rollback-failure output truthful, strengthened tests. Verification reported passed: typecheck, package tests, build, blitz smoke, focused apply-runtime tests. Main verified local HEAD and remote both ea515e5.
+
+**2026-06-16T01:37:22Z**
+
+provider evidence: openai-codex gpt-5.4-mini adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json: 22 rows, 22 correct, 22 Tokscale match, but only 17 accepted. Five rows selected routeOutcome=blitz with pi-blitz blitz-error UNSUPPORTED_OPERATION despite no mutation/correct safety outcome: adv-noop-idempotent-1/2, adv-stale-context-1, adv-generated-minified-1, adv-incomplete-intent-1. This is route product/accounting remediation input; preserve failed artifacts.
