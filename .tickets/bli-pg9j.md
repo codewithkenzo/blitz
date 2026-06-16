@@ -133,3 +133,11 @@ reviewer 3b7dd57b audit result: pi-blitz atomicity remediation passes. Route raw
 **2026-06-16T01:40:58Z**
 
 fixed reviewer report-honesty blockers in blitz: bench/natural-edit.ts now derives top-level toolProfile from observed row provenance and ScenarioResult dominant routeOutcome from iteration routeOutcome counts. Patched preserved Zai and GPT-5.4-mini route reports: top toolProfile=router; MD Results table shows actual routeOutcome (Zai decline; mini decline/blitz). Verified git diff --check and bun build bench/natural-edit.ts.
+
+**2026-06-16T01:41:38Z**
+
+landed: committed+pushed route report accounting fix 5ee1897a. Fixes top-level toolProfile derivation and ScenarioResult routeOutcome aggregation; patched preserved Zai and GPT-5.4-mini route reports. Verification: both reports top profile=router; MD Results route values match JSON; diff check and bench build passed.
+
+**2026-06-16T01:45:14Z**
+
+landed/verified: pi-blitz route unsupported/no-write remediation completed by D5 39c78f99. Commit 3dd5063 pushed to origin/feat/blitz-0.4-token-core-profile: unsupported compact aliases and UNSUPPORTED_OPERATION no-write errors become explicit route decline/noop with no internal core/apply_patch fallback. D5 verification passed typecheck/tests/build and focused 5 bad GPT-5.4-mini route scenarios. Main reran full GPT-5.4-mini adversarial route: reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json = 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router.
