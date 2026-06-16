@@ -121,3 +121,15 @@ landed: pi-blitz atomicity remediation completed by D5 9426da2c. Commit ea515e5 
 **2026-06-16T01:37:22Z**
 
 provider evidence: openai-codex gpt-5.4-mini adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json: 22 rows, 22 correct, 22 Tokscale match, but only 17 accepted. Five rows selected routeOutcome=blitz with pi-blitz blitz-error UNSUPPORTED_OPERATION despite no mutation/correct safety outcome: adv-noop-idempotent-1/2, adv-stale-context-1, adv-generated-minified-1, adv-incomplete-intent-1. This is route product/accounting remediation input; preserve failed artifacts.
+
+**2026-06-16T01:38:20Z**
+
+landed: committed+pushed failed GPT-5.4-mini adversarial route evidence in /home/kenzo/dev/blitz as 371f910b reports: preserve mini adversarial route failure. Preserves report reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json and 22 raw route dirs: 22 correct/22 Tokscale, 17 accepted, 5 unsupported-operation routeOutcome=blitz failures. D5 39c78f99 is remediating pi-blitz route unsupported/no-op behavior.
+
+**2026-06-16T01:39:17Z**
+
+reviewer 3b7dd57b audit result: pi-blitz atomicity remediation passes. Route raw JSON/JSONL counters pass, but Scope B blocking report-honesty issues: top-level report toolProfile says full while route row provenance says router; MD Results table displays scenario outcome noop instead of actual routeOutcome decline. Need fix report writer/regenerate affected route reports before relying on artifacts.
+
+**2026-06-16T01:40:58Z**
+
+fixed reviewer report-honesty blockers in blitz: bench/natural-edit.ts now derives top-level toolProfile from observed row provenance and ScenarioResult dominant routeOutcome from iteration routeOutcome counts. Patched preserved Zai and GPT-5.4-mini route reports: top toolProfile=router; MD Results table shows actual routeOutcome (Zai decline; mini decline/blitz). Verified git diff --check and bun build bench/natural-edit.ts.

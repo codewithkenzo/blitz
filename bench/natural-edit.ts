@@ -1915,7 +1915,16 @@ const main = async () => {
 
 			const correctIters = iterations.filter((i) => i.correct).length;
 			const acceptedIters = iterations.filter((i) => i.accepted).length;
-			const dominantRouteOutcome = classifyRouteOutcome(dominantOutcome, lane);
+			const routeOutcomeCounts = new Map<RouteOutcome, number>();
+			for (const item of iterations) {
+				routeOutcomeCounts.set(
+					item.routeOutcome,
+					(routeOutcomeCounts.get(item.routeOutcome) ?? 0) + 1,
+				);
+			}
+			const dominantRouteOutcome = [...routeOutcomeCounts.entries()].sort(
+				(a, b) => b[1] - a[1],
+			)[0]?.[0] ?? classifyRouteOutcome(dominantOutcome, lane);
 
 			allResults.push({
 				scenarioId: scenario.id,
@@ -1947,6 +1956,15 @@ const main = async () => {
 
 	// ── Report ────────────────────────────────────────────────────────────────
 
+	const observedToolProfiles = [
+		...new Set(runRecords.map((r) => r.provenance.toolProfile)),
+	].sort();
+	const reportToolProfile =
+		toolProfile ||
+		(observedToolProfiles.length === 1
+			? (observedToolProfiles[0] ?? "full")
+			: `mixed:${observedToolProfiles.join(",")}`);
+
 	const report = {
 		generatedAt: new Date().toISOString(),
 		provider,
@@ -1956,7 +1974,7 @@ const main = async () => {
 		tokscaleMode,
 		scenarioGroup,
 		scenarioSummary: summarizeScenarios(SCENARIOS),
-		toolProfile: toolProfile || "full",
+		toolProfile: reportToolProfile,
 		piBin,
 		extension,
 		skill,

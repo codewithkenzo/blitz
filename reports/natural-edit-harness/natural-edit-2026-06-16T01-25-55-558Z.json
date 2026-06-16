@@ -35,7 +35,7 @@
       "case-collisions": 1
     }
   },
-  "toolProfile": "full",
+  "toolProfile": "router",
   "piBin": "/home/kenzo/.local/bin/pi",
   "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
   "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
@@ -724,7 +724,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -821,7 +821,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -918,7 +918,7 @@
       ],
       "outcome": "noop",
       "outcomeLabel": "noop",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1016,7 +1016,7 @@
       ],
       "outcome": "noop",
       "outcomeLabel": "noop",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1114,7 +1114,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1212,7 +1212,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1310,7 +1310,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1408,7 +1408,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1505,7 +1505,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1603,7 +1603,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1700,7 +1700,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1798,7 +1798,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -1930,7 +1930,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2045,7 +2045,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2142,7 +2142,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2240,7 +2240,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2337,7 +2337,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2435,7 +2435,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2533,7 +2533,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2631,7 +2631,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2729,7 +2729,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
@@ -2844,7 +2844,7 @@
       ],
       "outcome": "safety_no_mutation",
       "outcomeLabel": "safety_no_mutation",
-      "routeOutcome": "noop",
+      "routeOutcome": "decline",
       "accepted": true,
       "totalIters": 1,
       "correctIters": 1
