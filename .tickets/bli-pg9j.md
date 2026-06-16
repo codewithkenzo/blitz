@@ -157,3 +157,67 @@ natural route failure: GPT-5.4-mini natural route report reports/natural-edit-ha
 **2026-06-16T01:54:13Z**
 
 natural route failure detail: GPT-5.4-mini natural route report reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias replace, route declined as UNSUPPORTED_OPERATION/no internal fallback. Product/schema/prompt remediation needed; artifacts preserved next.
+
+**2026-06-16T01:55:27Z**
+
+review passed: reviewer 09f5681f accepted route remediation evidence. Adversarial route artifacts for Zai, GPT-5.4-mini, GPT-5.5 all 22/22 accepted/correct/Tokscale, decline=22 fallback=0; caveat remains all-decline is safety evidence only, not Blitz-success/token-win evidence. Next audit should cover non-adversarial route Blitz-success rows and optimized-core token comparisons.
+
+**2026-06-16T01:56:24Z**
+
+natural failure inventory sent to D5 5967c825: from mini natural route failed report, unsupported aliases were replace x19, rename x2, insert x1, delete x1, reorder x1. Priority remains safe replace exact alias; broader aliases only if obvious/low-risk, otherwise decline explicitly.
+
+**2026-06-16T01:58:35Z**
+
+D5 focused rerun diagnostics after replace alias normalization: tiny-exact still declined because model used replace with line numbers [2,4,new] and route normalized to ru, causing ru find must be non-empty; mixed-config-doc selected blitz with two replace exact ops but outcome incorrect (likely dry-run only p=true no applied file? needs inspect); same-file-multi declined because multi-op pi_blitz_op only supports rb/ib/wb in one request after multiple replace ops. These are next natural-route blockers if D5 stops after replace alias only.
+
+**2026-06-16T02:12:31Z**
+
+handoff: D5 5967c825 completed pi-blitz route replace alias slice and pushed fc0d2cd `fix(edit): accept route replace aliases`. Focused GPT-5.4-mini route evidence after fc0d2cd: mixed-config-doc passes at reports/natural-edit-harness/natural-edit-2026-06-16T02-07-31-715Z.json; tiny-exact still declines on unstable replace range form `["replace",4,3,...]` at T02-07-27; same-file-multi still declines on unsupported `insert_after` alias at T02-07-37. Spawned D5 6d547bde for next narrow remediation: safe tiny-exact line/range support + insert_after alias, no hidden fallback, focused reruns + commit/push if fixed.
+
+**2026-06-16T06:05:16Z**
+
+handoff: focused GPT-5.4-mini route rerun after previous alias slice was unblocked but incorrect for tiny-exact and mixed-config-doc. tiny-exact line-range replace prepended body line and left old return; mixed-config-doc line-1 whole-file replace prepended new file and left old tail; same-file-multi passed. Spawned D5 f246b783 to fix line/range replacement semantics, keep no-hidden-fallback, rerun 3 focused rows, commit/push if verified.
+
+**2026-06-16T06:08:04Z**
+
+finding: focused route reruns after line/range fix show tiny-exact and mixed-config-doc passing, but same-file-multi latest report reports/natural-edit-harness/natural-edit-2026-06-16T06-07-12-052Z declines. GPT-5.4-mini used pi_blitz_route_edit with s=<entire desired file>, r=blitz, p=true,d=true; router parsed s as unsupported compact script and declined no-write. D5 f246b783 is still active; intercom cannot reach non-interactive worker.
+
+**2026-06-16T06:10:18Z**
+
+verify: pi-blitz route line alias remediation landed/pushed at 815f00d fix(edit): normalize route line aliases. Main verified local HEAD and origin feat/blitz-0.4-token-core-profile both 815f00d. Focused GPT-5.4-mini route reruns pass for tiny-exact, mixed-config-doc, same-file-multi: reports natural-edit-2026-06-16T06-08-44-971Z, T06-08-50-390Z, T06-08-56-070Z all accepted/correct/filesMatch/Tokscale routeOutcome=blitz. D5 f246b783 still finalizing acceptance output.
+
+**2026-06-16T06:13:42Z**
+
+handoff: after pi-blitz 815f00d, focused mandatory-provider spot checks show GPT-5.4-mini and GPT-5.5 pass tiny-exact/mixed-config-doc/same-file-multi route rows, but Zai only tiny-exact passes. Zai mixed-config-doc declines on odd ops including unsupported alias 'string' plus JSON-array s old/new; Zai same-file-multi declines on replace/insert/wrap aliases with ordinal args. Spawned D5 c66f3283 to add safe Zai alias normalization, keep no-hidden-fallback, verify Zai 3 focused rows + GPT-5.4-mini same-file regression, commit/push if green.
+
+**2026-06-16T06:15:16Z**
+
+review: reviewer 5df25f00 blocked pi-blitz 815f00d despite focused GPT rows passing. No hidden core/apply_patch found and p:true preview-then-apply is real, but fail-closed blockers: broad non-script s accepted as line-1 replacement/snippet corruption risk; header-line aliases remap to next line and may corrupt signature edits. Sent findings to active D5 c66f3283 Zai slice; next fix must add negative tests for snippet s and header/signature replacement.
+
+**2026-06-16T06:18:26Z**
+
+finding: D5 c66f3283 got pi-blitz unit gates green but Zai focused route still fails 3/3 after changes. Latest failed reports: tiny-exact T06-16-49 (unsupported alias smallTarget with s function snippet), mixed-config-doc T06-16-55 (unsupported CONFIG.logLevel and no-payload declines), same-file-multi T06-17-05 (unsupported alias 4,8 with English script). GPT-5.4-mini same-file regression T06-17-16 still passes. Current pi-blitz dirty: src/tools.ts and test/apply-runtime.test.ts; no commit accepted.
+
+**2026-06-16T06:20:00Z**
+
+finding: D5 c66f3283 latest Zai focused rerun improved mixed-config-doc to pass (T06-19-20 route=blitz) but tiny-exact and same-file-multi still decline with new shapes. tiny-exact T06-19-16 args ops [[smallTarget,2,3,7]], s smallTarget.name=name.toUpperCase(); same-file-multi T06-19-29 args [[adjust,10,return base + 1;],[emit,16,const markerUpper...],[risky,25,try...]], s symbol-colon lines. These remain safe declines; GPT-5.4-mini regression still green.
+
+**2026-06-16T06:21:33Z**
+
+finding: latest D5 c66f3283 Zai rerun after unit gates: tiny-exact passes; mixed-config-doc declines after index.html changed but config.ts stayed info due replace of quoted key string mismatch; same-file-multi route=blitz but incorrect because insert_after produced same-line insertion () and removed expected blank lines. These are actual route semantics/format blockers, not Zai rate-limit. D5 still active, pi-blitz dirty at 815f00d.
+
+**2026-06-16T06:23:51Z**
+
+cleanup: interrupted/paused D5 c66f3283 after repeated unsafe/incorrect Zai route attempts. Acceptance rejected; dirty pi-blitz changes in src/tools.ts/test/apply-runtime.test.ts were reverted to clean pushed 815f00d. Rationale: latest changes made Zai rows route=blitz but incorrect and regressed smoke tests; keep safe baseline before next narrow fix.
+
+**2026-06-16T06:30:36Z**
+
+landed: pi-blitz safety remediation commit 2d67786 pushed. Fixes reviewer 815f00d blockers: non-script s now file-guarded whole-file only; snippet s declines no-write; header/signature line replacement declines instead of body remap. Verification: pi-blitz typecheck/test/build passed; GPT-5.4-mini focused route reports T06-29-14/19/24 all accepted/correct/filesMatch/Tokscale routeOutcome=blitz. Artifact: /tmp/pi-subagents-uid-1000/d5-route-safety-remediation.md
+
+**2026-06-16T07:13:01Z**
+
+Zai/provider-shape remediation slice complete in pi-blitz: pushed da602c5 (normalize guarded provider route shapes). Evidence: D5 report /tmp/pi-subagents-uid-1000/d5-zai-provider-shape-remediation.md; pi-blitz apply-runtime 37/37; GPT-5.4 focused route rows 07-10-42/07-10-51/07-10-56 accepted+correct+filesMatch+Tokscale routeOutcome=blitz. Current Zai glm-4.5-air focused rows 07-09-35/07-09-39/07-11-17 classified as safe no-write declines with Tokscale match for unsupported/invalid unstable provider shapes; no auth/rate-limit; no hidden fallback; no benchmark artifacts committed.
+
+**2026-06-16T07:13:48Z**
+
+Evidence curation checkpoint: final accepted refs for this slice are pi-blitz commits d31f3e5 and da602c5, D5 reports /tmp/pi-subagents-uid-1000/d5-exported-signature-route-safety.md and /tmp/pi-subagents-uid-1000/d5-zai-provider-shape-remediation.md, reviewer blocker /tmp/pi-subagents-uid-1000/reviewer-pi-blitz-70b6f1f.md, and focused report timestamps called out in notes. Report artifact farm under reports/natural-edit-harness remains uncommitted by design; no benchmark artifacts should be committed for this slice. Universal claim remains blocked pending broad natural/adversarial/provider matrices under Tokscale/accounting.
