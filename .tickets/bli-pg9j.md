@@ -77,3 +77,35 @@ verify: latest full natural Zai improved to 49/50 accepted (report natural-edit-
 **2026-06-16T00:56:10Z**
 
 verify: full natural Zai matrix is now 50/50 accepted/correct with Tokscale match 50/50 at reports/natural-edit-harness/natural-edit-2026-06-16T00-49-32-836Z.json. Core 25/25, blitz 25/25; no timeouts. Token accounting still shows blitz visibleTotal 73631 vs core 54725, so this is correctness-only remediation, not route/token win.
+
+**2026-06-16T00:59:33Z**
+
+handoff: spawned D5 322e8a36 in /home/kenzo/dev/pi-blitz to implement atomic batched blitz_edit with rollback semantics, tests, typecheck/test/build, commit+push. Main will avoid running Pi benchmarks against pi-blitz dist while that builder may mutate dist.
+
+**2026-06-16T01:00:29Z**
+
+finding: adversarial harness currently has 22 scenarios / 44 rows per provider across required safety categories (ambiguous anchors, no-op/idempotence, stale context, path traversal/symlink, repeated matches, generated/minified, unsupported refactors, conflicting edits, prompt/schema attacks, huge/case-collision). No adversarial reports have been run yet.
+
+**2026-06-16T01:06:26Z**
+
+verify: D5 completed pi-blitz atomic batched blitz_edit slice: commit 42ff677e pushed to origin/feat/blitz-0.4-token-core-profile; typecheck/test/build pass. Atomicity: preview all safe units, snapshot touched files under sorted locks, sequential apply without nested locks, rollback snapshots on later failure; no core/apply_patch fallback.
+
+**2026-06-16T01:17:18Z**
+
+handoff: spawned D5 f0bb8592 in /home/kenzo/dev/blitz to add/remediate default route/adversarial safety lane in natural-edit harness. Context: adversarial minimal/core run natural-edit-2026-06-16T01-12-29-187Z only 19/44 accepted; NUL escaping dirty change prevents adv-binary-ish spawn crash; D5 may keep/improve/revert policy and should commit/push verified route-lane slice.
+
+**2026-06-16T01:24:42Z**
+
+review: reviewer ebcc438b failed acceptance parse but produced concrete atomicity blockers for pi-blitz 42ff677: hard later apply exceptions/timeouts skip rollback after snapshots; rollback-failure output overclaims restored all files; tests mock orchestration more than real same/cross success semantics. Treat atomicity as not fully benchmark-safe until remediated.
+
+**2026-06-16T01:25:12Z**
+
+handoff: spawned D5 9426da2c in /home/kenzo/dev/pi-blitz to remediate reviewer atomicity blockers: hard apply exceptions/timeouts rollback, truthful rollback-failure output, stronger same/cross/rollback tests, typecheck/test/build, commit+push.
+
+**2026-06-16T01:29:09Z**
+
+verify: default route adversarial Zai lane passed 22/22 accepted/correct with Tokscale match 22/22 at reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json. Route profile/tools recorded as pi_blitz_route_edit/router via /home/kenzo/dev/pi-blitz/dist/index.js; route outcome breakdown decline=22, blitz=0, fallback=0. NUL prompt escaping prevents adv-binary-ish spawnSync crash.
+
+**2026-06-16T01:29:25Z**
+
+route evidence: D5 f0bb produced Zai adversarial route report reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match; visible profile pi_blitz_route_edit/router from /home/kenzo/dev/pi-blitz/dist/index.js; route counts decline=22, fallback=0. Needs integration/commit and interpretation: safety pass, but all-decline means no Blitz-success subset for adversarial.
