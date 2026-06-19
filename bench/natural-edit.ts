@@ -60,7 +60,9 @@ const keepTemp = argv.includes("--keep-temp");
 const verbose = argv.includes("--verbose");
 const selfCheckParser = argv.includes("--self-check-parser");
 const selfCheckRouteTaxonomy = argv.includes("--self-check-route-taxonomy");
-const selfCheckProviderPreflight = argv.includes("--self-check-provider-preflight");
+const selfCheckProviderPreflight = argv.includes(
+	"--self-check-provider-preflight",
+);
 const selfCheckAlternates = argv.includes("--self-check-alternates");
 const listScenarios = argv.includes("--list-scenarios");
 const scenarioGroup = argFlag("--scenario-group", "natural");
@@ -99,8 +101,7 @@ const ROUTE_OUTCOMES = [
 	"error",
 ] as const;
 
-type RouteOutcome =
-	| (typeof ROUTE_OUTCOMES)[number];
+type RouteOutcome = (typeof ROUTE_OUTCOMES)[number];
 
 const PUBLIC_RESULT_TEXT_MAX_CHARS = 96;
 
@@ -214,7 +215,10 @@ type ProviderPreflightRow = {
 	countsAsSuccess: boolean;
 };
 
-const MANDATORY_PROVIDER_PREFLIGHT_MATRIX: { provider: ProviderId; model: string }[] = [
+const MANDATORY_PROVIDER_PREFLIGHT_MATRIX: {
+	provider: ProviderId;
+	model: string;
+}[] = [
 	{ provider: "openai-codex", model: "gpt-5-codex" },
 	{ provider: "anthropic", model: "claude-haiku-4-5" },
 	{ provider: "gemini", model: "gemini-2.5-flash" },
