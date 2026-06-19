@@ -33,6 +33,38 @@ type ScenarioId =
 	| "class-b-inserts-10"
 	| "class-c-structural-10"
 	| "class-d-config-docs-10";
+type EditClassId =
+	| "E01"
+	| "E02"
+	| "E03"
+	| "E04"
+	| "E05"
+	| "E06"
+	| "E07"
+	| "E08"
+	| "E09"
+	| "E10"
+	| "E11"
+	| "E12"
+	| "E13"
+	| "E14"
+	| "E15"
+	| "E16"
+	| "E17"
+	| "E18";
+type GateOutcome = "success" | "decline" | "noop" | "error";
+type GateLane = "paired" | "blitz-only";
+type GateRow = {
+	id: string;
+	classId: EditClassId;
+	className: string;
+	lanePolicy: GateLane;
+	expectedBlitzOutcome: GateOutcome;
+	expectedCoreOutcome?: GateOutcome;
+	scenarioId: ScenarioId | "all-edit-types-gate";
+	fixture: string;
+	notes: string;
+};
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
 
@@ -133,6 +165,7 @@ const mdOut = resolve(
 	),
 );
 const tokScaleRequired = hasFlag("--tokscale");
+const selfCheckAllEditTypes = hasFlag("--self-check-all-edit-types");
 const tmuxSession = `pi-true-streak-${stamp}`;
 
 if (!["core", "router", "blitz-edit", "core-optimized"].includes(lane))
@@ -151,6 +184,7 @@ if (
 	].includes(scenarioId)
 )
 	throw new Error(`invalid --scenario ${scenarioId}`);
+
 
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
 const safeName = (value: string) =>
@@ -293,6 +327,272 @@ const classDConfigDocsScenario = (): Scenario => ({
 		},
 	],
 });
+
+
+const allEditTypeGateRows = (): GateRow[] => [
+	{
+		id: "all-e01-tiny-exact",
+		classId: "E01",
+		className: "tiny exact single",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "tiny-10",
+		fixture: "tiny-01.ts",
+		notes: "Tiny guard row; one exact old/new replacement.",
+	},
+	{
+		id: "all-e02-same-file-multi",
+		classId: "E02",
+		className: "exact same-file multi",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "same-file-multi",
+		fixture: "same.ts",
+		notes: "Multiple exact replacements in one file.",
+	},
+	{
+		id: "all-e03-cross-file-multi",
+		classId: "E03",
+		className: "exact cross-file multi",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "mixed-20",
+		fixture: "tiny-01.ts + package.json + README.md",
+		notes: "Mixed scenario covers cross-file exact replacements with rollback-backed application.",
+	},
+	{
+		id: "all-e04-config-set-key",
+		classId: "E04",
+		className: "config set/key edit",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "class-d-config-docs-10",
+		fixture: "config-1.json/settings.toml/config.yml",
+		notes: "Config exact/key-like edits; JSONC parity remains a separate implementation decision if strict set_key route is required.",
+	},
+	{
+		id: "all-e05-doc-comment",
+		classId: "E05",
+		className: "doc/comment edit",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "class-d-config-docs-10",
+		fixture: "doc-2.md",
+		notes: "Markdown/doc text update without formatting drift.",
+	},
+	{
+		id: "all-e06-import-edit",
+		classId: "E06",
+		className: "import edit",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "all-edit-types-gate",
+		fixture: "imports.ts",
+		notes: "Dedicated Sprint D fixture required: insert/remove/reorder import with exact expected output.",
+	},
+	{
+		id: "all-e07-rename-local-usage",
+		classId: "E07",
+		className: "rename/local usage",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "all-edit-types-gate",
+		fixture: "rename-local.ts",
+		notes: "Dedicated Sprint D fixture required: exact same-file definition + usage rename, not global symbol graph claim.",
+	},
+	{
+		id: "all-e08-structural-replace",
+		classId: "E08",
+		className: "structural function body replace",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "class-c-structural-10",
+		fixture: "structural-10.ts",
+		notes: "TS/JS unique function body replacement from bli-sh7d policy.",
+	},
+	{
+		id: "all-e09-structural-insert-after",
+		classId: "E09",
+		className: "structural insert-after function",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "structural-3",
+		fixture: "structural.ts",
+		notes: "TS/JS unique function insert-after from bli-sh7d policy.",
+	},
+	{
+		id: "all-e10-wrap-try-catch",
+		classId: "E10",
+		className: "wrap body / try-catch",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "all-edit-types-gate",
+		fixture: "wrap-body.ts",
+		notes: "Dedicated Sprint D fixture required: exact replace can express initial row; structural try-catch route remains separate if claimed.",
+	},
+	{
+		id: "all-e11-delete-range",
+		classId: "E11",
+		className: "delete range",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "all-edit-types-gate",
+		fixture: "delete-range.ts",
+		notes: "Dedicated Sprint D fixture required: exact removal oldText -> empty string.",
+	},
+	{
+		id: "all-e12-append-section",
+		classId: "E12",
+		className: "append section",
+		lanePolicy: "paired",
+		expectedBlitzOutcome: "success",
+		expectedCoreOutcome: "success",
+		scenarioId: "all-edit-types-gate",
+		fixture: "append-section.md",
+		notes: "Dedicated Sprint D fixture required: exact anchor expansion appends section.",
+	},
+	{
+		id: "all-e13-noop-already-present",
+		classId: "E13",
+		className: "noop/already-present",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "noop",
+		scenarioId: "all-edit-types-gate",
+		fixture: "noop.ts",
+		notes: "Must classify as noop/already_present, not Blitz edit success.",
+	},
+	{
+		id: "all-e14-ambiguous-match",
+		classId: "E14",
+		className: "ambiguous match",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "decline",
+		scenarioId: "all-edit-types-gate",
+		fixture: "ambiguous.ts",
+		notes: "Repeated old text must decline with no mutation.",
+	},
+	{
+		id: "all-e15-no-match-stale",
+		classId: "E15",
+		className: "no-match/stale context",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "decline",
+		scenarioId: "all-edit-types-gate",
+		fixture: "stale.ts",
+		notes: "Missing/stale old text must decline with no mutation.",
+	},
+	{
+		id: "all-e16-unsupported-structural",
+		classId: "E16",
+		className: "unsupported structural",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "decline",
+		scenarioId: "all-edit-types-gate",
+		fixture: "plain.txt",
+		notes: "Unsupported structural target must decline; safety only, not success.",
+	},
+	{
+		id: "all-e17-path-escape",
+		classId: "E17",
+		className: "path escape/symlink/traversal",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "decline",
+		scenarioId: "all-edit-types-gate",
+		fixture: "outside-link.ts",
+		notes: "Path escape/symlink/traversal must not mutate outside workspace.",
+	},
+	{
+		id: "all-e18-rollback-failure",
+		classId: "E18",
+		className: "rollback failure case",
+		lanePolicy: "blitz-only",
+		expectedBlitzOutcome: "decline",
+		scenarioId: "all-edit-types-gate",
+		fixture: "rollback-a.ts + rollback-b.ts",
+		notes: "Later failed edit must roll back earlier mutations or report incomplete rollback truthfully.",
+	},
+];
+
+const selfCheckAllEditTypeRows = () => {
+	const rows = allEditTypeGateRows();
+	const required: EditClassId[] = [
+		"E01",
+		"E02",
+		"E03",
+		"E04",
+		"E05",
+		"E06",
+		"E07",
+		"E08",
+		"E09",
+		"E10",
+		"E11",
+		"E12",
+		"E13",
+		"E14",
+		"E15",
+		"E16",
+		"E17",
+		"E18",
+	];
+	const byClass = new Map<EditClassId, GateRow[]>();
+	for (const row of rows) {
+		const existing = byClass.get(row.classId) ?? [];
+		existing.push(row);
+		byClass.set(row.classId, existing);
+	}
+	const missing = required.filter((id) => !byClass.has(id));
+	if (missing.length > 0)
+		throw new Error(`missing all edit-type classes: ${missing.join(",")}`);
+	const duplicateRows = rows
+		.map((row) => row.id)
+		.filter((id, index, ids) => ids.indexOf(id) !== index);
+	if (duplicateRows.length > 0)
+		throw new Error(`duplicate all edit-type row ids: ${duplicateRows.join(",")}`);
+	const invalidSuccess = rows.filter(
+		(row) =>
+			(row.expectedBlitzOutcome === "decline" ||
+				row.expectedBlitzOutcome === "noop") &&
+			row.lanePolicy === "paired",
+	);
+	if (invalidSuccess.length > 0)
+		throw new Error(
+			`decline/noop rows must not be paired success rows: ${invalidSuccess
+				.map((row) => row.id)
+				.join(",")}`,
+		);
+	const successRows = rows.filter(
+		(row) => row.expectedBlitzOutcome === "success",
+	);
+	if (successRows.some((row) => row.lanePolicy !== "paired"))
+		throw new Error("success-intended rows must be paired core+Blitz rows");
+	const safetyRows = rows.filter(
+		(row) => row.expectedBlitzOutcome !== "success",
+	);
+	if (safetyRows.some((row) => row.expectedCoreOutcome !== undefined))
+		throw new Error("safety rows must not define core success baselines");
+	console.log(
+		`all-edit-type self-check passed: rows=${rows.length} classes=${required.length} success=${successRows.length} safety=${safetyRows.length}`,
+	);
+};
+
+
+if (selfCheckAllEditTypes) {
+	selfCheckAllEditTypeRows();
+	releaseTokenizer();
+	process.exit(0);
+}
 
 const classBInserts10Scenario = (): Scenario => ({
 	id: "class-b-inserts-10",

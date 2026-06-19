@@ -148,6 +148,35 @@ If rerun after a blocker fix:
 3. `bli-m3sj`: run one focused all edit-type lock.
 4. `bli-hndl`: audit scoped claim from artifacts.
 
+## Row registry status
+
+`bench/true-streak.ts --self-check-all-edit-types` is the deterministic pre-run guard for this sprint. It verifies that all E01-E18 classes exist and that success rows are paired while decline/noop/error rows cannot be counted as paired Blitz wins.
+
+Rows currently mapped to existing scenarios:
+
+- E01: `tiny-10`
+- E02: `same-file-multi`
+- E03: `mixed-20`
+- E04/E05: `class-d-config-docs-10`
+- E08: `class-c-structural-10`
+- E09: `structural-3`
+
+Rows that are intentionally registered as `all-edit-types-gate` placeholders before `bli-m3sj` can run:
+
+- E06 import edit
+- E07 rename/local usage
+- E10 wrap body / try-catch
+- E11 delete range
+- E12 append section
+- E13 noop/already-present
+- E14 ambiguous match
+- E15 no-match/stale context
+- E16 unsupported structural decline
+- E17 path escape/symlink/traversal
+- E18 rollback failure case
+
+These placeholder rows are not success claims. `bli-m3sj` must not run until they are either implemented as runnable harness fixtures or moved into explicit blocker tickets/policy decisions.
+
 ## Claim language if this passes
 
 Allowed:
