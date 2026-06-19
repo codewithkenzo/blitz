@@ -60,6 +60,7 @@ const keepTemp = argv.includes("--keep-temp");
 const verbose = argv.includes("--verbose");
 const selfCheckParser = argv.includes("--self-check-parser");
 const selfCheckRouteTaxonomy = argv.includes("--self-check-route-taxonomy");
+const selfCheckProviderPreflight = argv.includes("--self-check-provider-preflight");
 const selfCheckAlternates = argv.includes("--self-check-alternates");
 const listScenarios = argv.includes("--list-scenarios");
 const scenarioGroup = argFlag("--scenario-group", "natural");
@@ -180,6 +181,180 @@ type TokscaleAudit = {
 	totals: Record<string, number | null> | null;
 	details: string;
 };
+
+type ProviderId =
+	| "openai-codex"
+	| "anthropic"
+	| "gemini"
+	| "zai-glm"
+	| "xai-grok";
+type ProviderFailureClass =
+	| "none"
+	| "malformed_provider_shape"
+	| "auth_or_rate_limit"
+	| "retry_or_timeout"
+	| "product_failure";
+
+type ProviderPreflightRow = {
+	provider: ProviderId;
+	model: string;
+	toolCallsAttempted: number;
+	toolCallsCompleted: number;
+	profile: string;
+	tool: string;
+	routeOutcome: RouteOutcome;
+	fallback: "none" | "core" | "apply_patch" | "hidden";
+	malformedProviderShape: boolean;
+	failureClass: ProviderFailureClass;
+	retryCount: number;
+	timedOut: boolean;
+	authOrRateLimit: boolean;
+	tokscaleStatus: TokscaleAudit["status"];
+	cacheStatus: "not-run" | "hit" | "miss" | "unknown";
+	countsAsSuccess: boolean;
+};
+
+const MANDATORY_PROVIDER_PREFLIGHT_MATRIX: { provider: ProviderId; model: string }[] = [
+	{ provider: "openai-codex", model: "gpt-5-codex" },
+	{ provider: "anthropic", model: "claude-haiku-4-5" },
+	{ provider: "gemini", model: "gemini-2.5-flash" },
+	{ provider: "zai-glm", model: "glm-4.5-air" },
+	{ provider: "xai-grok", model: "grok-code-fast-1" },
+];
+
+const classifyProviderFailure = (row: {
+	malformedProviderShape: boolean;
+	authOrRateLimit: boolean;
+	timedOut: boolean;
+	retryCount: number;
+	routeOutcome: RouteOutcome;
+}): ProviderFailureClass => {
+	if (row.malformedProviderShape) return "malformed_provider_shape";
+	if (row.authOrRateLimit) return "auth_or_rate_limit";
+	if (row.timedOut || row.retryCount > 0) return "retry_or_timeout";
+	if (row.routeOutcome === "error" || row.routeOutcome === "incorrect")
+		return "product_failure";
+	return "none";
+};
+
+const classifyProviderPreflightRow = (
+	row: Omit<ProviderPreflightRow, "failureClass" | "countsAsSuccess">,
+): ProviderPreflightRow => {
+	const failureClass = classifyProviderFailure(row);
+	const completedExpectedTool = row.toolCallsCompleted > 0;
+	const visibleBlitzSuccess =
+		row.routeOutcome === "blitz_success" && row.fallback === "none";
+	return {
+		...row,
+		failureClass,
+		countsAsSuccess:
+			failureClass === "none" && completedExpectedTool && visibleBlitzSuccess,
+	};
+};
+
+const providerPreflightSelfCheckRows = (): ProviderPreflightRow[] => [
+	...MANDATORY_PROVIDER_PREFLIGHT_MATRIX.map(({ provider, model }) =>
+		classifyProviderPreflightRow({
+			provider,
+			model,
+			toolCallsAttempted: 1,
+			toolCallsCompleted: 1,
+			profile: "minimal",
+			tool: "blitz_edit",
+			routeOutcome: "blitz_success",
+			fallback: "none",
+			malformedProviderShape: false,
+			retryCount: 0,
+			timedOut: false,
+			authOrRateLimit: false,
+			tokscaleStatus: "not-run",
+			cacheStatus: "not-run",
+		}),
+	),
+	classifyProviderPreflightRow({
+		provider: "zai-glm",
+		model: "glm-4.5-air",
+		toolCallsAttempted: 1,
+		toolCallsCompleted: 0,
+		profile: "minimal",
+		tool: "blitz_edit",
+		routeOutcome: "error",
+		fallback: "none",
+		malformedProviderShape: true,
+		retryCount: 0,
+		timedOut: false,
+		authOrRateLimit: false,
+		tokscaleStatus: "not-run",
+		cacheStatus: "unknown",
+	}),
+	classifyProviderPreflightRow({
+		provider: "anthropic",
+		model: "claude-haiku-4-5",
+		toolCallsAttempted: 1,
+		toolCallsCompleted: 0,
+		profile: "minimal",
+		tool: "blitz_edit",
+		routeOutcome: "core_fallback",
+		fallback: "hidden",
+		malformedProviderShape: false,
+		retryCount: 0,
+		timedOut: false,
+		authOrRateLimit: false,
+		tokscaleStatus: "not-run",
+		cacheStatus: "unknown",
+	}),
+	classifyProviderPreflightRow({
+		provider: "openai-codex",
+		model: "gpt-5-codex",
+		toolCallsAttempted: 1,
+		toolCallsCompleted: 0,
+		profile: "minimal",
+		tool: "blitz_edit",
+		routeOutcome: "error",
+		fallback: "none",
+		malformedProviderShape: false,
+		retryCount: 0,
+		timedOut: false,
+		authOrRateLimit: true,
+		tokscaleStatus: "not-run",
+		cacheStatus: "unknown",
+	}),
+	classifyProviderPreflightRow({
+		provider: "gemini",
+		model: "gemini-2.5-flash",
+		toolCallsAttempted: 1,
+		toolCallsCompleted: 0,
+		profile: "minimal",
+		tool: "blitz_edit",
+		routeOutcome: "error",
+		fallback: "none",
+		malformedProviderShape: false,
+		retryCount: 1,
+		timedOut: true,
+		authOrRateLimit: false,
+		tokscaleStatus: "not-run",
+		cacheStatus: "unknown",
+	}),
+];
+
+const providerPreflightFields = [
+	"provider",
+	"model",
+	"toolCallsAttempted",
+	"toolCallsCompleted",
+	"profile",
+	"tool",
+	"routeOutcome",
+	"fallback",
+	"malformedProviderShape",
+	"failureClass",
+	"retryCount",
+	"timedOut",
+	"authOrRateLimit",
+	"tokscaleStatus",
+	"cacheStatus",
+	"countsAsSuccess",
+] as const;
 
 // ── Lane types ──────────────────────────────────────────────────────────────
 
@@ -1350,6 +1525,67 @@ if (selfCheckParser) {
 		),
 	);
 	process.exit(0);
+}
+
+if (selfCheckProviderPreflight) {
+	const rows = providerPreflightSelfCheckRows();
+	const mandatoryProviders = new Set(
+		MANDATORY_PROVIDER_PREFLIGHT_MATRIX.map((row) => row.provider),
+	);
+	const mandatoryCovered = [...mandatoryProviders].every((provider) =>
+		rows.some((row) => row.provider === provider),
+	);
+	const requiredFieldsPresent = rows.every((row) =>
+		providerPreflightFields.every((field) => row[field] !== undefined),
+	);
+	const hiddenFallbacksAreNonSuccess = rows.every(
+		(row) => row.fallback !== "hidden" || !row.countsAsSuccess,
+	);
+	const malformedShapeClassified = rows.some(
+		(row) => row.failureClass === "malformed_provider_shape",
+	);
+	const authOrRateLimitClassified = rows.some(
+		(row) => row.failureClass === "auth_or_rate_limit",
+	);
+	const retryOrTimeoutClassified = rows.some(
+		(row) => row.failureClass === "retry_or_timeout",
+	);
+	const attemptedCompletedTracked = rows.every(
+		(row) =>
+			Number.isInteger(row.toolCallsAttempted) &&
+			Number.isInteger(row.toolCallsCompleted) &&
+			row.toolCallsCompleted <= row.toolCallsAttempted,
+	);
+	const ok =
+		mandatoryCovered &&
+		requiredFieldsPresent &&
+		hiddenFallbacksAreNonSuccess &&
+		malformedShapeClassified &&
+		authOrRateLimitClassified &&
+		retryOrTimeoutClassified &&
+		attemptedCompletedTracked;
+	console.log(
+		JSON.stringify(
+			{
+				ok,
+				mandatoryProviderMatrix: MANDATORY_PROVIDER_PREFLIGHT_MATRIX,
+				fields: providerPreflightFields,
+				checks: {
+					mandatoryCovered,
+					requiredFieldsPresent,
+					hiddenFallbacksAreNonSuccess,
+					malformedShapeClassified,
+					authOrRateLimitClassified,
+					retryOrTimeoutClassified,
+					attemptedCompletedTracked,
+				},
+				rows,
+			},
+			null,
+			2,
+		),
+	);
+	process.exit(ok ? 0 : 1);
 }
 
 if (selfCheckRouteTaxonomy) {
