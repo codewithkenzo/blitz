@@ -199,7 +199,6 @@ if (
 )
 	throw new Error(`invalid --scenario ${scenarioId}`);
 
-
 const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
 const safeName = (value: string) =>
 	value.replace(/[^a-zA-Z0-9_.-]+/g, "_").slice(0, 80);
@@ -342,7 +341,6 @@ const classDConfigDocsScenario = (): Scenario => ({
 	],
 });
 
-
 export const allEditTypesSuccessScenario = (): Scenario => ({
 	id: "all-edit-types-gate",
 	title: "Sprint D all edit-type success fixtures",
@@ -391,7 +389,8 @@ export const allEditTypesSafetyFixtures = (): SafetyFixture[] => [
 		expectedOutcome: "noop",
 		expectedMutation: "none",
 		expectedClassification: "already_present/noop",
-		notes: "Requested state already present; Blitz must report noop without counting success.",
+		notes:
+			"Requested state already present; Blitz must report noop without counting success.",
 	},
 	{
 		id: "e14-ambiguous-match",
@@ -427,7 +426,8 @@ export const allEditTypesSafetyFixtures = (): SafetyFixture[] => [
 		expectedOutcome: "decline",
 		expectedMutation: "none",
 		expectedClassification: "unsupported_structural_op_minimal",
-		notes: "Unsupported structural op in minimal profile must decline, not fall back.",
+		notes:
+			"Unsupported structural op in minimal profile must decline, not fall back.",
 	},
 	{
 		id: "e17-path-escape",
@@ -450,11 +450,12 @@ export const allEditTypesSafetyFixtures = (): SafetyFixture[] => [
 		operation: `multi-edit where later rollback-b.ts edit fails after rollback-a.ts would change`,
 		expectedOutcome: "decline",
 		expectedMutation: "none",
-		expectedClassification: "rollback_decline_no_partial_mutation_or_truthful_failure",
-		notes: "Failed batch must leave no partial mutation or report incomplete rollback truthfully.",
+		expectedClassification:
+			"rollback_decline_no_partial_mutation_or_truthful_failure",
+		notes:
+			"Failed batch must leave no partial mutation or report incomplete rollback truthfully.",
 	},
 ];
-
 
 const allEditTypeGateRows = (): GateRow[] => [
 	{
@@ -488,7 +489,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "mixed-20",
 		fixture: "tiny-01.ts + package.json + README.md",
-		notes: "Mixed scenario covers cross-file exact replacements with rollback-backed application.",
+		notes:
+			"Mixed scenario covers cross-file exact replacements with rollback-backed application.",
 	},
 	{
 		id: "all-e04-config-set-key",
@@ -499,7 +501,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "class-d-config-docs-10",
 		fixture: "config-1.json/settings.toml/config.yml",
-		notes: "Config exact/key-like edits; JSONC parity remains a separate implementation decision if strict set_key route is required.",
+		notes:
+			"Config exact/key-like edits; JSONC parity remains a separate implementation decision if strict set_key route is required.",
 	},
 	{
 		id: "all-e05-doc-comment",
@@ -521,7 +524,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "imports.ts",
-		notes: "Sprint D runnable paired fixture: import insertion plus usage guard with exact expected output.",
+		notes:
+			"Sprint D runnable paired fixture: import insertion plus usage guard with exact expected output.",
 	},
 	{
 		id: "all-e07-rename-local-usage",
@@ -532,7 +536,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "rename-local.ts",
-		notes: "Sprint D runnable paired fixture: exact same-file local definition and usage rename, not a global symbol graph claim.",
+		notes:
+			"Sprint D runnable paired fixture: exact same-file local definition and usage rename, not a global symbol graph claim.",
 	},
 	{
 		id: "all-e08-structural-replace",
@@ -565,7 +570,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "wrap-body.ts",
-		notes: "Sprint D runnable paired fixture: exact replacement wraps body in try/catch; structural route remains separate if claimed.",
+		notes:
+			"Sprint D runnable paired fixture: exact replacement wraps body in try/catch; structural route remains separate if claimed.",
 	},
 	{
 		id: "all-e11-delete-range",
@@ -576,7 +582,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "delete-range.ts",
-		notes: "Sprint D runnable paired fixture: exact range removal represented by oldText to empty replacement.",
+		notes:
+			"Sprint D runnable paired fixture: exact range removal represented by oldText to empty replacement.",
 	},
 	{
 		id: "all-e12-append-section",
@@ -587,7 +594,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "append-section.md",
-		notes: "Sprint D runnable paired fixture: exact anchor expansion appends a Markdown section.",
+		notes:
+			"Sprint D runnable paired fixture: exact anchor expansion appends a Markdown section.",
 	},
 	{
 		id: "all-e13-noop-already-present",
@@ -627,7 +635,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedBlitzOutcome: "decline",
 		scenarioId: "all-edit-types-gate",
 		fixture: "plain.txt",
-		notes: "Unsupported structural target must decline; safety only, not success.",
+		notes:
+			"Unsupported structural target must decline; safety only, not success.",
 	},
 	{
 		id: "all-e17-path-escape",
@@ -647,7 +656,8 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedBlitzOutcome: "decline",
 		scenarioId: "all-edit-types-gate",
 		fixture: "rollback-a.ts + rollback-b.ts",
-		notes: "Later failed edit must roll back earlier mutations or report incomplete rollback truthfully.",
+		notes:
+			"Later failed edit must roll back earlier mutations or report incomplete rollback truthfully.",
 	},
 ];
 
@@ -686,7 +696,9 @@ const selfCheckAllEditTypeRows = () => {
 		.map((row) => row.id)
 		.filter((id, index, ids) => ids.indexOf(id) !== index);
 	if (duplicateRows.length > 0)
-		throw new Error(`duplicate all edit-type row ids: ${duplicateRows.join(",")}`);
+		throw new Error(
+			`duplicate all edit-type row ids: ${duplicateRows.join(",")}`,
+		);
 	const invalidSuccess = rows.filter(
 		(row) =>
 			(row.expectedBlitzOutcome === "decline" ||
@@ -728,7 +740,9 @@ const selfCheckAllEditTypeRows = () => {
 				.join(",")}`,
 		);
 	const safetyFixtures = allEditTypesSafetyFixtures();
-	const safetyByClass = new Map(safetyFixtures.map((fixture) => [fixture.classId, fixture]));
+	const safetyByClass = new Map(
+		safetyFixtures.map((fixture) => [fixture.classId, fixture]),
+	);
 	const missingSafetyFixtures = safetyRows.filter((row) => {
 		const fixture = safetyByClass.get(row.classId as SafetyFixture["classId"]);
 		return (
@@ -748,7 +762,6 @@ const selfCheckAllEditTypeRows = () => {
 		`all-edit-type self-check passed: rows=${rows.length} classes=${required.length} success=${successRows.length} safety=${safetyRows.length}`,
 	);
 };
-
 
 if (selfCheckAllEditTypes) {
 	selfCheckAllEditTypeRows();
@@ -976,7 +989,11 @@ export const exactChangedSpan = (before: string, after: string) => {
 		const anchorEnd = start;
 		let anchorStart = before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
 		let anchor = before.slice(anchorStart, anchorEnd);
-		while (anchor.length > 0 && occurrences(before, anchor) > 1 && anchorStart > 0) {
+		while (
+			anchor.length > 0 &&
+			occurrences(before, anchor) > 1 &&
+			anchorStart > 0
+		) {
 			anchorStart = before.lastIndexOf("\n", Math.max(0, anchorStart - 2)) + 1;
 			anchor = before.slice(anchorStart, anchorEnd);
 		}
