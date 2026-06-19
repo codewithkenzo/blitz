@@ -1,0 +1,182 @@
+{
+  "generatedAt": "2026-06-19T03:54:35.143Z",
+  "status": "declined",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "class-c-structural-10",
+  "scenarioTitle": "Class C 10 structural body replacements",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit",
+  "tmuxSession": "pi-true-streak-2026-06-19T03-54-20-446Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "profileDump": "/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json",
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 1509,\n      \"output\": 711,\n      \"cacheRead\": 2048,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.0011453400000000001\n    }\n  ],\n  \"totalInput\": 1509,\n  \"totalOutput\": 711,\n  \"totalCacheRead\": 2048,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.0011453400000000001,\n  \"processingTimeMs\": 16\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 1509,
+      "output": 711,
+      "cacheRead": 2048,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 14084,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/sessions/2026-06-19T03-54-20-997Z_019ede03-f1c5-7733-8115-994bc2e3a916.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work"
+  },
+  "steps": [
+    {
+      "id": "structural-10.ts",
+      "path": "structural-10.ts",
+      "correct": false,
+      "expectedSha": "bf098d15725e76dd",
+      "actualSha": "f641a38b60761f57"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node1",
+            "\n  return value * 2;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node2",
+            "\n  return value * 3;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node3",
+            "\n  return value * 4;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node4",
+            "\n  return value * 5;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node5",
+            "\n  return value * 6;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node6",
+            "\n  return value * 7;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node7",
+            "\n  return value * 8;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node8",
+            "\n  return value * 9;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node9",
+            "\n  return value * 10;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work/structural-10.ts",
+            "function",
+            "node10",
+            "\n  return value * 11;\n"
+          ]
+        ]
+      },
+      "argTokens": 644
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "decline op=rb reason=unsupported_structural_op_minimal no_mutation=true use core/apply_patch or PI_BLITZ_TOOL_PROFILE=structural",
+      "resultPayloadTokens": 32
+    }
+  ],
+  "usage": {
+    "input": 1509,
+    "output": 711,
+    "cacheRead": 2048,
+    "cacheWrite": 0,
+    "totalTokens": 4268,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 350,
+    "skillTokens": 268,
+    "promptTokens": 674,
+    "argTokens": 644,
+    "outputTokens": 711,
+    "cacheRead": 2048,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 32,
+    "residualInputTokens": 217,
+    "totalContextTokens": 4268
+  },
+  "decline": {
+    "reason": "unsupported_structural_op_minimal",
+    "noMutation": true,
+    "note": "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back."
+  },
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis.",
+    "minimal blitz_edit declined unsupported structural rb with no_mutation=true; this row is an explicit decline, not a correctness pass or hidden fallback."
+  ]
+}

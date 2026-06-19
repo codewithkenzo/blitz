@@ -1,0 +1,1 @@
+Decline: `rb` structural alias blocked by minimal profile. Use core/apply_patch or set `PI_BLITZ_TOOL_PROFILE=structural`.
