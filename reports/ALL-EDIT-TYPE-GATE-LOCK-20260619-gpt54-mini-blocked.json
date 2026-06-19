@@ -1,0 +1,233 @@
+{
+  "status": "blocked",
+  "ticket": "bli-m3sj",
+  "blocker": "bli-jv9q",
+  "zaiBlockerStillOpen": "bli-t3cl",
+  "generatedAt": "2026-06-19T08:22:00.657Z",
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "suffix": "20260619-gpt54-mini",
+  "note": "Alternate provider gate approved by user while Zai quota blocker remains open. This is not Zai replacement evidence.",
+  "completedRowsBeforeStop": 11,
+  "stopReason": "core_baseline_incorrect_and_tokscale_mismatch",
+  "failure": {
+    "file": "reports/pi-tmux-true-streak-structural-3-core-optimized-20260619-gpt54-mini.json",
+    "scenario": "structural-3",
+    "lane": "core-optimized",
+    "status": "caveated",
+    "correct": false,
+    "tokScaleMatch": false,
+    "tools": [
+      "edit"
+    ],
+    "totalContextTokens": 3386,
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "exitStatus": 0,
+    "timedOut": false,
+    "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/structural-3-core-optimized",
+    "tmuxSession": "pi-true-streak-2026-06-19T08-20-56-639Z"
+  },
+  "rows": [
+    {
+      "file": "reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-gpt54-mini.json",
+      "scenario": "class-c-structural-10",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "blitz_edit"
+      ],
+      "totalContextTokens": 3732,
+      "schemaTokens": 350,
+      "skillTokens": 268,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/class-c-structural-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-19-56-892Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "class-c-structural-10",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 3363,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/class-c-structural-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-19-49-096Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-class-d-config-docs-10-blitz-edit-20260619-gpt54-mini.json",
+      "scenario": "class-d-config-docs-10",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "blitz_edit"
+      ],
+      "totalContextTokens": 3212,
+      "schemaTokens": 350,
+      "skillTokens": 268,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-19-38-783Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-class-d-config-docs-10-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "class-d-config-docs-10",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 16578,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-19-21-398Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260619-gpt54-mini.json",
+      "scenario": "mixed-20",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "blitz_edit"
+      ],
+      "totalContextTokens": 5168,
+      "schemaTokens": 350,
+      "skillTokens": 268,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/mixed-20-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-19-05-093Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-mixed-20-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "mixed-20",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 9186,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/mixed-20-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-18-45-774Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-same-file-multi-blitz-edit-20260619-gpt54-mini.json",
+      "scenario": "same-file-multi",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "blitz_edit"
+      ],
+      "totalContextTokens": 1952,
+      "schemaTokens": 350,
+      "skillTokens": 268,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-18-38-488Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-same-file-multi-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "same-file-multi",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 1598,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-18-32-717Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-structural-3-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "structural-3",
+      "lane": "core-optimized",
+      "status": "caveated",
+      "correct": false,
+      "tokScaleMatch": false,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 3386,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/structural-3-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-20-56-639Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-tiny-10-blitz-edit-20260619-gpt54-mini.json",
+      "scenario": "tiny-10",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "blitz_edit"
+      ],
+      "totalContextTokens": 3440,
+      "schemaTokens": 350,
+      "skillTokens": 268,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/tiny-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-18-18-906Z"
+    },
+    {
+      "file": "reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-gpt54-mini.json",
+      "scenario": "tiny-10",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "tokScaleMatch": true,
+      "tools": [
+        "edit"
+      ],
+      "totalContextTokens": 26791,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "exitStatus": 0,
+      "timedOut": false,
+      "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/tiny-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T08-17-14-328Z"
+    }
+  ],
+  "rerunPerformed": false,
+  "claimAuditStarted": false
+}

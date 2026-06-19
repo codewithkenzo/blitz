@@ -1,0 +1,120 @@
+{
+  "generatedAt": "2026-06-19T08:18:38.410Z",
+  "status": "accepted",
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "runner": "tmux",
+  "lane": "core-optimized",
+  "scenario": "same-file-multi",
+  "scenarioTitle": "same-file multi-edit scenario",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized",
+  "tmuxSession": "pi-true-streak-2026-06-19T08-18-32-717Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "profileDump": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"gpt-5.4-mini\",\n      \"provider\": \"openai-codex\",\n      \"input\": 1490,\n      \"output\": 108,\n      \"cacheRead\": 0,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.0016035\n    }\n  ],\n  \"totalInput\": 1490,\n  \"totalOutput\": 108,\n  \"totalCacheRead\": 0,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.0016035,\n  \"processingTimeMs\": 17\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 1490,
+      "output": 108,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 5164,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/sessions/2026-06-19T08-18-33-336Z_019edef5-d4f7-7990-ad44-80f56f2d5e14.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/work"
+  },
+  "steps": [
+    {
+      "id": "same.ts",
+      "path": "same.ts",
+      "correct": true,
+      "expectedSha": "616c6c4a5520d180",
+      "actualSha": "616c6c4a5520d180"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/work/same.ts",
+        "edits": [
+          {
+            "oldText": "\"old-a\"",
+            "newText": "\"new-a\""
+          },
+          {
+            "oldText": "\"old-b\"",
+            "newText": "\"new-b\""
+          },
+          {
+            "oldText": "\"old-c\"",
+            "newText": "\"new-c\""
+          }
+        ]
+      },
+      "argTokens": 92
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 3 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-gpt54-mini/same-file-multi-core-optimized/work/same.ts.",
+      "resultPayloadTokens": 44
+    }
+  ],
+  "usage": {
+    "input": 1490,
+    "output": 108,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "totalTokens": 1598,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 123,
+    "argTokens": 92,
+    "outputTokens": 108,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 44,
+    "residualInputTokens": 1367,
+    "totalContextTokens": 1598
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

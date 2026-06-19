@@ -1,0 +1,14 @@
+tiny-10 core-optimized
+tiny-10 blitz-edit
+same-file-multi core-optimized
+same-file-multi blitz-edit
+mixed-20 core-optimized
+mixed-20 blitz-edit
+class-d-config-docs-10 core-optimized
+class-d-config-docs-10 blitz-edit
+class-c-structural-10 core-optimized
+class-c-structural-10 blitz-edit
+structural-3 core-optimized
+structural-3 blitz-edit
+all-edit-types-gate core-optimized
+all-edit-types-gate blitz-edit

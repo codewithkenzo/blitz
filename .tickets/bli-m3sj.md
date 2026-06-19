@@ -1,7 +1,7 @@
 ---
 id: bli-m3sj
 status: open
-deps: [bli-cca2, bli-91kk, bli-4aff, bli-1sab, bli-t3cl]
+deps: [bli-cca2, bli-91kk, bli-4aff, bli-1sab, bli-t3cl, bli-jv9q]
 links: []
 created: 2026-06-19T06:41:57Z
 type: task
@@ -36,3 +36,11 @@ blocked: one bounded focused lock attempt stopped at first row tiny-10/core-opti
 **2026-06-19T08:13:36Z**
 
 still blocked: quota reset time has not passed; bli-t3cl remains open. No lock rerun performed.
+
+**2026-06-19T08:16:51Z**
+
+alternate gate start: user approved GPT-5.4-mini while Zai quota blocker bli-t3cl remains open. This is provider-scoped alternate evidence, not replacement for original Zai gate unless user accepts later. Artifacts use gpt54-mini suffix. Provider/model: openai-codex/gpt-5.4-mini; Pi args keep --thinking off via harness.
+
+**2026-06-19T08:21:32Z**
+
+alternate GPT-5.4-mini gate stopped on stop-rule at structural-3/core-optimized: core baseline incorrect + Tokscale mismatch. Created blocker bli-jv9q. Zai blocker bli-t3cl remains open. No rerun and no bli-hndl start.
