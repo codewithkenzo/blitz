@@ -1,0 +1,20 @@
+---
+id: bli-1sab
+status: open
+deps: []
+links: []
+created: 2026-06-19T06:52:47Z
+type: task
+priority: 0
+assignee: Kenzo
+parent: bli-6uqs
+tags: [blitz, 0.5, sprint-d, harness, safety]
+---
+# 0.5D materialize safety edit-type rows
+
+Convert Sprint D safety placeholders into runnable no-mutation gate fixtures before the focused lock run.
+
+## Acceptance Criteria
+
+E13 noop, E14 ambiguous, E15 no-match/stale, E16 unsupported structural, E17 path escape/symlink/traversal, and E18 rollback failure are runnable safety fixtures with expected no-mutation/decline/noop/error classifications; they cannot be counted as Blitz success.
+

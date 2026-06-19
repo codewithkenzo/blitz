@@ -31,3 +31,7 @@ Sprint C scoped replacement gate + final claim audit complete: bli-o1pd and bli-
 **2026-06-19T06:41:57Z**
 
 plan: Sprint D added for all edit-type coverage on one provider first. Tickets: bli-cca2 plan, bli-91kk harness rows, bli-m3sj focused lock run, bli-hndl claim audit.
+
+**2026-06-19T06:52:47Z**
+
+plan: Sprint D lock run blocked on placeholder materialization tickets bli-4aff (success edit types) and bli-1sab (safety edit types).
