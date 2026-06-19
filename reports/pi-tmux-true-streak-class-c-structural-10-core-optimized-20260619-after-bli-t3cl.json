@@ -1,0 +1,274 @@
+{
+  "generatedAt": "2026-06-19T19:03:56.533Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "core-optimized",
+  "scenario": "class-c-structural-10",
+  "scenarioTitle": "Class C 10 structural body replacements",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized",
+  "tmuxSession": "pi-true-streak-2026-06-19T19-03-44-317Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "profileDump": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 2348,\n      \"output\": 723,\n      \"cacheRead\": 2176,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00133018\n    }\n  ],\n  \"totalInput\": 2348,\n  \"totalOutput\": 723,\n  \"totalCacheRead\": 2176,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00133018,\n  \"processingTimeMs\": 17\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 2348,
+      "output": 723,
+      "cacheRead": 2176,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 11549,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/sessions/2026-06-19T19-03-45-063Z_019ee144-86a7-77d3-a70c-25e627f95e3b.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work"
+  },
+  "steps": [
+    {
+      "id": "structural-10.ts",
+      "path": "structural-10.ts",
+      "correct": true,
+      "expectedSha": "bf098d15725e76dd",
+      "actualSha": "bf098d15725e76dd"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 1;",
+            "newText": "* 2;"
+          }
+        ]
+      },
+      "argTokens": 66
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 2",
+            "newText": "* 3"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 3",
+            "newText": "* 4"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 4",
+            "newText": "* 5"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 5",
+            "newText": "* 6"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 6",
+            "newText": "* 7"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 7",
+            "newText": "* 8"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 8",
+            "newText": "* 9"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 9",
+            "newText": "* 10"
+          }
+        ]
+      },
+      "argTokens": 64
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 10",
+            "newText": "* 11"
+          }
+        ]
+      },
+      "argTokens": 64
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 51
+    }
+  ],
+  "usage": {
+    "input": 2348,
+    "output": 723,
+    "cacheRead": 2176,
+    "cacheWrite": 0,
+    "totalTokens": 5247,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 932,
+    "argTokens": 642,
+    "outputTokens": 723,
+    "cacheRead": 2176,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 510,
+    "residualInputTokens": 1416,
+    "totalContextTokens": 5247
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

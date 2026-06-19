@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-06-19T19:04:27.995Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "structural-3",
+  "scenarioTitle": "3 structural symbol edits",
+  "runRoot": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit",
+  "tmuxSession": "pi-true-streak-2026-06-19T19-04-20-278Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "profileDump": "/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json",
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 557,\n      \"output\": 197,\n      \"cacheRead\": 1536,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00037418\n    }\n  ],\n  \"totalInput\": 557,\n  \"totalOutput\": 197,\n  \"totalCacheRead\": 1536,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00037418,\n  \"processingTimeMs\": 19\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 557,
+      "output": 197,
+      "cacheRead": 1536,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 7323,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/sessions/2026-06-19T19-04-20-862Z_019ee145-127e-7185-b443-2f859d3b419d.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/work"
+  },
+  "steps": [
+    {
+      "id": "structural.ts",
+      "path": "structural.ts",
+      "correct": true,
+      "expectedSha": "35851f15b9e12f02",
+      "actualSha": "35851f15b9e12f02"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/work/structural.ts",
+            "function",
+            "alpha",
+            "\n  return value + 1;\n"
+          ],
+          [
+            "rb",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/work/structural.ts",
+            "function",
+            "beta",
+            "\n  return \"new\";\n"
+          ],
+          [
+            "ia",
+            "/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/structural-3-blitz-edit/work/structural.ts",
+            "function",
+            "beta",
+            "\n\nexport function gamma(): boolean { return true; }"
+          ]
+        ]
+      },
+      "argTokens": 174
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=3 files=1 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true",
+      "resultPayloadTokens": 25
+    }
+  ],
+  "usage": {
+    "input": 557,
+    "output": 197,
+    "cacheRead": 1536,
+    "cacheWrite": 0,
+    "totalTokens": 2290,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 350,
+    "skillTokens": 268,
+    "promptTokens": 204,
+    "argTokens": 174,
+    "outputTokens": 197,
+    "cacheRead": 1536,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 25,
+    "residualInputTokens": 0,
+    "totalContextTokens": 2290
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

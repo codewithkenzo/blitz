@@ -1,7 +1,7 @@
 ---
 id: bli-m3sj
 status: open
-deps: [bli-cca2, bli-91kk, bli-4aff, bli-1sab, bli-t3cl, bli-jv9q]
+deps: [bli-cca2, bli-91kk, bli-4aff, bli-1sab, bli-t3cl, bli-jv9q, bli-z13z]
 links: []
 created: 2026-06-19T06:41:57Z
 type: task
@@ -44,3 +44,11 @@ alternate gate start: user approved GPT-5.4-mini while Zai quota blocker bli-t3c
 **2026-06-19T08:21:32Z**
 
 alternate GPT-5.4-mini gate stopped on stop-rule at structural-3/core-optimized: core baseline incorrect + Tokscale mismatch. Created blocker bli-jv9q. Zai blocker bli-t3cl remains open. No rerun and no bli-hndl start.
+
+**2026-06-19T19:01:29Z**
+
+resume: Zai provider available again; bli-t3cl closed as external quota blocker. Running one bounded original Zai/glm-4.5-air focused gate with after-bli-t3cl artifact suffix. No rerun fishing.
+
+**2026-06-19T19:05:48Z**
+
+blocked: Zai after-bli-t3cl run completed provider rows, but validation found all-edit-types-gate reports identify scenario=tiny-10. Gate cannot pass because materialized E06/E07/E10/E11/E12 rows were not proven. Created blocker bli-z13z. No rerun and no claim audit.
