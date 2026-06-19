@@ -1,0 +1,30 @@
+---
+id: bli-o1pd
+status: open
+deps: [bli-wwly, bli-97se, bli-wcjq, bli-42f3, bli-7x68, bli-bbnw, bli-09ru, bli-mj6a]
+links: []
+created: 2026-06-19T01:30:52Z
+type: task
+priority: 1
+assignee: Kenzo
+parent: bli-6uqs
+tags: [blitz, 0.5, sprint-c, benchmark, tokscale]
+---
+# 0.5C focused final lock run
+
+Run one bounded final proof after implementation gates, preserving artifacts and classifying failures instead of rerun fishing.
+
+## Acceptance Criteria
+
+Paired core vs Blitz rows for agreed classes have Tokscale match, route truth, correctness, mutation safety, resident schema+skill accounting, artifact hash manifest; systemic failure creates tickets, not looped reruns.
+
+
+## Notes
+
+**2026-06-19T02:57:27Z**
+
+start: focused final token replacement lock. Following docs/plans/PLAN-0.5C-token-replacement-gate.md exactly; stop at first correctness/route/Tokscale failure; no rerun fishing.
+
+**2026-06-19T03:03:17Z**
+
+finding: final lock failed stop-rule on class-c-structural-10 blitz-edit. Route=blitz_edit, Tokscale matched zero deltas, but final structural-10.ts hash mismatched. No rerun performed. Planned class-d rows also ran after failure due local validation-script bug; preserved but not counted as pass claim. Reports: reports/REPLACEMENT-GATE-LOCK-20260619.json and reports/REPLACEMENT-GATE-20260619.md. Ticket remains open.
