@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { exactChangedSpan, isMinimalStructuralDecline } from "./true-streak.ts";
+import {
+	allEditTypesSafetyFixtures,
+	allEditTypesSuccessScenario,
+	exactChangedSpan,
+	isMinimalStructuralDecline,
+} from "./true-streak.ts";
 
 const declineText =
 	"decline op=rb reason=unsupported_structural_op_minimal no_mutation=true use core/apply_patch or PI_BLITZ_TOOL_PROFILE=structural";
@@ -41,3 +46,46 @@ assert.deepEqual(
 	{ oldText: "+ 1;", newText: "* 2;" },
 	"Class C optimized core span must include right boundary so '+ 1' does not also match '+ 10'",
 );
+
+const sprintDSuccess = allEditTypesSuccessScenario();
+assert.deepEqual(
+	sprintDSuccess.steps.map((step) => step.id),
+	[
+		"e06-import-edit",
+		"e07-rename-local-usage",
+		"e10-wrap-try-catch",
+		"e11-delete-range",
+		"e12-append-section",
+	],
+	"Sprint D success rows must be concrete runnable paired fixtures, not placeholders",
+);
+for (const step of sprintDSuccess.steps) {
+	assert.notEqual(step.before, step.after, `${step.id} must have expected output`);
+	assert.ok(step.before.length > 0, `${step.id} must define initial fixture`);
+	assert.ok(step.after.length > 0, `${step.id} must define expected fixture`);
+}
+
+const safetyFixtures = allEditTypesSafetyFixtures();
+assert.deepEqual(
+	safetyFixtures.map((fixture) => [
+		fixture.classId,
+		fixture.expectedOutcome,
+		fixture.expectedMutation,
+	]),
+	[
+		["E13", "noop", "none"],
+		["E14", "decline", "none"],
+		["E15", "decline", "none"],
+		["E16", "decline", "none"],
+		["E17", "decline", "none"],
+		["E18", "decline", "none"],
+	],
+	"Sprint D safety rows must be classified as noop/decline/error with no mutation",
+);
+for (const fixture of safetyFixtures) {
+	assert.ok(fixture.initial.length > 0, `${fixture.id} must define initial content`);
+	assert.ok(
+		fixture.expectedClassification.length > 0,
+		`${fixture.id} must define classification`,
+	);
+}

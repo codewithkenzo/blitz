@@ -161,21 +161,21 @@ Rows currently mapped to existing scenarios:
 - E08: `class-c-structural-10`
 - E09: `structural-3`
 
-Rows that are intentionally registered as `all-edit-types-gate` placeholders before `bli-m3sj` can run:
+Rows materialized by Sprint D row-fixture tickets before `bli-m3sj`:
 
-- E06 import edit
-- E07 rename/local usage
-- E10 wrap body / try-catch
-- E11 delete range
-- E12 append section
-- E13 noop/already-present
-- E14 ambiguous match
-- E15 no-match/stale context
-- E16 unsupported structural decline
-- E17 path escape/symlink/traversal
-- E18 rollback failure case
+- E06 import edit: runnable paired `all-edit-types-gate` fixture with exact expected output.
+- E07 rename/local usage: runnable paired `all-edit-types-gate` fixture scoped to same-file local usage.
+- E10 wrap body / try-catch: runnable paired `all-edit-types-gate` exact replacement fixture.
+- E11 delete range: runnable paired `all-edit-types-gate` exact deletion fixture.
+- E12 append section: runnable paired `all-edit-types-gate` Markdown append fixture.
+- E13 noop/already-present: runnable safety fixture classified `noop`, no mutation, not Blitz success.
+- E14 ambiguous match: runnable safety fixture classified `decline`, no mutation, not Blitz success.
+- E15 no-match/stale context: runnable safety fixture classified `decline`, no mutation, not Blitz success.
+- E16 unsupported structural decline: runnable safety fixture classified `decline`, no mutation, not Blitz success.
+- E17 path escape/symlink/traversal: runnable safety fixture classified `decline`, no mutation outside workspace, not Blitz success.
+- E18 rollback failure case: runnable safety fixture classified `decline`, no partial mutation or truthful rollback failure, not Blitz success.
 
-These placeholder rows are not success claims. `bli-m3sj` must not run until they are either implemented as runnable harness fixtures or moved into explicit blocker tickets/policy decisions.
+`bli-m3sj` can be checked for readiness only after these rows remain materialized and the deterministic self-check stays green.
 
 ## Claim language if this passes
 

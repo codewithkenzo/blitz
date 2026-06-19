@@ -32,7 +32,8 @@ type ScenarioId =
 	| "class-d-config-docs"
 	| "class-b-inserts-10"
 	| "class-c-structural-10"
-	| "class-d-config-docs-10";
+	| "class-d-config-docs-10"
+	| "all-edit-types-gate";
 type EditClassId =
 	| "E01"
 	| "E02"
@@ -61,12 +62,24 @@ type GateRow = {
 	lanePolicy: GateLane;
 	expectedBlitzOutcome: GateOutcome;
 	expectedCoreOutcome?: GateOutcome;
-	scenarioId: ScenarioId | "all-edit-types-gate";
+	scenarioId: ScenarioId;
 	fixture: string;
 	notes: string;
 };
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
+type SafetyFixture = {
+	id: string;
+	classId: Extract<EditClassId, "E13" | "E14" | "E15" | "E16" | "E17" | "E18">;
+	fixture: string;
+	path: string;
+	initial: string;
+	operation: string;
+	expectedOutcome: Exclude<GateOutcome, "success">;
+	expectedMutation: "none";
+	expectedClassification: string;
+	notes: string;
+};
 
 type UsageTotals = {
 	input: number;
@@ -181,6 +194,7 @@ if (
 		"class-b-inserts-10",
 		"class-c-structural-10",
 		"class-d-config-docs-10",
+		"all-edit-types-gate",
 	].includes(scenarioId)
 )
 	throw new Error(`invalid --scenario ${scenarioId}`);
@@ -329,6 +343,119 @@ const classDConfigDocsScenario = (): Scenario => ({
 });
 
 
+export const allEditTypesSuccessScenario = (): Scenario => ({
+	id: "all-edit-types-gate",
+	title: "Sprint D all edit-type success fixtures",
+	steps: [
+		{
+			id: "e06-import-edit",
+			path: "imports.ts",
+			before: `import { readFile } from "node:fs/promises";\n\nexport async function load(path: string): Promise<string> {\n  return readFile(path, "utf8");\n}\n`,
+			after: `import { existsSync } from "node:fs";\nimport { readFile } from "node:fs/promises";\n\nexport async function load(path: string): Promise<string> {\n  if (!existsSync(path)) return "";\n  return readFile(path, "utf8");\n}\n`,
+		},
+		{
+			id: "e07-rename-local-usage",
+			path: "rename-local.ts",
+			before: `export function total(items: number[]): number {\n  const sum = items.reduce((acc, item) => acc + item, 0);\n  return sum;\n}\n`,
+			after: `export function total(items: number[]): number {\n  const totalValue = items.reduce((acc, item) => acc + item, 0);\n  return totalValue;\n}\n`,
+		},
+		{
+			id: "e10-wrap-try-catch",
+			path: "wrap-body.ts",
+			before: `export async function refresh(): Promise<string> {\n  const res = await fetch("/api/status");\n  return res.text();\n}\n`,
+			after: `export async function refresh(): Promise<string> {\n  try {\n    const res = await fetch("/api/status");\n    return res.text();\n  } catch (error) {\n    return "offline";\n  }\n}\n`,
+		},
+		{
+			id: "e11-delete-range",
+			path: "delete-range.ts",
+			before: `export function score(value: number): number {\n  const debug = value * 100;\n  console.log("debug", debug);\n  return value + 1;\n}\n`,
+			after: `export function score(value: number): number {\n  return value + 1;\n}\n`,
+		},
+		{
+			id: "e12-append-section",
+			path: "append-section.md",
+			before: `# Release Notes\n\n## Fixed\n\n- Correct stale cache state.\n`,
+			after: `# Release Notes\n\n## Fixed\n\n- Correct stale cache state.\n\n## Added\n\n- Document all edit-type gate fixtures.\n`,
+		},
+	],
+});
+
+export const allEditTypesSafetyFixtures = (): SafetyFixture[] => [
+	{
+		id: "e13-noop-already-present",
+		classId: "E13",
+		fixture: "noop.ts",
+		path: "noop.ts",
+		initial: `export const mode = "ready";\n`,
+		operation: `replace "ready" with "ready"`,
+		expectedOutcome: "noop",
+		expectedMutation: "none",
+		expectedClassification: "already_present/noop",
+		notes: "Requested state already present; Blitz must report noop without counting success.",
+	},
+	{
+		id: "e14-ambiguous-match",
+		classId: "E14",
+		fixture: "ambiguous.ts",
+		path: "ambiguous.ts",
+		initial: `export const first = "same";\nexport const second = "same";\n`,
+		operation: `replace ambiguous "same" with "done"`,
+		expectedOutcome: "decline",
+		expectedMutation: "none",
+		expectedClassification: "ambiguous_match/decline",
+		notes: "Repeated old text must decline before mutation.",
+	},
+	{
+		id: "e15-no-match-stale",
+		classId: "E15",
+		fixture: "stale.ts",
+		path: "stale.ts",
+		initial: `export const version = "current";\n`,
+		operation: `replace stale "previous" with "next"`,
+		expectedOutcome: "decline",
+		expectedMutation: "none",
+		expectedClassification: "no_match/stale_context",
+		notes: "Missing old text must decline with original file intact.",
+	},
+	{
+		id: "e16-unsupported-structural",
+		classId: "E16",
+		fixture: "plain.txt",
+		path: "plain.txt",
+		initial: `plain text has no function symbol\n`,
+		operation: `rb function missingSymbol`,
+		expectedOutcome: "decline",
+		expectedMutation: "none",
+		expectedClassification: "unsupported_structural_op_minimal",
+		notes: "Unsupported structural op in minimal profile must decline, not fall back.",
+	},
+	{
+		id: "e17-path-escape",
+		classId: "E17",
+		fixture: "outside-link.ts",
+		path: "outside-link.ts",
+		initial: `export const safe = true;\n`,
+		operation: `attempt edit through path traversal/symlink outside workspace`,
+		expectedOutcome: "decline",
+		expectedMutation: "none",
+		expectedClassification: "path_escape_or_symlink_boundary",
+		notes: "Path boundary safety row must not mutate outside workspace.",
+	},
+	{
+		id: "e18-rollback-failure",
+		classId: "E18",
+		fixture: "rollback-a.ts + rollback-b.ts",
+		path: "rollback-a.ts",
+		initial: `export const a = "original";\n`,
+		operation: `multi-edit where later rollback-b.ts edit fails after rollback-a.ts would change`,
+		expectedOutcome: "decline",
+		expectedMutation: "none",
+		expectedClassification: "rollback_decline_no_partial_mutation_or_truthful_failure",
+		notes: "Failed batch must leave no partial mutation or report incomplete rollback truthfully.",
+	},
+];
+
+
 const allEditTypeGateRows = (): GateRow[] => [
 	{
 		id: "all-e01-tiny-exact",
@@ -394,7 +521,7 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "imports.ts",
-		notes: "Dedicated Sprint D fixture required: insert/remove/reorder import with exact expected output.",
+		notes: "Sprint D runnable paired fixture: import insertion plus usage guard with exact expected output.",
 	},
 	{
 		id: "all-e07-rename-local-usage",
@@ -405,7 +532,7 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "rename-local.ts",
-		notes: "Dedicated Sprint D fixture required: exact same-file definition + usage rename, not global symbol graph claim.",
+		notes: "Sprint D runnable paired fixture: exact same-file local definition and usage rename, not a global symbol graph claim.",
 	},
 	{
 		id: "all-e08-structural-replace",
@@ -438,7 +565,7 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "wrap-body.ts",
-		notes: "Dedicated Sprint D fixture required: exact replace can express initial row; structural try-catch route remains separate if claimed.",
+		notes: "Sprint D runnable paired fixture: exact replacement wraps body in try/catch; structural route remains separate if claimed.",
 	},
 	{
 		id: "all-e11-delete-range",
@@ -449,7 +576,7 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "delete-range.ts",
-		notes: "Dedicated Sprint D fixture required: exact removal oldText -> empty string.",
+		notes: "Sprint D runnable paired fixture: exact range removal represented by oldText to empty replacement.",
 	},
 	{
 		id: "all-e12-append-section",
@@ -460,7 +587,7 @@ const allEditTypeGateRows = (): GateRow[] => [
 		expectedCoreOutcome: "success",
 		scenarioId: "all-edit-types-gate",
 		fixture: "append-section.md",
-		notes: "Dedicated Sprint D fixture required: exact anchor expansion appends section.",
+		notes: "Sprint D runnable paired fixture: exact anchor expansion appends a Markdown section.",
 	},
 	{
 		id: "all-e13-noop-already-present",
@@ -582,6 +709,41 @@ const selfCheckAllEditTypeRows = () => {
 	);
 	if (safetyRows.some((row) => row.expectedCoreOutcome !== undefined))
 		throw new Error("safety rows must not define core success baselines");
+	const successFixturePaths = new Set(
+		allEditTypesSuccessScenario().steps.map((step) => step.path),
+	);
+	const sprintDSuccessRows = rows.filter((row) =>
+		["E06", "E07", "E10", "E11", "E12"].includes(row.classId),
+	);
+	const missingSuccessFixtures = sprintDSuccessRows.filter(
+		(row) =>
+			row.scenarioId !== "all-edit-types-gate" ||
+			!successFixturePaths.has(row.fixture) ||
+			row.notes.includes("required"),
+	);
+	if (missingSuccessFixtures.length > 0)
+		throw new Error(
+			`unmaterialized Sprint D success fixtures: ${missingSuccessFixtures
+				.map((row) => row.id)
+				.join(",")}`,
+		);
+	const safetyFixtures = allEditTypesSafetyFixtures();
+	const safetyByClass = new Map(safetyFixtures.map((fixture) => [fixture.classId, fixture]));
+	const missingSafetyFixtures = safetyRows.filter((row) => {
+		const fixture = safetyByClass.get(row.classId as SafetyFixture["classId"]);
+		return (
+			fixture === undefined ||
+			fixture.fixture !== row.fixture ||
+			fixture.expectedOutcome !== row.expectedBlitzOutcome ||
+			fixture.expectedMutation !== "none"
+		);
+	});
+	if (missingSafetyFixtures.length > 0)
+		throw new Error(
+			`unmaterialized Sprint D safety fixtures: ${missingSafetyFixtures
+				.map((row) => row.id)
+				.join(",")}`,
+		);
 	console.log(
 		`all-edit-type self-check passed: rows=${rows.length} classes=${required.length} success=${successRows.length} safety=${safetyRows.length}`,
 	);

@@ -1,6 +1,6 @@
 ---
 id: bli-1sab
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-19T06:52:47Z
@@ -18,3 +18,9 @@ Convert Sprint D safety placeholders into runnable no-mutation gate fixtures bef
 
 E13 noop, E14 ambiguous, E15 no-match/stale, E16 unsupported structural, E17 path escape/symlink/traversal, and E18 rollback failure are runnable safety fixtures with expected no-mutation/decline/noop/error classifications; they cannot be counted as Blitz success.
 
+
+## Notes
+
+**2026-06-19T07:22:20Z**
+
+start: materializing Sprint D safety rows E13-E18 in bench/true-streak.ts; no provider/model benchmark or focused lock.
