@@ -1,7 +1,7 @@
 ---
 id: bli-o1pd
 status: open
-deps: [bli-wwly, bli-97se, bli-wcjq, bli-42f3, bli-7x68, bli-bbnw, bli-09ru, bli-mj6a, bli-7kz8]
+deps: [bli-wwly, bli-97se, bli-wcjq, bli-42f3, bli-7x68, bli-bbnw, bli-09ru, bli-mj6a, bli-7kz8, bli-sh7d]
 links: []
 created: 2026-06-19T01:30:52Z
 type: task
@@ -44,3 +44,7 @@ start: bli-ta7v closed; starting exactly one final replacement lock after ta7v w
 **2026-06-19T03:56:11Z**
 
 finding: final-after-ta7v lock ran once after ta7v. All core rows and A/B/D blitz rows accepted with Tokscale match. Class C blitz-edit declined with unsupported_structural_op_minimal/no mutation; route truth ok, no hidden fallback. Gate decision failed under current plan because declined structural work cannot count as default replacement. Artifacts: reports/REPLACEMENT-GATE-LOCK-20260619-final-after-ta7v.json and reports/REPLACEMENT-GATE-20260619-final-after-ta7v.md. Created blocker bli-7kz8; qgz1 remains blocked.
+
+**2026-06-19T04:43:10Z**
+
+policy: bli-7kz8 chose strict default replacement for Exodia 0.5. Class C structural decline is safety, not edit success. o1pd now waits on bli-sh7d for default/minimal blitz_edit structural success before another final lock.

@@ -16,6 +16,21 @@ Produce one bounded final lock proving whether the minimal `blitz_edit` route ca
 - No accepted Blitz row may count core `edit` / `apply_patch` fallback as Blitz success.
 - Structural rows may use compact tuple ops only where the current capability matrix says supported.
 
+## Class C structural policy
+
+Decision: **A — strict default replacement** for Exodia 0.5.
+
+Class C structural decline is safety, not edit success. `unsupported_structural_op_minimal` with `noMutation=true`, route `blitz_edit`, and Tokscale match proves fail-closed route truth only. It does **not** satisfy the default-replacement gate and must not be counted as a replacement win.
+
+For `bli-o1pd` to pass under the universal/exodia 0.5 goal, the default/minimal `blitz_edit` route must produce a successful Class C structural edit for the planned supported slice, with no hidden core/apply_patch fallback and no file corruption. Until that support lands, `bli-o1pd` remains blocked by implementation ticket `bli-sh7d`.
+
+Initial required structural success slice:
+
+- Languages: TypeScript and JavaScript only.
+- Operations: unique function body replacement and insertion after a unique function declaration.
+- Failure mode: unsupported language, parse error, ambiguous symbol, missing symbol, multi-match, or unsafe edit must decline with no mutation.
+- Evidence: focused regression plus final lock row showing `class-c-structural-10` / `blitz-edit` accepted, correct, Tokscale matched, route `blitz_edit`, no fallback.
+
 ## Providers / models
 
 Primary lock provider/model:
