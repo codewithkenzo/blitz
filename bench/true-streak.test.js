@@ -69,6 +69,25 @@ for (const step of sprintDSuccess.steps) {
 	assert.ok(step.after.length > 0, `${step.id} must define expected fixture`);
 }
 
+const structuralBefore = `export function alpha(value: number): number {\n  return value + 1;\n}\n\nexport function beta(): string {\n  return "new";\n}\n`;
+const structuralAfter = `${structuralBefore}\nexport function gamma(): boolean { return true; }\n`;
+const structuralAppend = exactChangedSpan(structuralBefore, structuralAfter);
+assert.notEqual(
+	structuralAppend.oldText,
+	"}\n",
+	"structural-3 core append span must not use ambiguous closing brace anchor",
+);
+assert.equal(
+	structuralBefore.split(structuralAppend.oldText).length - 1,
+	1,
+	"structural-3 core append span oldText must be unique",
+);
+assert.equal(
+	structuralBefore.replace(structuralAppend.oldText, structuralAppend.newText),
+	structuralAfter,
+	"structural-3 core append span must produce expected output",
+);
+
 const safetyFixtures = allEditTypesSafetyFixtures();
 assert.deepEqual(
 	safetyFixtures.map((fixture) => [

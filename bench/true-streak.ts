@@ -974,9 +974,12 @@ export const exactChangedSpan = (before: string, after: string) => {
 	}
 	if (oldText.length === 0) {
 		const anchorEnd = start;
-		const prevLineStart =
-			before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
-		const anchor = before.slice(prevLineStart, anchorEnd);
+		let anchorStart = before.lastIndexOf("\n", Math.max(0, anchorEnd - 2)) + 1;
+		let anchor = before.slice(anchorStart, anchorEnd);
+		while (anchor.length > 0 && occurrences(before, anchor) > 1 && anchorStart > 0) {
+			anchorStart = before.lastIndexOf("\n", Math.max(0, anchorStart - 2)) + 1;
+			anchor = before.slice(anchorStart, anchorEnd);
+		}
 		if (anchor.length > 0) {
 			oldText = anchor;
 			newText = anchor + newText;
