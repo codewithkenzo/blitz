@@ -1,6 +1,6 @@
 ---
 id: bli-o1pd
-status: open
+status: closed
 deps: [bli-wwly, bli-97se, bli-wcjq, bli-42f3, bli-7x68, bli-bbnw, bli-09ru, bli-mj6a, bli-7kz8, bli-sh7d]
 links: []
 created: 2026-06-19T01:30:52Z
@@ -48,3 +48,11 @@ finding: final-after-ta7v lock ran once after ta7v. All core rows and A/B/D blit
 **2026-06-19T04:43:10Z**
 
 policy: bli-7kz8 chose strict default replacement for Exodia 0.5. Class C structural decline is safety, not edit success. o1pd now waits on bli-sh7d for default/minimal blitz_edit structural success before another final lock.
+
+**2026-06-19T05:03:25Z**
+
+start: final-after-sh7d lock after closed/pushed bli-sh7d. Same settings: zai/glm-4.5-air, tmux true-streak, --tokscale, 600000ms, 6 scenarios x core-optimized+blitz-edit, suffix final-after-sh7d. Stop on first correctness/route/Tokscale failure; no qgz1.
+
+**2026-06-19T05:07:47Z**
+
+result: final-after-sh7d lock passed. 12/12 accepted/correct; class-c-structural-10 blitz-edit accepted via blitz_edit (not declined); Tokscale matched all rows; route truth ok; core total context 36094, Blitz 24141, delta 33.12%; tiny guard pass (5950 core vs 3890 Blitz). Artifacts: reports/REPLACEMENT-GATE-LOCK-20260619-final-after-sh7d.json and reports/REPLACEMENT-GATE-20260619-final-after-sh7d.md. qgz1 not started.

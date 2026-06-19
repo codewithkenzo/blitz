@@ -1,0 +1,3 @@
+Run 3 ordered edits in this one Pi session on the same file.
+Use only edit. No prose. Call edit exactly once with this exact JSON:
+{"path":"/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-core-optimized/work/same.ts","edits":[{"oldText":"\"old-a\"","newText":"\"new-a\""},{"oldText":"\"old-b\"","newText":"\"new-b\""},{"oldText":"\"old-c\"","newText":"\"new-c\""}]}
