@@ -60,7 +60,11 @@ assert.deepEqual(
 	"Sprint D success rows must be concrete runnable paired fixtures, not placeholders",
 );
 for (const step of sprintDSuccess.steps) {
-	assert.notEqual(step.before, step.after, `${step.id} must have expected output`);
+	assert.notEqual(
+		step.before,
+		step.after,
+		`${step.id} must have expected output`,
+	);
 	assert.ok(step.before.length > 0, `${step.id} must define initial fixture`);
 	assert.ok(step.after.length > 0, `${step.id} must define expected fixture`);
 }
@@ -83,7 +87,10 @@ assert.deepEqual(
 	"Sprint D safety rows must be classified as noop/decline/error with no mutation",
 );
 for (const fixture of safetyFixtures) {
-	assert.ok(fixture.initial.length > 0, `${fixture.id} must define initial content`);
+	assert.ok(
+		fixture.initial.length > 0,
+		`${fixture.id} must define initial content`,
+	);
 	assert.ok(
 		fixture.expectedClassification.length > 0,
 		`${fixture.id} must define classification`,
