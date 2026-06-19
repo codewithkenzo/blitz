@@ -432,7 +432,7 @@ const finalExpectedByPath = (steps: Step[]) => {
 	return map;
 };
 
-const exactChangedSpan = (before: string, after: string) => {
+export const exactChangedSpan = (before: string, after: string) => {
 	let start = 0;
 	while (
 		start < before.length &&
@@ -469,6 +469,28 @@ const exactChangedSpan = (before: string, after: string) => {
 	}
 	let oldText = before.slice(start, beforeEnd);
 	let newText = after.slice(start, afterEnd);
+	const occurrences = (haystack: string, needle: string) => {
+		if (needle.length === 0) return 0;
+		let count = 0;
+		let at = haystack.indexOf(needle);
+		while (at >= 0) {
+			count += 1;
+			at = haystack.indexOf(needle, at + 1);
+		}
+		return count;
+	};
+	while (
+		oldText.length > 0 &&
+		occurrences(before, oldText) > 1 &&
+		beforeEnd < before.length &&
+		afterEnd < after.length &&
+		before[beforeEnd] === after[afterEnd]
+	) {
+		beforeEnd += 1;
+		afterEnd += 1;
+		oldText = before.slice(start, beforeEnd);
+		newText = after.slice(start, afterEnd);
+	}
 	if (oldText.length === 0) {
 		const anchorEnd = start;
 		const prevLineStart =
