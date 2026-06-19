@@ -1,6 +1,6 @@
 ---
 id: bli-cca2
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-19T06:41:57Z
@@ -18,3 +18,13 @@ Define one-provider all edit-type gate before running. Scope is zai/glm-4.5-air 
 
 Plan lists edit classes, fixtures, expected outcomes, route-success/decline rules, token fields, retry/timeout policy, artifacts, stop rules, and pass/fail thresholds. No benchmark run in this ticket.
 
+
+## Notes
+
+**2026-06-19T06:45:22Z**
+
+start: defining one-provider all edit-type gate before any run. Scope: zai/glm-4.5-air first, all edit classes, no provider x edit explosion.
+
+**2026-06-19T06:46:16Z**
+
+verify: wrote docs/plans/PLAN-0.5D-all-edit-type-gate.md. Defines provider/model, E01-E18 edit classes, pass criteria, stop rules, artifact names, and claim language. No benchmark run.
