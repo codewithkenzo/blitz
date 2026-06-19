@@ -170,7 +170,7 @@ pub const Language = enum {
 
     pub fn fromExtension(ext: []const u8) ?Language {
         if (std.ascii.eqlIgnoreCase(ext, ".rs")) return .rust;
-        if (std.ascii.eqlIgnoreCase(ext, ".ts")) return .typescript;
+        if (std.ascii.eqlIgnoreCase(ext, ".ts") or std.ascii.eqlIgnoreCase(ext, ".js")) return .typescript;
         if (std.ascii.eqlIgnoreCase(ext, ".tsx")) return .tsx;
         if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
         if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
@@ -403,6 +403,7 @@ pub const QueryCursor = struct {
 test "Language.fromExtension matches supported extensions" {
     try std.testing.expectEqual(Language.rust, Language.fromExtension(".rs").?);
     try std.testing.expectEqual(Language.typescript, Language.fromExtension(".TS").?);
+    try std.testing.expectEqual(Language.typescript, Language.fromExtension(".js").?);
     try std.testing.expectEqual(Language.tsx, Language.fromExtension(".tsx").?);
     try std.testing.expectEqual(Language.python, Language.fromExtension(".py").?);
     try std.testing.expectEqual(Language.go, Language.fromExtension(".go").?);

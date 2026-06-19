@@ -43,7 +43,7 @@ const no_kinds = [_][]const u8{};
 
 const configs = [_]GrammarConfig{
     .{ .language = .rust, .name = "rust", .extensions = &.{".rs"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
-    .{ .language = .typescript, .name = "typescript", .extensions = &.{".ts"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
+    .{ .language = .typescript, .name = "typescript", .extensions = &.{ ".ts", ".js" }, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
     .{ .language = .tsx, .name = "tsx", .extensions = &.{".tsx"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
     .{ .language = .python, .name = "python", .extensions = &.{".py"}, .comment_styles = &python_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = false },
     .{ .language = .go, .name = "go", .extensions = &.{".go"}, .comment_styles = &typescript_comment_styles, .declaration_kinds = &declaration_kinds, .body_kinds = &body_kinds, .name_fields = &name_fields, .brace_body = true },
@@ -58,7 +58,7 @@ const configs = [_]GrammarConfig{
 
 pub fn languageForExtension(ext: []const u8) ?bindings.Language {
     if (std.ascii.eqlIgnoreCase(ext, ".rs")) return .rust;
-    if (std.ascii.eqlIgnoreCase(ext, ".ts")) return .typescript;
+    if (std.ascii.eqlIgnoreCase(ext, ".ts") or std.ascii.eqlIgnoreCase(ext, ".js")) return .typescript;
     if (std.ascii.eqlIgnoreCase(ext, ".tsx")) return .tsx;
     if (std.ascii.eqlIgnoreCase(ext, ".py")) return .python;
     if (std.ascii.eqlIgnoreCase(ext, ".go")) return .go;
