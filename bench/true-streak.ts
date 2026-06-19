@@ -52,6 +52,21 @@ type ToolResultRecord = {
 	resultPayloadTokens: number;
 };
 
+export const isMinimalStructuralDecline = (
+	laneValue: Lane,
+	scenarioValue: ScenarioId,
+	toolResults: Pick<ToolResultRecord, "toolName" | "text">[],
+) =>
+	laneValue === "blitz-edit" &&
+	scenarioValue === "class-c-structural-10" &&
+	toolResults.some(
+		(result) =>
+			result.toolName === "blitz_edit" &&
+			result.text.includes("decline op=rb") &&
+			result.text.includes("unsupported_structural_op_minimal") &&
+			result.text.includes("no_mutation=true"),
+	);
+
 type StepResult = {
 	id: string;
 	path: string;
@@ -836,6 +851,11 @@ const main = async () => {
 	const exit = await runTmux(commandFile, exitFile, stdoutLog, stderrLog);
 	const parsed = await parseSession(sessionDir);
 	const expected = finalExpectedByPath(scenario.steps);
+	const minimalStructuralDecline = isMinimalStructuralDecline(
+		lane,
+		scenarioId,
+		parsed.toolResults,
+	);
 	const stepResults: StepResult[] = [];
 	for (const [path, text] of expected) {
 		const actual = await readFile(join(workDir, path), "utf8").catch(() => "");
@@ -880,15 +900,19 @@ const main = async () => {
 			parsed.usage.cacheRead +
 			parsed.usage.cacheWrite,
 	};
+	const correctnessPassed = stepResults.every((s) => s.correct);
+	const accountingPassed =
+		exit.status === 0 &&
+		!exit.timedOut &&
+		(!tokScaleRequired || (tokScale?.status === 0 && tokScaleMatch.matched));
+	const status = minimalStructuralDecline
+		? "declined"
+		: correctnessPassed && accountingPassed
+			? "accepted"
+			: "caveated";
 	const report = {
 		generatedAt: new Date().toISOString(),
-		status:
-			stepResults.every((s) => s.correct) &&
-			exit.status === 0 &&
-			!exit.timedOut &&
-			(!tokScaleRequired || (tokScale?.status === 0 && tokScaleMatch.matched))
-				? "accepted"
-				: "caveated",
+		status,
 		provider,
 		model,
 		runner: "tmux",
@@ -924,9 +948,21 @@ const main = async () => {
 		toolResults: parsed.toolResults,
 		usage: parsed.usage,
 		totals,
+		decline: minimalStructuralDecline
+			? {
+				reason: "unsupported_structural_op_minimal",
+				noMutation: true,
+				note: "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back.",
+			}
+			: null,
 		caveats: [
 			"schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
 			"true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis.",
+			...(minimalStructuralDecline
+				? [
+					"minimal blitz_edit declined unsupported structural rb with no_mutation=true; this row is an explicit decline, not a correctness pass or hidden fallback.",
+				]
+				: []),
 		],
 	};
 	await mkdir(dirname(jsonOut), { recursive: true });
@@ -941,7 +977,8 @@ const main = async () => {
 				mdOut,
 				status: report.status,
 				totalContextTokens: totals.totalContextTokens,
-				correct: stepResults.every((s) => s.correct),
+				correct: correctnessPassed,
+				declined: minimalStructuralDecline,
 			},
 			null,
 			2,
@@ -949,4 +986,4 @@ const main = async () => {
 	);
 };
 
-await main();
+if (import.meta.main) await main();

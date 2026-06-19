@@ -1,0 +1,1 @@
+Done. The `rb` structural alias is blocked under the minimal profile. Use core/apply_patch or enable PI_BLITZ_TOOL_PROFILE=structural.
