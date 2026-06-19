@@ -35,6 +35,7 @@
     "bench:small-target": "bun bench/deep-small-target.ts",
     "smoke:mcp": "bun scripts/mcp-smoke.ts",
     "pack:check": "npm pack --dry-run --json",
+    "pack:verify": "node scripts/verify-package-isolation.js",
     "pack:linux-x64-musl": "npm pack ./packages/blitz-linux-x64-musl --json"
   },
   "keywords": [
