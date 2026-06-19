@@ -32,3 +32,7 @@ start: focused Sprint D all edit-type lock run. One bounded run only; no rerun f
 **2026-06-19T07:54:46Z**
 
 blocked: one bounded focused lock attempt stopped at first row tiny-10/core-optimized due provider usage limit before tool calls. No rerun. Created blocker bli-t3cl. Artifacts under reports/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized and reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.{json,md}.
+
+**2026-06-19T08:13:36Z**
+
+still blocked: quota reset time has not passed; bli-t3cl remains open. No lock rerun performed.
