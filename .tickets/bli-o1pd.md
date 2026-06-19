@@ -28,3 +28,11 @@ start: focused final token replacement lock. Following docs/plans/PLAN-0.5C-toke
 **2026-06-19T03:03:17Z**
 
 finding: final lock failed stop-rule on class-c-structural-10 blitz-edit. Route=blitz_edit, Tokscale matched zero deltas, but final structural-10.ts hash mismatched. No rerun performed. Planned class-d rows also ran after failure due local validation-script bug; preserved but not counted as pass claim. Reports: reports/REPLACEMENT-GATE-LOCK-20260619.json and reports/REPLACEMENT-GATE-20260619.md. Ticket remains open.
+
+**2026-06-19T03:19:28Z**
+
+start: bli-k296 closed; starting exactly one final lock rerun after k296 with same planned settings. Prior failed artifacts preserved; rerun artifacts use -rerun-after-k296 suffix. No broad matrix/rerun fishing.
+
+**2026-06-19T03:24:58Z**
+
+finding: rerun-after-k296 stopped on first new failure before class-c blitz/class-d rows. class-c-structural-10 core-optimized returned status=caveated, Tokscale matched, route edit, failed structural-10.ts final hash. Rerun artifacts use -rerun-after-k296 suffix; prior failed lock preserved. No rerun fishing.
