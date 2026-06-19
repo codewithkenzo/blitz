@@ -294,7 +294,6 @@ const classDConfigDocsScenario = (): Scenario => ({
 	],
 });
 
-
 const classBInserts10Scenario = (): Scenario => ({
 	id: "class-b-inserts-10",
 	title: "Class B 10 anchor inserts",
@@ -311,7 +310,8 @@ const classBInserts10Scenario = (): Scenario => ({
 
 const classCStructural10Scenario = (): Scenario => {
 	let before = "";
-	for (let i = 1; i <= 10; i++) before += `export function node${i}(value: number): number {\n  return value + ${i};\n}\n\n`;
+	for (let i = 1; i <= 10; i++)
+		before += `export function node${i}(value: number): number {\n  return value + ${i};\n}\n\n`;
 	const steps: Step[] = [];
 	let current = before;
 	for (let i = 1; i <= 10; i++) {
@@ -319,10 +319,19 @@ const classCStructural10Scenario = (): Scenario => {
 			`export function node${i}(value: number): number {\n  return value + ${i};\n}`,
 			`export function node${i}(value: number): number {\n  return value * ${i + 1};\n}`,
 		);
-		steps.push({ id: `replace-node-${i}`, path: "structural-10.ts", before: current, after: next });
+		steps.push({
+			id: `replace-node-${i}`,
+			path: "structural-10.ts",
+			before: current,
+			after: next,
+		});
 		current = next;
 	}
-	return { id: "class-c-structural-10", title: "Class C 10 structural body replacements", steps };
+	return {
+		id: "class-c-structural-10",
+		title: "Class C 10 structural body replacements",
+		steps,
+	};
 };
 
 const classDConfigDocs10Scenario = (): Scenario => ({
@@ -331,8 +340,18 @@ const classDConfigDocs10Scenario = (): Scenario => ({
 	steps: Array.from({ length: 10 }, (_, i) => {
 		const n = i + 1;
 		return n % 2 === 0
-			? { id: `doc-${n}`, path: `doc-${n}.md`, before: `# Doc ${n}\n\nStatus: draft\n`, after: `# Doc ${n}\n\nStatus: ready\n` }
-			: { id: `json-${n}`, path: `config-${n}.json`, before: `{ "feature${n}": false, "stable": true }\n`, after: `{ "feature${n}": true, "stable": true }\n` };
+			? {
+					id: `doc-${n}`,
+					path: `doc-${n}.md`,
+					before: `# Doc ${n}\n\nStatus: draft\n`,
+					after: `# Doc ${n}\n\nStatus: ready\n`,
+				}
+			: {
+					id: `json-${n}`,
+					path: `config-${n}.json`,
+					before: `{ "feature${n}": false, "stable": true }\n`,
+					after: `{ "feature${n}": true, "stable": true }\n`,
+				};
 	}),
 });
 
@@ -560,10 +579,7 @@ const buildPrompt = async (workDir: string, steps: Step[]): Promise<string> => {
 			steps.every((s) => s.path === steps[0].path)
 		) {
 			const spans = steps.map((step) => {
-				const { oldText, newText } = exactChangedSpan(
-					step.before,
-					step.after,
-				);
+				const { oldText, newText } = exactChangedSpan(step.before, step.after);
 				return { oldText, newText };
 			});
 			const allSimple = spans.every(
@@ -813,7 +829,9 @@ const runTokscale = (sessionDir: string) => {
 	};
 };
 
-const parseTokscaleTotals = (tokScale: ReturnType<typeof runTokscale> | null) => {
+const parseTokscaleTotals = (
+	tokScale: ReturnType<typeof runTokscale> | null,
+) => {
 	if (!tokScale?.stdout) return null;
 	try {
 		const parsed = JSON.parse(tokScale.stdout);
@@ -829,7 +847,10 @@ const parseTokscaleTotals = (tokScale: ReturnType<typeof runTokscale> | null) =>
 	}
 };
 
-const buildTokscaleMatch = (usage: UsageTotals, tokScale: ReturnType<typeof runTokscale> | null) => {
+const buildTokscaleMatch = (
+	usage: UsageTotals,
+	tokScale: ReturnType<typeof runTokscale> | null,
+) => {
 	const totals = parseTokscaleTotals(tokScale);
 	if (!totals) {
 		return { matched: !tokScaleRequired, totals: null, deltas: null };
@@ -893,9 +914,10 @@ const main = async () => {
 	const skillText = usesBlitzExtension
 		? await readFile(join(skill, "SKILL.md"), "utf8").catch(() => "")
 		: "";
-	const schemaText = lane === "blitz-edit"
-		? await readFile(profileDump, "utf8").catch(() => "")
-		: "";
+	const schemaText =
+		lane === "blitz-edit"
+			? await readFile(profileDump, "utf8").catch(() => "")
+			: "";
 	const tokScale = tokScaleRequired ? runTokscale(sessionDir) : null;
 	if (tokScaleRequired && tokScale?.status !== 0)
 		console.error(tokScale?.stderr || tokScale?.stdout);
@@ -914,7 +936,10 @@ const main = async () => {
 		),
 		residualInputTokens: Math.max(
 			0,
-			parsed.usage.input - countTokens(prompt) - countTokens(skillText) - countTokens(schemaText),
+			parsed.usage.input -
+				countTokens(prompt) -
+				countTokens(skillText) -
+				countTokens(schemaText),
 		),
 		totalContextTokens:
 			parsed.usage.input +
@@ -972,18 +997,18 @@ const main = async () => {
 		totals,
 		decline: minimalStructuralDecline
 			? {
-				reason: "unsupported_structural_op_minimal",
-				noMutation: true,
-				note: "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back.",
-			}
+					reason: "unsupported_structural_op_minimal",
+					noMutation: true,
+					note: "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back.",
+				}
 			: null,
 		caveats: [
 			"schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
 			"true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis.",
 			...(minimalStructuralDecline
 				? [
-					"minimal blitz_edit declined unsupported structural rb with no_mutation=true; this row is an explicit decline, not a correctness pass or hidden fallback.",
-				]
+						"minimal blitz_edit declined unsupported structural rb with no_mutation=true; this row is an explicit decline, not a correctness pass or hidden fallback.",
+					]
 				: []),
 		],
 	};
