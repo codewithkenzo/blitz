@@ -68,6 +68,12 @@ type GateRow = {
 };
 type Step = { id: string; path: string; before: string; after: string };
 type Scenario = { id: ScenarioId; title: string; steps: Step[] };
+type AllEditTypeReportMetadata = {
+	requestedScenario: ScenarioId;
+	resolvedScenario: ScenarioId;
+	rows: Array<Pick<GateRow, "id" | "classId" | "scenarioId" | "fixture">>;
+	classIds: EditClassId[];
+};
 type SafetyFixture = {
 	id: string;
 	classId: Extract<EditClassId, "E13" | "E14" | "E15" | "E16" | "E17" | "E18">;
@@ -763,12 +769,6 @@ const selfCheckAllEditTypeRows = () => {
 	);
 };
 
-if (selfCheckAllEditTypes) {
-	selfCheckAllEditTypeRows();
-	releaseTokenizer();
-	process.exit(0);
-}
-
 const classBInserts10Scenario = (): Scenario => ({
 	id: "class-b-inserts-10",
 	title: "Class B 10 anchor inserts",
@@ -890,24 +890,97 @@ const sameFileScenario = (): Scenario => {
 	};
 };
 
-const scenario =
-	scenarioId === "mixed-20"
-		? mixedScenario()
-		: scenarioId === "same-file-multi"
-			? sameFileScenario()
-			: scenarioId === "structural-3"
-				? structuralScenario()
-				: scenarioId === "class-b-inserts"
-					? classBInsertsScenario()
-					: scenarioId === "class-d-config-docs"
-						? classDConfigDocsScenario()
-						: scenarioId === "class-b-inserts-10"
-							? classBInserts10Scenario()
-							: scenarioId === "class-c-structural-10"
-								? classCStructural10Scenario()
-								: scenarioId === "class-d-config-docs-10"
-									? classDConfigDocs10Scenario()
-									: tinyScenario();
+export const resolveScenario = (requestedScenarioId: ScenarioId): Scenario => {
+	switch (requestedScenarioId) {
+		case "tiny-10":
+			return tinyScenario();
+		case "mixed-20":
+			return mixedScenario();
+		case "same-file-multi":
+			return sameFileScenario();
+		case "structural-3":
+			return structuralScenario();
+		case "class-b-inserts":
+			return classBInsertsScenario();
+		case "class-d-config-docs":
+			return classDConfigDocsScenario();
+		case "class-b-inserts-10":
+			return classBInserts10Scenario();
+		case "class-c-structural-10":
+			return classCStructural10Scenario();
+		case "class-d-config-docs-10":
+			return classDConfigDocs10Scenario();
+		case "all-edit-types-gate":
+			return allEditTypesSuccessScenario();
+	}
+};
+
+const scenario = resolveScenario(scenarioId);
+
+if (scenario.id !== scenarioId)
+	throw new Error(
+		`scenario resolver mismatch: requested=${scenarioId} resolved=${scenario.id}`,
+	);
+
+const allEditTypeReportMetadata = (
+	requestedScenario: ScenarioId,
+	resolvedScenario: Scenario,
+): AllEditTypeReportMetadata | null => {
+	if (requestedScenario !== "all-edit-types-gate") return null;
+	const rows = allEditTypeGateRows().filter(
+		(row) => row.scenarioId === requestedScenario,
+	);
+	return {
+		requestedScenario,
+		resolvedScenario: resolvedScenario.id,
+		rows: rows.map(({ id, classId, scenarioId: rowScenarioId, fixture }) => ({
+			id,
+			classId,
+			scenarioId: rowScenarioId,
+			fixture,
+		})),
+		classIds: rows.map((row) => row.classId),
+	};
+};
+
+const selfCheckAllEditTypeScenarioResolution = () => {
+	const resolved = resolveScenario("all-edit-types-gate");
+	if (resolved.id !== "all-edit-types-gate")
+		throw new Error(
+			`all-edit-types-gate resolved to ${resolved.id}; requested row would emit mismatched scenario id`,
+		);
+	if (resolved.id === "tiny-10")
+		throw new Error("all-edit-types-gate must never resolve to tiny-10");
+	const expectedFixturePaths = new Set(
+		allEditTypeGateRows()
+			.filter((row) => row.scenarioId === "all-edit-types-gate")
+			.filter((row) => row.expectedBlitzOutcome === "success")
+			.map((row) => row.fixture),
+	);
+	const resolvedFixturePaths = new Set(resolved.steps.map((step) => step.path));
+	const missing = [...expectedFixturePaths].filter(
+		(fixture) => !resolvedFixturePaths.has(fixture),
+	);
+	if (missing.length > 0)
+		throw new Error(
+			`all-edit-types-gate resolver missing fixture paths: ${missing.join(",")}`,
+		);
+	const metadata = allEditTypeReportMetadata("all-edit-types-gate", resolved);
+	if (!metadata || metadata.requestedScenario !== metadata.resolvedScenario)
+		throw new Error("all-edit-types-gate metadata lost requested/resolved identity");
+	const classIds = new Set(metadata.classIds);
+	for (const required of ["E06", "E07", "E10", "E11", "E12"] as const) {
+		if (!classIds.has(required))
+			throw new Error(`all-edit-types-gate metadata missing class ${required}`);
+	}
+};
+
+if (selfCheckAllEditTypes) {
+	selfCheckAllEditTypeRows();
+	selfCheckAllEditTypeScenarioResolution();
+	releaseTokenizer();
+	process.exit(0);
+}
 
 const writeInitialFiles = async (workDir: string, steps: Step[]) => {
 	const seen = new Set<string>();
@@ -1446,8 +1519,10 @@ const main = async () => {
 		model,
 		runner: "tmux",
 		lane,
+		requestedScenario: scenarioId,
 		scenario: scenario.id,
 		scenarioTitle: scenario.title,
+		allEditTypes: allEditTypeReportMetadata(scenarioId, scenario),
 		runRoot,
 		tmuxSession,
 		piBin,

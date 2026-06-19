@@ -4,6 +4,7 @@ import {
 	allEditTypesSuccessScenario,
 	exactChangedSpan,
 	isMinimalStructuralDecline,
+	resolveScenario,
 } from "./true-streak.ts";
 
 const declineText =
@@ -48,6 +49,22 @@ assert.deepEqual(
 );
 
 const sprintDSuccess = allEditTypesSuccessScenario();
+const resolvedAllEditTypesGate = resolveScenario("all-edit-types-gate");
+assert.equal(
+	resolvedAllEditTypesGate.id,
+	"all-edit-types-gate",
+	"all-edit-types-gate request must emit matching scenario id",
+);
+assert.notEqual(
+	resolvedAllEditTypesGate.id,
+	"tiny-10",
+	"all-edit-types-gate must not fall through to tiny-10",
+);
+assert.deepEqual(
+	resolvedAllEditTypesGate.steps.map((step) => step.path),
+	sprintDSuccess.steps.map((step) => step.path),
+	"all-edit-types-gate resolver must use Sprint D success fixture paths",
+);
 assert.deepEqual(
 	sprintDSuccess.steps.map((step) => step.id),
 	[
