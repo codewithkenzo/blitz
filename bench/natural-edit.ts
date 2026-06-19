@@ -59,6 +59,7 @@ const toolProfile = argFlag("--tool-profile", "");
 const keepTemp = argv.includes("--keep-temp");
 const verbose = argv.includes("--verbose");
 const selfCheckParser = argv.includes("--self-check-parser");
+const selfCheckRouteTaxonomy = argv.includes("--self-check-route-taxonomy");
 const selfCheckAlternates = argv.includes("--self-check-alternates");
 const listScenarios = argv.includes("--list-scenarios");
 const scenarioGroup = argFlag("--scenario-group", "natural");
@@ -87,14 +88,35 @@ type Outcome =
 	| "incorrect";
 
 /** Canonical route outcome taxonomy — never infer fallback as blitz. */
+const ROUTE_OUTCOMES = [
+	"blitz_success",
+	"core_fallback",
+	"needs_host_merge",
+	"decline",
+	"noop",
+	"incorrect",
+	"error",
+] as const;
+
 type RouteOutcome =
-	| "blitz"
-	| "core"
-	| "decline"
-	| "fallback"
-	| "clarify"
-	| "noop"
-	| "incorrect";
+	| (typeof ROUTE_OUTCOMES)[number];
+
+const PUBLIC_RESULT_TEXT_MAX_CHARS = 96;
+
+const publicRouteText = (
+	outcome: RouteOutcome,
+	scenarioId: string,
+	reason = "",
+): string => {
+	const suffix = reason ? ` reason=${reason}` : "";
+	const text = `route=${outcome} scenario=${scenarioId}${suffix}`;
+	return text.length <= PUBLIC_RESULT_TEXT_MAX_CHARS
+		? text
+		: `${text.slice(0, PUBLIC_RESULT_TEXT_MAX_CHARS - 1)}…`;
+};
+
+const isBlitzWin = (outcome: RouteOutcome): boolean =>
+	outcome === "blitz_success";
 
 const classifyRouteOutcome = (
 	outcome: Outcome,
@@ -104,9 +126,9 @@ const classifyRouteOutcome = (
 	if (routeProbe?.outcome) return routeProbe.outcome;
 	switch (outcome) {
 		case "blitz_mutated":
-			return "blitz";
+			return "blitz_success";
 		case "core_mutated":
-			return "core";
+			return "core_fallback";
 		case "noop":
 		case "safety_no_mutation":
 			return "noop";
@@ -1330,6 +1352,70 @@ if (selfCheckParser) {
 	process.exit(0);
 }
 
+if (selfCheckRouteTaxonomy) {
+	const expected = [
+		"blitz_success",
+		"core_fallback",
+		"needs_host_merge",
+		"decline",
+		"noop",
+		"incorrect",
+		"error",
+	];
+	const mapped = [
+		classifyRouteOutcome("blitz_mutated", "route"),
+		classifyRouteOutcome("core_mutated", "route"),
+		classifyRouteOutcome("decline_or_no_mutation", "route"),
+		classifyRouteOutcome("noop", "route"),
+		classifyRouteOutcome("incorrect", "route"),
+		classifyRouteOutcome("blitz_mutated", "route", {
+			outcome: "needs_host_merge",
+			toolName: "pi_blitz_route_edit",
+			selected: "core",
+			reason: "host merge required",
+			toolResultText: "needs_host_merge",
+		}),
+	];
+	const nonWinOutcomes = [
+		"core_fallback",
+		"needs_host_merge",
+		"decline",
+		"noop",
+		"incorrect",
+		"error",
+	] as RouteOutcome[];
+	const publicTexts = ROUTE_OUTCOMES.map((outcome) =>
+		publicRouteText(
+			outcome,
+			"sample-parser",
+			"deterministic guard text that must stay compact for public output",
+		),
+	);
+	const ok =
+		JSON.stringify(ROUTE_OUTCOMES) === JSON.stringify(expected) &&
+		mapped.includes("blitz_success") &&
+		mapped.includes("core_fallback") &&
+		mapped.includes("needs_host_merge") &&
+		nonWinOutcomes.every((outcome) => !isBlitzWin(outcome)) &&
+		isBlitzWin("blitz_success") &&
+		publicTexts.every((text) => text.length <= PUBLIC_RESULT_TEXT_MAX_CHARS);
+	console.log(
+		JSON.stringify(
+			{
+				ok,
+				outcomes: ROUTE_OUTCOMES,
+				mapped,
+				nonWins: nonWinOutcomes,
+				publicResultTextMaxChars: PUBLIC_RESULT_TEXT_MAX_CHARS,
+				publicTextLengths: publicTexts.map((text) => text.length),
+			},
+			null,
+			2,
+		),
+	);
+	process.exit(ok ? 0 : 1);
+}
+
 const tokDeltas = (
 	tokscaleTotals: Record<string, number | null>,
 	parserTotals: SessionTotals,
@@ -1514,13 +1600,17 @@ const inferRouteProbe = async (
 				})
 				.filter(Boolean)
 				.join("\n");
-			const outcome = toolResultText.includes("route declined")
-				? "decline"
-				: selected === "blitz"
-					? "blitz"
-					: selected === "core" || selected === "apply_patch"
-						? "fallback"
-						: null;
+			const outcome: RouteOutcome | null = toolResultText.includes(
+				"needs_host_merge",
+			)
+				? "needs_host_merge"
+				: toolResultText.includes("route declined")
+					? "decline"
+					: selected === "blitz"
+						? "blitz_success"
+						: selected === "core" || selected === "apply_patch"
+							? "core_fallback"
+							: null;
 			found = {
 				outcome,
 				toolName: "pi_blitz_route_edit",
@@ -1827,7 +1917,10 @@ const main = async () => {
 				// Discover session JSONL
 				const sessionJsonl = await discoverSessionJsonl(r.sessionDir);
 				const routeProbe = await inferRouteProbe(sessionJsonl);
-				const routeOutcome = classifyRouteOutcome(outcome, lane, routeProbe);
+				const routeOutcome: RouteOutcome =
+					r.status !== 0 || r.timedOut
+						? "error"
+						: classifyRouteOutcome(outcome, lane, routeProbe);
 				const tokscale = await runTokscale(sessionJsonl, workDir);
 				const visibleTools =
 					lane === "core"
@@ -1846,8 +1939,7 @@ const main = async () => {
 						!hasUndeclaredSideEffects) &&
 					(scenario.expectedBehavior === "mutation" ||
 						routeOutcome === "noop" ||
-						routeOutcome === "decline" ||
-						routeOutcome === "clarify") &&
+						routeOutcome === "decline") &&
 					r.status === 0 &&
 					!r.timedOut &&
 					tokscale.match !== false &&
@@ -1922,9 +2014,9 @@ const main = async () => {
 					(routeOutcomeCounts.get(item.routeOutcome) ?? 0) + 1,
 				);
 			}
-			const dominantRouteOutcome = [...routeOutcomeCounts.entries()].sort(
-				(a, b) => b[1] - a[1],
-			)[0]?.[0] ?? classifyRouteOutcome(dominantOutcome, lane);
+			const dominantRouteOutcome =
+				[...routeOutcomeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+				classifyRouteOutcome(dominantOutcome, lane);
 
 			allResults.push({
 				scenarioId: scenario.id,
@@ -1949,7 +2041,7 @@ const main = async () => {
 							? "△"
 							: "✗";
 			console.log(
-				`  ${icon} ${scenario.id} / ${lane}: ${outcomeLabel} (${iterations.filter((i) => i.correct).length}/${iters} correct)`,
+				`  ${icon} ${publicRouteText(dominantRouteOutcome, scenario.id)} (${iterations.filter((i) => i.correct).length}/${iters} correct)`,
 			);
 		}
 	}
@@ -2157,12 +2249,18 @@ const generateMdReport = (report: {
 	const total = report.runs.length;
 	const totalAccepted = report.runs.filter((r) => r.accepted).length;
 	const totalCorrect = report.runs.filter((r) => r.correct).length;
+	const totalBlitzWins = report.runs.filter(
+		(r) => r.accepted && isBlitzWin(r.routeOutcome),
+	).length;
 	const totalTimedOut = report.runs.filter((r) => r.timedOut).length;
 	const totalSideEffects = report.runs.filter(
 		(r) => r.sideEffects.length,
 	).length;
 	lines.push(`- Accepted: ${totalAccepted}/${total}`);
 	lines.push(`- Correct: ${totalCorrect}/${total}`);
+	lines.push(
+		`- Blitz wins: ${totalBlitzWins}/${total} (only \`blitz_success\`; fallback/noop/decline excluded)`,
+	);
 	lines.push(`- Timed out: ${totalTimedOut}/${total}`);
 	lines.push(
 		`- Runs with undeclared side effects: ${totalSideEffects}/${total}`,
@@ -2183,6 +2281,10 @@ const generateMdReport = (report: {
 
 	// Route outcome counts
 	lines.push("## Route outcome counts");
+	lines.push("");
+	lines.push(
+		`Canonical outcomes: ${ROUTE_OUTCOMES.map((outcome) => `\`${outcome}\``).join(", ")}`,
+	);
 	lines.push("");
 	const routeCounts: Record<string, number> = {};
 	for (const run of report.runs) {
