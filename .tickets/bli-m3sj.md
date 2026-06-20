@@ -56,3 +56,7 @@ blocked: Zai after-bli-t3cl run completed provider rows, but validation found al
 **2026-06-20T03:13:19Z**
 
 done: fixed Zai all-edit-type lock passed after bli-z13z. Evidence: reports/ALL-EDIT-TYPE-GATE-20260619-after-z13z.md and reports/ALL-EDIT-TYPE-GATE-LOCK-20260619-after-z13z.json. Provider/model zai/glm-4.5-air; self-check rows=18/classes=18/success=12/safety=6; row files=14; all accepted/correct/Tokscale matched; all-edit-types-gate reported scenario all-edit-types-gate; Blitz tools only blitz_edit; schema/skill accounting present; core ctx=34923, blitz ctx=24358, delta=10565 (30.25%). Old 20260619-after-bli-t3cl excluded. bli-hndl not started.
+
+**2026-06-20T03:19:03Z**
+
+claim audit completed under bli-hndl: reports/SPRINT-D-ALL-EDIT-TYPE-CLAIM-AUDIT-20260620.md. Scoped claim supported for zai/glm-4.5-air after-z13z only; provider-wide/universal residual remains outside gate.
