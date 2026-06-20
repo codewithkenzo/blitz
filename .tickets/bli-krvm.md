@@ -1,6 +1,6 @@
 ---
 id: bli-krvm
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-20T05:09:49Z
@@ -18,3 +18,9 @@ Follow-up from bli-s7by: green provider-language rows are token-negative when ti
 
 Guard has deterministic byte/token thresholds; tiny/simple row routing decision is logged/classified; no provider-wide claim without rerun evidence; tests cover core-choice and Blitz-choice boundaries.
 
+
+## Notes
+
+**2026-06-20T05:34:46Z**
+
+Implemented deterministic simple-row route budget guard in bench/natural-edit.ts. Verification passed: route-budget self-check, prompt-shape self-check, bench script bundle check, LSP diagnostics clean. No model/provider runs.

@@ -65,6 +65,7 @@ const selfCheckProviderPreflight = argv.includes(
 );
 const selfCheckAlternates = argv.includes("--self-check-alternates");
 const selfCheckPromptShapes = argv.includes("--self-check-prompt-shapes");
+const selfCheckRouteBudget = argv.includes("--self-check-route-budget");
 const listScenarios = argv.includes("--list-scenarios");
 const scenarioGroup = argFlag("--scenario-group", "natural");
 const selfCheckSessionJsonl = argFlag("--session-jsonl", "");
@@ -481,7 +482,70 @@ const preamble = (lane: Lane, _scenarioId: string): string => {
 
 const LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD = `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. Tool arg e must always be an array of tuples. Use x exact replacement for imports, local line insertion/removal/reordering, formatting, and multi-edit batches by replacing the smallest unique surrounding block. Use 4-item ['x', file, old, new], or top-level f with 3-item ['x', old, new]. Use rb only for symbol body replacement. Use ia only after a symbol declaration, never after arbitrary text anchors. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit. If blitz_edit returns ok, do not call it again; output exactly done.`;
 
-const byteLength = (text: string): number => new TextEncoder().encode(text).byteLength;
+const byteLength = (text: string): number =>
+	new TextEncoder().encode(text).byteLength;
+
+type SimpleRouteResidentBudget = {
+	schemaBytes: number;
+	skillBytes: number;
+	successOutputBytes: number;
+	declineOutputBytes: number;
+	promptCreditBytes: number;
+	maxOverCoreBytes: number;
+};
+
+const SIMPLE_ROUTE_RESIDENT_BUDGET: SimpleRouteResidentBudget = {
+	// Locked pi-blitz tax guards from Sprint F. Byte budgets are deterministic
+	// proxies; provider token runs remain required before any savings claim.
+	schemaBytes: 760,
+	skillBytes: 850,
+	successOutputBytes: 32,
+	declineOutputBytes: 80,
+	promptCreditBytes: 0,
+	// Blitz/route must beat or tie core for simple rows. No hidden fallback.
+	maxOverCoreBytes: 0,
+};
+
+type SimpleRouteBudget = {
+	scenarioId: string;
+	coreBytes: number;
+	blitzBytes: number;
+	residentBytes: number;
+	outputBytes: number;
+	deltaBytes: number;
+	selected: "core" | "blitz";
+	reason: "simple_route_budget_core" | "simple_route_budget_blitz";
+};
+
+const simpleRouteBudgetDecision = (
+	scenario: Scenario,
+	overrides: Partial<typeof SIMPLE_ROUTE_RESIDENT_BUDGET> = {},
+): SimpleRouteBudget => {
+	const budget = { ...SIMPLE_ROUTE_RESIDENT_BUDGET, ...overrides };
+	const coreBytes = byteLength(buildNaturalPrompt("core", scenario));
+	const residentBytes = budget.schemaBytes + budget.skillBytes;
+	const outputBytes = budget.successOutputBytes + budget.declineOutputBytes;
+	const blitzBytes =
+		byteLength(buildNaturalPrompt("blitz", scenario)) -
+		budget.promptCreditBytes +
+		residentBytes +
+		outputBytes;
+	const deltaBytes = blitzBytes - coreBytes;
+	const selected = deltaBytes <= budget.maxOverCoreBytes ? "blitz" : "core";
+	return {
+		scenarioId: scenario.id,
+		coreBytes,
+		blitzBytes,
+		residentBytes,
+		outputBytes,
+		deltaBytes,
+		selected,
+		reason:
+			selected === "blitz"
+				? "simple_route_budget_blitz"
+				: "simple_route_budget_core",
+	};
+};
 
 const FIXTURES_DIR = join(REPO_ROOT, "bench/fixtures-llm");
 
@@ -2063,6 +2127,61 @@ if (selfCheckAlternates) {
 	process.exit(ok ? 0 : 1);
 }
 
+if (selfCheckRouteBudget) {
+	const scenario = SCENARIOS.find((s) => s.id === "tiny-exact");
+	if (!scenario) {
+		console.error("tiny-exact scenario missing");
+		process.exit(1);
+	}
+	const current = simpleRouteBudgetDecision(scenario);
+	const blitzAllowed = simpleRouteBudgetDecision(scenario, {
+		schemaBytes: 0,
+		skillBytes: 0,
+		successOutputBytes: 0,
+		declineOutputBytes: 0,
+		promptCreditBytes: 6,
+	});
+	const tieBoundary = simpleRouteBudgetDecision(scenario, {
+		schemaBytes: 0,
+		skillBytes: 0,
+		successOutputBytes: 0,
+		declineOutputBytes: 0,
+		promptCreditBytes: 5,
+	});
+	const checks = [
+		{
+			label: "tiny-exact-current-budget-selects-core",
+			decision: current,
+			accepted: current.selected === "core" && current.deltaBytes > 0,
+		},
+		{
+			label: "reduced-resident-budget-selects-blitz",
+			decision: blitzAllowed,
+			accepted:
+				blitzAllowed.selected === "blitz" && blitzAllowed.deltaBytes <= 0,
+		},
+		{
+			label: "tie-boundary-allows-blitz",
+			decision: tieBoundary,
+			accepted: tieBoundary.selected === "blitz",
+		},
+		{
+			label: "current-budget-has-explicit-thresholds",
+			thresholds: SIMPLE_ROUTE_RESIDENT_BUDGET,
+			accepted:
+				SIMPLE_ROUTE_RESIDENT_BUDGET.schemaBytes === 760 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.skillBytes === 850 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.successOutputBytes === 32 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.declineOutputBytes === 80 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.promptCreditBytes === 0 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.maxOverCoreBytes === 0,
+		},
+	];
+	const ok = checks.every((check) => check.accepted);
+	console.log(JSON.stringify({ ok, checks }, null, 2));
+	process.exit(ok ? 0 : 1);
+}
+
 if (selfCheckPromptShapes) {
 	const scenario = SCENARIOS.find((s) => s.id === "tiny-exact");
 	if (!scenario) {
@@ -2104,9 +2223,7 @@ if (selfCheckPromptShapes) {
 		JSON.stringify(
 			{
 				ok,
-				legacyPreambleBytes: byteLength(
-					LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD,
-				),
+				legacyPreambleBytes: byteLength(LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD),
 				currentPreambleBytes: byteLength(currentPreamble),
 				legacyTinyExactPromptBytes: byteLength(legacyPrompt),
 				currentTinyExactPromptBytes: byteLength(currentPrompt),
