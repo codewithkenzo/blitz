@@ -1,6 +1,6 @@
 ---
 id: bli-lcde
-status: open
+status: in_progress
 deps: []
 links: []
 created: 2026-06-20T04:59:33Z
@@ -24,3 +24,11 @@ Survey/true-streak prompts avoid repeated irrelevant context, avoid unchanged-co
 **2026-06-20T05:09:49Z**
 
 finding from bli-s7by report: provider-language survey prompt delta is +1414 tokens across 14 green rows (+101 per Blitz row). Optimize row prompt shapes so Blitz-specific instruction/context is not larger than core for tiny/doc/tsx/exact rows. No claim until re-measured.
+
+**2026-06-20T05:17:18Z**
+
+start: optimizing provider-language survey prompts/row shapes. Scope: harness/report prompt shaping only, no model/provider benchmark reruns, no savings claim until remeasured.
+
+**2026-06-20T05:20:51Z**
+
+done: optimized natural/provider-language Blitz preamble and centralized prompt builder. Static guard --self-check-prompt-shapes passes: legacy preamble 887 bytes -> current 440; tiny-exact Blitz prompt 1342 -> 895 (-447). Safety/no-fallback phrases retained. Verification: self-check, bun build bench/natural-edit.ts, git diff --check passed. No benchmark/model/provider reruns; no token-savings claim.
