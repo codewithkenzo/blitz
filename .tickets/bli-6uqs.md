@@ -43,3 +43,7 @@ plan: Sprint E added as exploratory provider-language survey, not claim gate. Ti
 **2026-06-20T04:59:33Z**
 
 plan: Sprint F added after provider-language survey showed green rows token-negative and structural-body product red. Tickets: bli-s7by diagnose token regression, bli-r9jv reduce minimal tax, bli-lcde optimize survey prompts/rows, bli-7yuu structural-body default route fix linked to bli-caly.
+
+**2026-06-20T06:00:43Z**
+
+plan: Sprint G added from Sprint F impact survey. Tickets: bli-9ftq OpenAI structural-body fix, bli-j8kw core baseline stability, bli-h3ta tiny exact break-even, bli-4tbc focused post-fix check.
