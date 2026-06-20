@@ -416,6 +416,7 @@ type RunItem = {
 	iter: number;
 	outcome: Outcome;
 	routeOutcome: RouteOutcome;
+	routeSelection: RouteSelection;
 	/** True only if correct && exitCode===0 && !timedOut && (tokscale match || not-run). */
 	accepted: boolean;
 	correct: boolean;
@@ -459,6 +460,7 @@ type ScenarioResult = {
 	outcome: Outcome;
 	outcomeLabel: string;
 	routeOutcome: RouteOutcome;
+	routeSelection: RouteSelection;
 	accepted: boolean;
 	totalIters: number;
 	correctIters: number;
@@ -477,7 +479,7 @@ const preamble = (lane: Lane, _scenarioId: string): string => {
 	if (lane === "route") {
 		return `You have only the "pi_blitz_route_edit" tool available. This is the default edit route: use Blitz only for supported, local, unambiguous edits, otherwise make no file changes and decline through the route tool. For an unsafe, ambiguous, already-present, unsupported, or out-of-bound request, call pi_blitz_route_edit for the relevant listed file without ops or s so it returns a no-write route decline, then output exactly done. Never invent edits, never fallback internally, and never count a fallback/decline as Blitz success.`;
 	}
-	return `Only tool: blitz_edit. Safe local edits only; output exactly done after tool. e: ['x',file,old,new] or f+['x',old,new]; TS/JS ['rb'|'ia',file,'function',name,text]. x exact unique text; rb function body; ia after function declaration. If already-present, ambiguous, unsupported, or unclear: no edit. Never guess repeated matches or fallback. Stop on ok/noop/decline.`;
+	return `Only tool: blitz_edit. Minimal profile: exact local edits only; output exactly done after tool. e: ['x',file,old,new] or f+['x',old,new]. x exact unique text. Structural ops require advanced profile and must decline here. If already-present, ambiguous, unsupported, or unclear: no edit. Never guess repeated matches or fallback. Stop on ok/noop/decline.`;
 };
 
 const LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD = `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. Tool arg e must always be an array of tuples. Use x exact replacement for imports, local line insertion/removal/reordering, formatting, and multi-edit batches by replacing the smallest unique surrounding block. Use 4-item ['x', file, old, new], or top-level f with 3-item ['x', old, new]. Use rb only for symbol body replacement. Use ia only after a symbol declaration, never after arbitrary text anchors. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit. If blitz_edit returns ok, do not call it again; output exactly done.`;
@@ -517,6 +519,27 @@ type SimpleRouteBudget = {
 	reason: "simple_route_budget_core" | "simple_route_budget_blitz";
 };
 
+type RouteSelection = {
+	scenarioId: string;
+	selectedRoute: "core" | "blitz" | "decline";
+	reason:
+		| "core_cheaper_tiny_floor"
+		| "blitz_tie_or_win"
+		| "blitz_required_safety_or_capability"
+		| "minimal_structural_declined_advanced_only"
+		| "unsupported_declined";
+	profile: "minimal" | "advanced";
+	coreTokens: number | null;
+	blitzTokens: number | null;
+	deltaTokens: number | null;
+	source: "measured-artifact" | "deterministic-budget" | "policy";
+};
+
+type RouteSelectionContext = {
+	provider: string;
+	model: string;
+};
+
 const simpleRouteBudgetDecision = (
 	scenario: Scenario,
 	overrides: Partial<typeof SIMPLE_ROUTE_RESIDENT_BUDGET> = {},
@@ -544,6 +567,102 @@ const simpleRouteBudgetDecision = (
 			selected === "blitz"
 				? "simple_route_budget_blitz"
 				: "simple_route_budget_core",
+	};
+};
+
+const MEASURED_ROUTE_DELTAS: Record<
+	string,
+	{ coreTokens: number; blitzTokens: number; reason?: RouteSelection["reason"] }
+> = {
+	"openai-codex/gpt-5.4-mini:tiny-exact": {
+		coreTokens: 1554,
+		blitzTokens: 1556,
+		reason: "core_cheaper_tiny_floor",
+	},
+	"zai/glm-4.5-air:tiny-exact": { coreTokens: 2054, blitzTokens: 1769 },
+	"zai/glm-4.5-air:same-file-multi": { coreTokens: 2493, blitzTokens: 2321 },
+	"openai-codex/gpt-5.4-mini:same-file-multi": {
+		coreTokens: 2162,
+		blitzTokens: 2124,
+	},
+	"zai/glm-4.5-air:mixed-config-doc": { coreTokens: 1993, blitzTokens: 1747 },
+	"openai-codex/gpt-5.4-mini:mixed-config-doc": {
+		coreTokens: 1479,
+		blitzTokens: 1526,
+		reason: "core_cheaper_tiny_floor",
+	},
+};
+
+const providerModelKey = ({ provider, model }: RouteSelectionContext): string =>
+	`${provider}/${model}`;
+
+const isMinimalStructuralScenario = (scenario: Scenario): boolean =>
+	scenario.categories.some((category) => category.includes("structural"));
+
+const selectEditRoute = (
+	scenario: Scenario,
+	context: RouteSelectionContext,
+): RouteSelection => {
+	if (isMinimalStructuralScenario(scenario)) {
+		return {
+			scenarioId: scenario.id,
+			selectedRoute: "decline",
+			reason: "minimal_structural_declined_advanced_only",
+			profile: "minimal",
+			coreTokens: null,
+			blitzTokens: null,
+			deltaTokens: null,
+			source: "policy",
+		};
+	}
+
+	if (scenario.expectedBehavior === "no-mutation") {
+		return {
+			scenarioId: scenario.id,
+			selectedRoute: "decline",
+			reason: "unsupported_declined",
+			profile: "minimal",
+			coreTokens: null,
+			blitzTokens: null,
+			deltaTokens: null,
+			source: "policy",
+		};
+	}
+
+	const measured =
+		MEASURED_ROUTE_DELTAS[`${providerModelKey(context)}:${scenario.id}`];
+	if (measured) {
+		const deltaTokens = measured.blitzTokens - measured.coreTokens;
+		const selectedRoute = deltaTokens <= 0 ? "blitz" : "core";
+		return {
+			scenarioId: scenario.id,
+			selectedRoute,
+			reason:
+				measured.reason ??
+				(selectedRoute === "blitz"
+					? "blitz_tie_or_win"
+					: "core_cheaper_tiny_floor"),
+			profile: "minimal",
+			coreTokens: measured.coreTokens,
+			blitzTokens: measured.blitzTokens,
+			deltaTokens,
+			source: "measured-artifact",
+		};
+	}
+
+	const budget = simpleRouteBudgetDecision(scenario);
+	return {
+		scenarioId: scenario.id,
+		selectedRoute: budget.selected,
+		reason:
+			budget.selected === "blitz"
+				? "blitz_tie_or_win"
+				: "core_cheaper_tiny_floor",
+		profile: "minimal",
+		coreTokens: budget.coreBytes,
+		blitzTokens: budget.blitzBytes,
+		deltaTokens: budget.deltaBytes,
+		source: "deterministic-budget",
 	};
 };
 
@@ -2134,6 +2253,26 @@ if (selfCheckRouteBudget) {
 		process.exit(1);
 	}
 	const current = simpleRouteBudgetDecision(scenario);
+	const openAiTiny = selectEditRoute(scenario, {
+		provider: "openai-codex",
+		model: "gpt-5.4-mini",
+	});
+	const zaiTiny = selectEditRoute(scenario, {
+		provider: "zai",
+		model: "glm-4.5-air",
+	});
+	const openAiMulti = selectEditRoute(
+		SCENARIOS.find((s) => s.id === "same-file-multi") ?? scenario,
+		{ provider: "openai-codex", model: "gpt-5.4-mini" },
+	);
+	const zaiConfig = selectEditRoute(
+		SCENARIOS.find((s) => s.id === "mixed-config-doc") ?? scenario,
+		{ provider: "zai", model: "glm-4.5-air" },
+	);
+	const minimalStructural = selectEditRoute(
+		SCENARIOS.find((s) => s.id === "structural-body") ?? scenario,
+		{ provider: "zai", model: "glm-4.5-air" },
+	);
 	const blitzAllowed = simpleRouteBudgetDecision(scenario, {
 		schemaBytes: 0,
 		skillBytes: 0,
@@ -2179,7 +2318,44 @@ if (selfCheckRouteBudget) {
 		{
 			label: "current-deterministic-floor-recorded",
 			decision: current,
-			accepted: current.selected === "core" && current.deltaBytes === 1422,
+			accepted: current.selected === "core" && current.deltaBytes === 1409,
+		},
+		{
+			label: "openai-tiny-exact-selects-core-when-cheaper",
+			selection: openAiTiny,
+			accepted:
+				openAiTiny.selectedRoute === "core" &&
+				openAiTiny.reason === "core_cheaper_tiny_floor" &&
+				openAiTiny.deltaTokens === 2,
+		},
+		{
+			label: "zai-tiny-exact-selects-blitz-on-win",
+			selection: zaiTiny,
+			accepted:
+				zaiTiny.selectedRoute === "blitz" &&
+				zaiTiny.reason === "blitz_tie_or_win",
+		},
+		{
+			label: "same-file-multi-can-select-blitz",
+			selection: openAiMulti,
+			accepted:
+				openAiMulti.selectedRoute === "blitz" &&
+				openAiMulti.reason === "blitz_tie_or_win",
+		},
+		{
+			label: "config-doc-can-select-blitz",
+			selection: zaiConfig,
+			accepted:
+				zaiConfig.selectedRoute === "blitz" &&
+				zaiConfig.reason === "blitz_tie_or_win",
+		},
+		{
+			label: "minimal-structural-declines-advanced-only",
+			selection: minimalStructural,
+			accepted:
+				minimalStructural.selectedRoute === "decline" &&
+				minimalStructural.reason ===
+					"minimal_structural_declined_advanced_only",
 		},
 	];
 	const ok = checks.every((check) => check.accepted);
@@ -2240,7 +2416,9 @@ if (selfCheckPromptShapes) {
 				currentPreamble.includes("fallback") &&
 				currentPreamble.includes("ambiguous") &&
 				currentPreamble.includes("output exactly done") &&
-				currentPreamble.includes("['rb'|'ia',file,'function',name,text]"),
+				currentPreamble.includes("Structural ops require advanced profile") &&
+				!currentPreamble.includes("rb function body") &&
+				!currentPreamble.includes("['rb'"),
 		},
 		{
 			label: "structural-body-prompt-rejects-start-end-only",
@@ -2299,6 +2477,7 @@ const main = async () => {
 
 	for (const scenario of SCENARIOS) {
 		if (scenarioFilter && !scenario.id.includes(scenarioFilter)) continue;
+		const routeSelection = selectEditRoute(scenario, { provider, model });
 
 		for (const lane of ["core", "blitz", "route"] as Lane[]) {
 			if (laneFilter && lane !== laneFilter) continue;
@@ -2328,13 +2507,17 @@ const main = async () => {
 				);
 				const beforeWorkdirSnapshot = await snapshotWorkdir(workDir);
 
-				const prompt = buildNaturalPrompt(lane, scenario);
+				const effectiveLane: Lane =
+					lane === "route" && routeSelection.selectedRoute !== "decline"
+						? routeSelection.selectedRoute
+						: lane;
+				const prompt = buildNaturalPrompt(effectiveLane, scenario);
 
 				if (verbose) {
 					console.error(`\n[${scenario.id}][${lane}][iter ${iter}] running...`);
 				}
 
-				const r = runPi(lane, prompt, workDir);
+				const r = runPi(effectiveLane, prompt, workDir);
 				const afterWorkdirSnapshot = await snapshotWorkdir(workDir);
 				const sideEffects = diffSideEffects(
 					beforeWorkdirSnapshot,
@@ -2369,7 +2552,7 @@ const main = async () => {
 						? allMatch && !hasUndeclaredSideEffects
 						: allMatch;
 				const outcome = classifyOutcome(
-					lane,
+					effectiveLane,
 					allMatch,
 					allUnchanged && !hasUndeclaredSideEffects,
 					scenario.expectedBehavior,
@@ -2383,13 +2566,17 @@ const main = async () => {
 				const routeOutcome: RouteOutcome =
 					r.status !== 0 || r.timedOut
 						? "error"
-						: classifyRouteOutcome(outcome, lane, routeProbe);
+						: classifyRouteOutcome(outcome, effectiveLane, routeProbe);
 				const tokscale = await runTokscale(sessionJsonl, workDir);
 				const visibleTools =
-					lane === "core"
-						? "edit"
-						: lane === "route"
-							? "pi_blitz_route_edit"
+					lane === "route"
+						? routeSelection.selectedRoute === "core"
+							? "edit"
+							: routeSelection.selectedRoute === "blitz"
+								? "blitz_edit"
+								: "pi_blitz_route_edit"
+						: lane === "core"
+							? "edit"
 							: "blitz_edit";
 				const currentToolProfile =
 					toolProfile ||
@@ -2419,6 +2606,7 @@ const main = async () => {
 					iter,
 					outcome,
 					routeOutcome,
+					routeSelection,
 					accepted,
 					correct,
 					filesMatch: allMatch,
@@ -2432,8 +2620,9 @@ const main = async () => {
 					sessionJsonl,
 					tokscale,
 					provenance: {
-						extensionPath: lane === "core" ? "(core-no-extension)" : extension,
-						skillPath: lane === "core" ? "(core-no-skill)" : skill,
+						extensionPath:
+							effectiveLane === "core" ? "(core-no-extension)" : extension,
+						skillPath: effectiveLane === "core" ? "(core-no-skill)" : skill,
 						visibleTools,
 						toolProfile: currentToolProfile,
 					},
@@ -2489,6 +2678,7 @@ const main = async () => {
 				outcome: dominantOutcome,
 				outcomeLabel: dominantOutcome,
 				routeOutcome: dominantRouteOutcome,
+				routeSelection,
 				accepted: acceptedIters > 0,
 				totalIters: iterations.length,
 				correctIters,
@@ -2504,7 +2694,11 @@ const main = async () => {
 							? "△"
 							: "✗";
 			console.log(
-				`  ${icon} ${publicRouteText(dominantRouteOutcome, scenario.id)} (${iterations.filter((i) => i.correct).length}/${iters} correct)`,
+				`  ${icon} ${publicRouteText(
+					dominantRouteOutcome,
+					scenario.id,
+					`selected=${routeSelection.selectedRoute}/${routeSelection.reason}`,
+				)} (${iterations.filter((i) => i.correct).length}/${iters} correct)`,
 			);
 		}
 	}
@@ -2644,16 +2838,16 @@ const generateMdReport = (report: {
 	lines.push("## Results");
 	lines.push("");
 	lines.push(
-		"| Scenario | Lane | Route outcome | Correct / Iters | Accepted / Iters | Wall ms (median) |",
+		"| Scenario | Lane | Selected route | Selection reason | Route outcome | Correct / Iters | Accepted / Iters | Wall ms (median) |",
 	);
-	lines.push("|---|---|:---|---:|:---:|---:|");
+	lines.push("|---|---|:---|:---|:---|---:|:---:|---:|");
 	for (const r of report.results) {
 		const medianWall =
 			[...r.iterations].sort((a, b) => a.wallMs - b.wallMs)[
 				Math.floor(r.iterations.length / 2)
 			]?.wallMs ?? 0;
 		lines.push(
-			`| ${r.scenarioId} | ${r.lane} | \`${r.routeOutcome}\` | ${r.correctIters}/${r.totalIters} | ${r.iterations.filter((i) => i.accepted).length}/${r.totalIters} | ${medianWall.toFixed(0)} |`,
+			`| ${r.scenarioId} | ${r.lane} | \`${r.routeSelection.selectedRoute}\` | \`${r.routeSelection.reason}\` | \`${r.routeOutcome}\` | ${r.correctIters}/${r.totalIters} | ${r.iterations.filter((i) => i.accepted).length}/${r.totalIters} | ${medianWall.toFixed(0)} |`,
 		);
 	}
 	lines.push("");
@@ -2775,7 +2969,7 @@ const generateMdReport = (report: {
 	lines.push("## Per-row audit fields");
 	lines.push("");
 	lines.push(
-		"| Provider | Model | Lane | Group | Expected behavior | Scenario | Iter | Accepted | Correct | Files match | Matched variants | Side effects | Outcome | Route | Exit | Timed out | Wall ms | Run dir | Session dir | Session JSONL | Provenance | Tokscale |",
+		"| Provider | Model | Lane | Group | Expected behavior | Scenario | Iter | Accepted | Correct | Files match | Matched variants | Side effects | Outcome | Route | Selected route | Selection reason | Exit | Timed out | Wall ms | Run dir | Session dir | Session JSONL | Provenance | Tokscale |",
 	);
 	lines.push(
 		"|---|---|---|---|---|---|---:|:---:|:---:|:---:|---|---|---|---|---:|:---:|---:|---|---|---|---|---|",
@@ -2796,7 +2990,7 @@ const generateMdReport = (report: {
 			)
 			.join("; ");
 		lines.push(
-			`| ${run.provider} | ${run.model} | ${run.lane} | ${run.scenarioGroup} | ${run.expectedBehavior} | ${run.scenarioId} | ${run.iter} | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.filesMatch ? "yes" : "no"} | ${matchedVariants} | ${sideEffects} | ${run.outcome} | ${run.routeOutcome} | ${run.exitCode} | ${run.timedOut ? "yes" : "no"} | ${run.wallMs.toFixed(0)} | ${run.runDir} | ${run.sessionDir} | ${sessionJsonl} | ${provenance} | ${tok} |`,
+			`| ${run.provider} | ${run.model} | ${run.lane} | ${run.scenarioGroup} | ${run.expectedBehavior} | ${run.scenarioId} | ${run.iter} | ${run.accepted ? "yes" : "no"} | ${run.correct ? "yes" : "no"} | ${run.filesMatch ? "yes" : "no"} | ${matchedVariants} | ${sideEffects} | ${run.outcome} | ${run.routeOutcome} | ${run.routeSelection.selectedRoute} | ${run.routeSelection.reason} | ${run.exitCode} | ${run.timedOut ? "yes" : "no"} | ${run.wallMs.toFixed(0)} | ${run.runDir} | ${run.sessionDir} | ${sessionJsonl} | ${provenance} | ${tok} |`,
 		);
 	}
 	lines.push("");
