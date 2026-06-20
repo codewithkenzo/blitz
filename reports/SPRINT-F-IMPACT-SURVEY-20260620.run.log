@@ -1,0 +1,283 @@
+## provider=zai model=glm-4.5-air
+### run=1 provider=zai model=glm-4.5-air scenario=tiny-exact lane=core
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=tiny-exact (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-50-683Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-50-683Z.md
+### exit=0
+### run=2 provider=zai model=glm-4.5-air scenario=tiny-exact lane=blitz
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✗ route=incorrect scenario=tiny-exact (0/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-59-180Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-59-180Z.md
+### exit=0
+### run=3 provider=zai model=glm-4.5-air scenario=same-file-multi lane=core
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=same-file-multi (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-05-060Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-05-060Z.md
+### exit=0
+### run=4 provider=zai model=glm-4.5-air scenario=same-file-multi lane=blitz
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=same-file-multi (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-11-445Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-11-445Z.md
+### exit=0
+### run=5 provider=zai model=glm-4.5-air scenario=same-file-doc-comments lane=core
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=same-file-doc-comments (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-18-629Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-18-629Z.md
+### exit=0
+### run=6 provider=zai model=glm-4.5-air scenario=same-file-doc-comments lane=blitz
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=same-file-doc-comments (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-25-236Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-25-236Z.md
+### exit=0
+### run=7 provider=zai model=glm-4.5-air scenario=config-env-update lane=core
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=config-env-update (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-30-633Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-30-633Z.md
+### exit=0
+### run=8 provider=zai model=glm-4.5-air scenario=config-env-update lane=blitz
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=config-env-update (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-41-989Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-41-989Z.md
+### exit=0
+### run=9 provider=zai model=glm-4.5-air scenario=structural-body lane=core
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✗ route=incorrect scenario=structural-body (0/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-46-674Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-46-674Z.md
+### exit=0
+### run=10 provider=zai model=glm-4.5-air scenario=structural-body lane=blitz
+# Natural edit harness
+Provider: zai / Model: glm-4.5-air
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=structural-body (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-52-546Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-52-546Z.md
+### exit=0
+## provider=openai-codex model=gpt-5.4-mini
+### run=11 provider=openai-codex model=gpt-5.4-mini scenario=tiny-exact lane=core
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=tiny-exact (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-52-870Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-52-870Z.md
+### exit=0
+### run=12 provider=openai-codex model=gpt-5.4-mini scenario=tiny-exact lane=blitz
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=tiny-exact (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-57-086Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-57-086Z.md
+### exit=0
+### run=13 provider=openai-codex model=gpt-5.4-mini scenario=same-file-multi lane=core
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=same-file-multi (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-01-274Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-01-274Z.md
+### exit=0
+### run=14 provider=openai-codex model=gpt-5.4-mini scenario=same-file-multi lane=blitz
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=same-file-multi (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-07-066Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-07-066Z.md
+### exit=0
+### run=15 provider=openai-codex model=gpt-5.4-mini scenario=same-file-doc-comments lane=core
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=same-file-doc-comments (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-12-978Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-12-978Z.md
+### exit=0
+### run=16 provider=openai-codex model=gpt-5.4-mini scenario=same-file-doc-comments lane=blitz
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=same-file-doc-comments (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-17-560Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-17-560Z.md
+### exit=0
+### run=17 provider=openai-codex model=gpt-5.4-mini scenario=config-env-update lane=core
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=config-env-update (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-23-052Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-23-052Z.md
+### exit=0
+### run=18 provider=openai-codex model=gpt-5.4-mini scenario=config-env-update lane=blitz
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=blitz_success scenario=config-env-update (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-27-577Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-27-577Z.md
+### exit=0
+### run=19 provider=openai-codex model=gpt-5.4-mini scenario=structural-body lane=core
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✓ route=core_fallback scenario=structural-body (1/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-32-220Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-32-220Z.md
+### exit=0
+### run=20 provider=openai-codex model=gpt-5.4-mini scenario=structural-body lane=blitz
+# Natural edit harness
+Provider: openai-codex / Model: gpt-5.4-mini
+Iterations: 1
+Timeout: 180000ms
+Pi: /home/kenzo/.local/bin/pi
+Blitz PATH prepend: /home/kenzo/dev/blitz/zig-out/bin
+Scenario group: natural
+Scenarios: 25
+  ✗ route=incorrect scenario=structural-body (0/1 correct)
+
+Report JSON: /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-59-418Z.json
+Report MD:   /home/kenzo/dev/blitz/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-59-418Z.md
+### exit=0
+TOTAL_RAW_RUNS=20
