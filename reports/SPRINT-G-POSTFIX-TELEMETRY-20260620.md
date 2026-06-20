@@ -40,5 +40,7 @@ Constraints: 8/12 raw model runs, Tokscale required (8/8 matched), no rerun fish
 ## Caveats
 
 - Structural-body Blitz rows are red; do not use them for savings claims.
+- Strict-format failures (including semantic near-miss missing final newline) remain failures, not successes.
+- `bli-js15` follow-up policy: minimal/default scope is exact/simple/config/doc/tiny multi; structural `rb` / structural-body moves to future advanced or explicit structural route unless strict supported tuple validation lands.
 - Tiny-exact OpenAI is effectively near break-even but still +2 tokens; no universal/default claim.
 - This run used merged local pi-blitz dist from `e94a904`; build output is not a source commit.

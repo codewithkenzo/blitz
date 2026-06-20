@@ -14,22 +14,22 @@ Produce one bounded final lock proving whether the minimal `blitz_edit` route ca
 - Blitz backend: bundled `@codewithkenzo/blitz` CLI through pi-blitz runtime.
 - Core baseline: Pi native `edit` tool with optimized changed spans and same-file batched `edits` where supported.
 - No accepted Blitz row may count core `edit` / `apply_patch` fallback as Blitz success.
-- Structural rows may use compact tuple ops only where the current capability matrix says supported.
+- Minimal/default claim scope is exact/simple/config/doc/tiny multi edits. Structural `rb` / structural-body is excluded unless a future strict supported tuple shape passes deterministic validation.
 
 ## Class C structural policy
 
-Decision: **A — strict default replacement** for Exodia 0.5.
+Decision update (`bli-js15`, 2026-06-20): **demote structural `rb` from minimal/default replacement scope**.
 
-Class C structural decline is safety, not edit success. `unsupported_structural_op_minimal` with `noMutation=true`, route `blitz_edit`, and Tokscale match proves fail-closed route truth only. It does **not** satisfy the default-replacement gate and must not be counted as a replacement win.
+Class C structural decline is safety, not edit success. `unsupported_structural_op_minimal` with `noMutation=true`, route `blitz_edit`, and Tokscale match proves fail-closed route truth only. It does **not** satisfy the default-replacement gate and must not be counted as a replacement win. Semantic-but-format-red rows remain failures; do not count missing-newline or strict-format mismatches as success.
 
-For `bli-o1pd` to pass under the universal/exodia 0.5 goal, the default/minimal `blitz_edit` route must produce a successful Class C structural edit for the planned supported slice, with no hidden core/apply_patch fallback and no file corruption. Until that support lands, `bli-o1pd` remains blocked by implementation ticket `bli-sh7d`.
+For the current minimal/default gate, accepted Blitz rows are exact/simple/config/doc/tiny multi. Structural `rb` / structural-body belongs to a future advanced or explicit structural route, not the minimal default surface. Unsupported or malformed `rb` shapes must decline without mutation; no hidden core/apply_patch fallback.
 
-Initial required structural success slice:
+Future structural success slice, if reintroduced behind explicit route:
 
 - Languages: TypeScript and JavaScript only.
 - Operations: unique function body replacement and insertion after a unique function declaration.
-- Failure mode: unsupported language, parse error, ambiguous symbol, missing symbol, multi-match, or unsafe edit must decline with no mutation.
-- Evidence: focused regression plus final lock row showing `class-c-structural-10` / `blitz-edit` accepted, correct, Tokscale matched, route `blitz_edit`, no fallback.
+- Failure mode: unsupported language, parse error, ambiguous symbol, missing symbol, multi-match, malformed tuple, format mismatch, or unsafe edit must decline/fail with no mutation.
+- Evidence: focused regression plus final lock row showing explicit structural route accepted, correct under strict format, Tokscale matched, and no fallback.
 
 ## Providers / models
 
