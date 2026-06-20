@@ -35,3 +35,7 @@ plan: Sprint D added for all edit-type coverage on one provider first. Tickets: 
 **2026-06-19T06:52:47Z**
 
 plan: Sprint D lock run blocked on placeholder materialization tickets bli-4aff (success edit types) and bli-1sab (safety edit types).
+
+**2026-06-20T04:10:23Z**
+
+plan: Sprint E added as exploratory provider-language survey, not claim gate. Tickets: bli-l415 plan, bli-bhyc run, bli-05rl triage.
