@@ -1,6 +1,6 @@
 ---
 id: bli-6gb1
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-20T07:02:09Z
@@ -18,3 +18,13 @@ Define realistic 60-80% token-saving math by edit class and route policy. Separa
 
 Report/plan states achievable savings bands per edit class, forbidden claims, weighted target formula, and exact rows where 60-80% is mathematically plausible. Uses existing Sprint D/F/G artifacts; no model reruns.
 
+
+## Notes
+
+**2026-06-20T07:06:17Z**
+
+Sprint I slice started. Preflight done. Existing report farm and .tickets/bli-pg9j.md dirty state will be preserved; no model/provider benchmark loops.
+
+**2026-06-20T07:08:24Z**
+
+Closed with report reports/SPRINT-I-ROUTE-OPTIMIZER-TOKEN-TARGET-MATH-20260620.md. Report uses existing artifacts only, defines per-class bands, route formula, forbidden wording, weighted savings formula, and plausible 60-80% row families.
