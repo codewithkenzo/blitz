@@ -18,3 +18,9 @@ Reduce benchmark/harness prompt and fixture overhead where it is not part of pro
 
 Survey/true-streak prompts avoid repeated irrelevant context, avoid unchanged-code replay, and keep core/Blitz comparable; self-checks/build pass; no claim from changed prompts until re-measured.
 
+
+## Notes
+
+**2026-06-20T05:09:49Z**
+
+finding from bli-s7by report: provider-language survey prompt delta is +1414 tokens across 14 green rows (+101 per Blitz row). Optimize row prompt shapes so Blitz-specific instruction/context is not larger than core for tiny/doc/tsx/exact rows. No claim until re-measured.
