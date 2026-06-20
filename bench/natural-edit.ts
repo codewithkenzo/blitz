@@ -653,7 +653,7 @@ Make the final file reflect all three changes in one pass where possible. Keep a
 		title: "Wrap function body in try/catch (structural)",
 		description:
 			"Wrap the body of mediumCompute in try/catch without naming exact line text.",
-		prompt: `In medium.ts, wrap the entire body of mediumCompute in a try/catch. Every existing statement inside the function body must stay in the try block unchanged. In the catch block, call console.error(error) then throw error. Keep the indentation of the original body at 2 spaces inside try. Target the mediumCompute body as a single structural body change or exact replacement of the smallest unique function-body block.`,
+		prompt: `In medium.ts, wrap the entire body of mediumCompute in a try/catch. Every existing statement inside the function body must stay in the try block unchanged. In the catch block, call console.error(error) then throw error. Each original 2-space body statement must be indented two additional spaces inside try (4 spaces total). Start/end-only edits that add try/catch but leave middle total += lines at the original 2-space indentation are incorrect. Target the mediumCompute body as a single structural body change or exact replacement of the complete function-body block.`,
 		files: [
 			{
 				path: "medium.ts",
@@ -2188,12 +2188,32 @@ if (selfCheckPromptShapes) {
 		console.error("tiny-exact scenario missing");
 		process.exit(1);
 	}
+	const structuralScenario = SCENARIOS.find((s) => s.id === "structural-body");
+	const structuralFile = structuralScenario?.files[0];
+	if (!structuralScenario || !structuralFile) {
+		console.error("structural-body scenario missing");
+		process.exit(1);
+	}
 	const currentPreamble = preamble("blitz", scenario.id);
 	const legacyPrompt = buildNaturalPrompt("blitz", scenario).replace(
 		currentPreamble,
 		LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD,
 	);
 	const currentPrompt = buildNaturalPrompt("blitz", scenario);
+	const structuralPrompt = buildNaturalPrompt("core", structuralScenario);
+	const structuralStartEndOnlyAntiPattern = structuralFile.before
+		.replace(
+			"function mediumCompute(seed: number): number {\n  let total = seed;",
+			"function mediumCompute(seed: number): number {\n  try {\n    let total = seed;",
+		)
+		.replace(
+			"  return total;\n}",
+			"    return total;\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n}",
+		);
+	const structuralOriginalStatementsIndented = structuralFile.after
+		.split("\n")
+		.filter((line) => line.trim().startsWith("total +="))
+		.every((line) => line.startsWith("    total +="));
 	const checks = [
 		{
 			label: "blitz-preamble-bytes",
@@ -2217,6 +2237,26 @@ if (selfCheckPromptShapes) {
 				currentPreamble.includes("output exactly done") &&
 				currentPreamble.includes("['rb'|'ia',file,'function',name,text]"),
 		},
+		{
+			label: "structural-body-prompt-rejects-start-end-only",
+			accepted:
+				structuralPrompt.includes("Start/end-only edits") &&
+				structuralPrompt.includes("4 spaces total") &&
+				structuralPrompt.includes("complete function-body block"),
+		},
+		{
+			label: "structural-body-expected-indents-all-original-statements",
+			accepted:
+				structuralOriginalStatementsIndented &&
+				!structuralFile.after.includes("\n  total +="),
+		},
+		{
+			label: "structural-body-start-end-only-antipattern-rejected",
+			accepted: !expectedVariantResults(
+				structuralFile,
+				structuralStartEndOnlyAntiPattern,
+			).match,
+		},
 	];
 	const ok = checks.every((check) => check.accepted);
 	console.log(
@@ -2227,6 +2267,7 @@ if (selfCheckPromptShapes) {
 				currentPreambleBytes: byteLength(currentPreamble),
 				legacyTinyExactPromptBytes: byteLength(legacyPrompt),
 				currentTinyExactPromptBytes: byteLength(currentPrompt),
+				structuralPromptBytes: byteLength(structuralPrompt),
 				checks,
 			},
 			null,
