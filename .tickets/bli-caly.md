@@ -1,6 +1,6 @@
 ---
 id: bli-caly
-status: open
+status: closed
 deps: []
 links: [bli-05rl, bli-7yuu]
 created: 2026-06-20T04:54:06Z
@@ -17,3 +17,13 @@ Provider-language survey 20260620 found structural-body Blitz red on both zai/gl
 ## Acceptance Criteria
 
 structural-body survey fixture passes for default Blitz route with supported rb/function/name/body shape; unsupported rb shapes fail closed with clear route/provider classification; brace/newline body replacement preserves expected formatting; focused evidence includes at least Zai and OpenAI/Codex or documented provider-specific prompt/schema guard; no hidden core/apply_patch fallback counted as Blitz.
+
+## Notes
+
+**2026-06-20T05:01:30Z**
+
+start: linked provider-independent structural-body survey red fix. Evidence sources: reports/PROVIDER-LANGUAGE-SURVEY-20260620.md/json and reports/pi-accounting-runs/20260620-provider-language-survey/.
+
+**2026-06-20T05:05:46Z**
+
+done: provider-independent structural-body survey red remediated in pi-blitz commit 4c5b5aacef02d9ae20f8e349548a00c1a00893a4. Evidence: focused tests cover Zai supported shape formatting and OpenAI old/new shape normalization; pi-blitz typecheck/test/build pass. No hidden core/apply_patch fallback.
