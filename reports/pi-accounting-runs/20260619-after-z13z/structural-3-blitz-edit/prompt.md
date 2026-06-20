@@ -1,0 +1,3 @@
+Run 3 ordered exact edits in this one Pi session.
+Use only blitz_edit. No prose. Call blitz_edit exactly once with this exact JSON:
+{"e":[["rb","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-z13z/structural-3-blitz-edit/work/structural.ts","function","alpha","\n  return value + 1;\n"],["rb","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-z13z/structural-3-blitz-edit/work/structural.ts","function","beta","\n  return \"new\";\n"],["ia","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-z13z/structural-3-blitz-edit/work/structural.ts","function","beta","\n\nexport function gamma(): boolean { return true; }"]]}

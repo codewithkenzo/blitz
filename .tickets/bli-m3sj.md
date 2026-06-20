@@ -1,6 +1,6 @@
 ---
 id: bli-m3sj
-status: open
+status: closed
 deps: [bli-cca2, bli-91kk, bli-4aff, bli-1sab, bli-t3cl, bli-jv9q, bli-z13z]
 links: []
 created: 2026-06-19T06:41:57Z
@@ -52,3 +52,7 @@ resume: Zai provider available again; bli-t3cl closed as external quota blocker.
 **2026-06-19T19:05:48Z**
 
 blocked: Zai after-bli-t3cl run completed provider rows, but validation found all-edit-types-gate reports identify scenario=tiny-10. Gate cannot pass because materialized E06/E07/E10/E11/E12 rows were not proven. Created blocker bli-z13z. No rerun and no claim audit.
+
+**2026-06-20T03:13:19Z**
+
+done: fixed Zai all-edit-type lock passed after bli-z13z. Evidence: reports/ALL-EDIT-TYPE-GATE-20260619-after-z13z.md and reports/ALL-EDIT-TYPE-GATE-LOCK-20260619-after-z13z.json. Provider/model zai/glm-4.5-air; self-check rows=18/classes=18/success=12/safety=6; row files=14; all accepted/correct/Tokscale matched; all-edit-types-gate reported scenario all-edit-types-gate; Blitz tools only blitz_edit; schema/skill accounting present; core ctx=34923, blitz ctx=24358, delta=10565 (30.25%). Old 20260619-after-bli-t3cl excluded. bli-hndl not started.

@@ -1,0 +1,8 @@
+{
+  "jsonOut": "/home/kenzo/dev/blitz/reports/pi-tmux-true-streak-all-edit-types-gate-core-optimized-20260619-after-z13z.json",
+  "mdOut": "/home/kenzo/dev/blitz/reports/pi-tmux-true-streak-all-edit-types-gate-core-optimized-20260619-after-z13z.md",
+  "status": "accepted",
+  "totalContextTokens": 4525,
+  "correct": true,
+  "declined": false
+}
