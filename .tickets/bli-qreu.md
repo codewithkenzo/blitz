@@ -18,3 +18,9 @@ After Sprint I implementation/design work, run bounded weighted telemetry to mea
 
 Gate waits on relevant implementation tickets, caps model rows, uses Tokscale, reports green-only route-truth numbers, and computes weighted savings by edit class. No rerun fishing.
 
+
+## Notes
+
+**2026-06-20T09:05:43Z**
+
+handoff: prompt prepared at docs/plans/PROMPT-0.5I-weighted-telemetry-gate.md; do not run telemetry until explicitly started; prerequisites fu5w/53tr closed
