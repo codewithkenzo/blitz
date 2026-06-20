@@ -1,6 +1,6 @@
 ---
 id: bli-53tr
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-20T07:02:09Z
@@ -18,3 +18,13 @@ Plan structural operations as explicit advanced route outside minimal default sc
 
 Plan defines strict accepted tuple shapes, provider normalization rules, formatting checks, language capability matrix, failure taxonomy, and future lock gate. Does not re-add structural rb to minimal profile.
 
+
+## Notes
+
+**2026-06-20T08:51:07Z**
+
+start: advanced structural profile plan; separate from minimal/default; no model/provider runs
+
+**2026-06-20T09:04:49Z**
+
+done: plan saved docs/plans/PLAN-0.5I-advanced-structural-profile.md; minimal profile keeps structural rb decline-only; no model/provider runs
