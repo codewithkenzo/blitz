@@ -2,7 +2,7 @@
 id: bli-caly
 status: open
 deps: []
-links: [bli-05rl]
+links: [bli-05rl, bli-7yuu]
 created: 2026-06-20T04:54:06Z
 type: bug
 priority: 1

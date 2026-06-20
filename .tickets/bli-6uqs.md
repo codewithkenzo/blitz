@@ -39,3 +39,7 @@ plan: Sprint D lock run blocked on placeholder materialization tickets bli-4aff 
 **2026-06-20T04:10:23Z**
 
 plan: Sprint E added as exploratory provider-language survey, not claim gate. Tickets: bli-l415 plan, bli-bhyc run, bli-05rl triage.
+
+**2026-06-20T04:59:33Z**
+
+plan: Sprint F added after provider-language survey showed green rows token-negative and structural-body product red. Tickets: bli-s7by diagnose token regression, bli-r9jv reduce minimal tax, bli-lcde optimize survey prompts/rows, bli-7yuu structural-body default route fix linked to bli-caly.
