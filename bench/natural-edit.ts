@@ -477,7 +477,7 @@ const preamble = (lane: Lane, _scenarioId: string): string => {
 	if (lane === "route") {
 		return `You have only the "pi_blitz_route_edit" tool available. This is the default edit route: use Blitz only for supported, local, unambiguous edits, otherwise make no file changes and decline through the route tool. For an unsafe, ambiguous, already-present, unsupported, or out-of-bound request, call pi_blitz_route_edit for the relevant listed file without ops or s so it returns a no-write route decline, then output exactly done. Never invent edits, never fallback internally, and never count a fallback/decline as Blitz success.`;
 	}
-	return `Only tool: blitz_edit. Make safe local edits, then output exactly done. e is tuples: ['x',file,old,new] or f+['x',old,new]; TS/JS ['rb'|'ia',file,'function',name,text]. Use x for exact unique local text; rb only for function body; ia only after function declaration. If already-present, ambiguous, unsupported, or target unclear: no edit, output exactly done. Never guess repeated matches or fallback. If tool returns ok/noop/decline, stop.`;
+	return `Only tool: blitz_edit. Safe local edits only; output exactly done after tool. e: ['x',file,old,new] or f+['x',old,new]; TS/JS ['rb'|'ia',file,'function',name,text]. x exact unique text; rb function body; ia after function declaration. If already-present, ambiguous, unsupported, or unclear: no edit. Never guess repeated matches or fallback. Stop on ok/noop/decline.`;
 };
 
 const LEGACY_BLITZ_PREAMBLE_FOR_PROMPT_GUARD = `You have only the "blitz_edit" tool available. Use it to make the changes described below. Use the file contents provided in this prompt to choose safe edits. Tool arg e must always be an array of tuples. Use x exact replacement for imports, local line insertion/removal/reordering, formatting, and multi-edit batches by replacing the smallest unique surrounding block. Use 4-item ['x', file, old, new], or top-level f with 3-item ['x', old, new]. Use rb only for symbol body replacement. Use ia only after a symbol declaration, never after arbitrary text anchors. If the requested change is already present, or if the target is ambiguous and cannot be identified from the files and request, do not edit any file and output exactly done. Never guess among repeated matches. Call blitz_edit only for a needed safe edit. If blitz_edit returns ok, do not call it again; output exactly done.`;
@@ -497,8 +497,8 @@ type SimpleRouteResidentBudget = {
 const SIMPLE_ROUTE_RESIDENT_BUDGET: SimpleRouteResidentBudget = {
 	// Locked pi-blitz tax guards from Sprint F. Byte budgets are deterministic
 	// proxies; provider token runs remain required before any savings claim.
-	schemaBytes: 760,
-	skillBytes: 850,
+	schemaBytes: 666,
+	skillBytes: 713,
 	successOutputBytes: 32,
 	declineOutputBytes: 80,
 	promptCreditBytes: 0,
@@ -2166,15 +2166,20 @@ if (selfCheckRouteBudget) {
 			accepted: tieBoundary.selected === "blitz",
 		},
 		{
-			label: "current-budget-has-explicit-thresholds",
+			label: "current-budget-locks-sprint-g-floor",
 			thresholds: SIMPLE_ROUTE_RESIDENT_BUDGET,
 			accepted:
-				SIMPLE_ROUTE_RESIDENT_BUDGET.schemaBytes === 760 &&
-				SIMPLE_ROUTE_RESIDENT_BUDGET.skillBytes === 850 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.schemaBytes === 666 &&
+				SIMPLE_ROUTE_RESIDENT_BUDGET.skillBytes === 713 &&
 				SIMPLE_ROUTE_RESIDENT_BUDGET.successOutputBytes === 32 &&
 				SIMPLE_ROUTE_RESIDENT_BUDGET.declineOutputBytes === 80 &&
 				SIMPLE_ROUTE_RESIDENT_BUDGET.promptCreditBytes === 0 &&
 				SIMPLE_ROUTE_RESIDENT_BUDGET.maxOverCoreBytes === 0,
+		},
+		{
+			label: "current-deterministic-floor-recorded",
+			decision: current,
+			accepted: current.selected === "core" && current.deltaBytes === 1422,
 		},
 	];
 	const ok = checks.every((check) => check.accepted);
