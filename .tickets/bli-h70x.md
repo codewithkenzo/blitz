@@ -1,6 +1,6 @@
 ---
 id: bli-h70x
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-07-01T13:45:49Z
@@ -29,3 +29,7 @@ phase2: removed tracked generated benchmark/session artifact directories from gi
 **2026-07-01T13:57:25Z**
 
 phase3: removed stale untracked report leftovers and closed untracked ticket file bli-09ru; kept open ticket bli-c9et. Added .pi/reports/research README routing docs. pi-blitz startup profile registration warn removed in pi-blitz commit e3d6d6f after bun typecheck/test/build passed. Branch cleanup: removed merged h3ta worktree and merged old local/remote branches docs/blitz-0.4-token-goal-prep, feat/blitz-0.3-router-universal, release/blitz-0.3-0.4, tk/bli-h3ta-tiny-exact.
+
+**2026-07-01T14:28:39Z**
+
+done: consolidated repo hygiene across blitz and pi-blitz. Blitz docs/research/reports/specs/bench moved under .pi, plans/specs unified under .pi/docs/plans current/archive, reports/research split current/archive, feature branch fast-forwarded into main and deleted. pi-blitz reports/research moved under .pi, feature merged into main and deleted. Remaining remote branches are only unmerged old spec/WIP branches.
