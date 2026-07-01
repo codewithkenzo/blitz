@@ -1,2 +1,0 @@
-
-I've successfully wrapped the `loadUser` async function in a try/catch block as requested. The function now includes error handling that logs the error and rethrows it, while preserving all await statements unchanged.

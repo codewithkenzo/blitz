@@ -1,8 +1,0 @@
-{
-  "toolSpecTokenizer": "cl100k_base via tiktoken",
-  "skillTokenizer": "cl100k_base via tiktoken",
-  "toolCallArgTokenizer": "cl100k_base via tiktoken",
-  "model": "glm-4.5-air",
-  "provider": "zai",
-  "profile": "structural"
-}

@@ -1,2 +1,0 @@
-
-The edit has been completed successfully. The final return statement of the mediumCompute function has been changed from `return total;` to `return total + 1;` as requested.

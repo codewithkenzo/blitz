@@ -1,2 +1,0 @@
-
-The edit was applied successfully. The `StatusBadge` function now returns `<strong className="badge">{label.toUpperCase()}</strong>` instead of the original `<span className="badge">{label}</span>`.

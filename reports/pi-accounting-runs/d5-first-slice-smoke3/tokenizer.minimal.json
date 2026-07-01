@@ -1,7 +1,0 @@
-{
-  "toolSpecTokenizer": "cl100k_base via tiktoken",
-  "skillTokenizer": "cl100k_base via tiktoken",
-  "toolCallArgTokenizer": "cl100k_base via tiktoken",
-  "model": "claude-haiku-4-5",
-  "provider": "anthropic"
-}

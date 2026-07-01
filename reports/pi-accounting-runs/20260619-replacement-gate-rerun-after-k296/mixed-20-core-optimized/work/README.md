@@ -1,3 +1,0 @@
-# Demo
-
-Status: ready

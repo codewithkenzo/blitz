@@ -1,8 +1,0 @@
-{
-  "jsonOut": "/home/kenzo/dev/blitz/reports/pi-tmux-true-streak-structural-3-core-optimized-20260619-after-z13z.json",
-  "mdOut": "/home/kenzo/dev/blitz/reports/pi-tmux-true-streak-structural-3-core-optimized-20260619-after-z13z.md",
-  "status": "accepted",
-  "totalContextTokens": 2703,
-  "correct": true,
-  "declined": false
-}

@@ -1,3 +1,0 @@
-Run 3 ordered exact edits in this one Pi session.
-Use only blitz_edit. No prose. Call blitz_edit exactly once with this exact JSON:
-{"e":[["x","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/same-file-multi-blitz-edit/work/same.ts","\"old-a\"","\"new-a\""],["x","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/same-file-multi-blitz-edit/work/same.ts","\"old-b\"","\"new-b\""],["x","/home/kenzo/dev/blitz/reports/pi-accounting-runs/20260619-after-bli-t3cl/same-file-multi-blitz-edit/work/same.ts","\"old-c\"","\"new-c\""]]}

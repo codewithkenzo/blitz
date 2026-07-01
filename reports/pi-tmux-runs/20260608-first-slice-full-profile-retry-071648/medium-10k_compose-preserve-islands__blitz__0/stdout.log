@@ -1,6 +1,0 @@
-
-The edit was applied successfully. The `mediumCompute` function now includes the two validation checks:
-1. A finite check immediately after `let total = seed;` that throws a RangeError if the seed is not finite
-2. An early return check before the final return that returns 0 if the total is negative
-
-All original arithmetic statements were preserved exactly as requested.

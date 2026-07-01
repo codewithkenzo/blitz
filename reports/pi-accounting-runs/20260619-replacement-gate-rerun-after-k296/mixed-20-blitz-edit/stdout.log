@@ -1,1 +1,0 @@
-ok c=20 files=20 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true
