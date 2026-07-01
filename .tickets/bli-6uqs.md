@@ -50,4 +50,4 @@ plan: Sprint G added from Sprint F impact survey. Tickets: bli-9ftq OpenAI struc
 
 **2026-06-20T07:02:09Z**
 
-plan: Sprint I token moonshot added. Goal is route-optimizer/advanced-profile path toward 60-80% on eligible high-context edits, not literal forced-Blitz savings on every tiny row. Plan: docs/plans/PLAN-0.5I-token-moonshot.md. Tickets: bli-6gb1 math, bli-qn4t route selector, bli-cwfj resident tax, bli-fu5w compact IR v2, bli-53tr advanced structural, bli-qreu weighted telemetry.
+plan: Sprint I token moonshot added. Goal is route-optimizer/advanced-profile path toward 60-80% on eligible high-context edits, not literal forced-Blitz savings on every tiny row. Plan: .pi/docs/plans/PLAN-0.5I-token-moonshot.md. Tickets: bli-6gb1 math, bli-qn4t route selector, bli-cwfj resident tax, bli-fu5w compact IR v2, bli-53tr advanced structural, bli-qreu weighted telemetry.

@@ -1,0 +1,448 @@
+{
+  "provider": "openai-codex",
+  "model": "gpt-5.5",
+  "iters": 1,
+  "runner": "tmux",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z",
+  "tmuxSession": "pi-bench-2026-06-09T02-25-21-688Z",
+  "timeoutMs": 120000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "extension": "/home/kenzo/dev/pi-blitz-token-profile/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz",
+  "toolProfile": "semantic",
+  "accountingArtifacts": {
+    "artifactRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z",
+    "toolSpec": {
+      "profile": "semantic",
+      "profileLabel": "semantic",
+      "visibleToolNames": [
+        "pi_blitz_patch",
+        "pi_blitz_try_catch",
+        "pi_blitz_replace_return"
+      ],
+      "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.semantic.json",
+      "serializedToolSpecsTokens": 1152,
+      "serializedToolSpecsBytes": 5237
+    },
+    "toolSpecs": [
+      {
+        "profile": "minimal",
+        "profileLabel": "minimal-v0",
+        "visibleToolNames": [
+          "pi_blitz_patch"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.minimal.json",
+        "serializedToolSpecsTokens": 442,
+        "serializedToolSpecsBytes": 1902
+      },
+      {
+        "profile": "semantic",
+        "profileLabel": "semantic",
+        "visibleToolNames": [
+          "pi_blitz_patch",
+          "pi_blitz_try_catch",
+          "pi_blitz_replace_return"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.semantic.json",
+        "serializedToolSpecsTokens": 1152,
+        "serializedToolSpecsBytes": 5237
+      },
+      {
+        "profile": "structural",
+        "profileLabel": "structural",
+        "visibleToolNames": [
+          "pi_blitz_replace_body_span",
+          "pi_blitz_multi_body",
+          "pi_blitz_patch"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.structural.json",
+        "serializedToolSpecsTokens": 1344,
+        "serializedToolSpecsBytes": 6269
+      },
+      {
+        "profile": "admin",
+        "profileLabel": "admin",
+        "visibleToolNames": [
+          "pi_blitz_read",
+          "pi_blitz_rename",
+          "pi_blitz_undo",
+          "pi_blitz_doctor"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.admin.json",
+        "serializedToolSpecsTokens": 622,
+        "serializedToolSpecsBytes": 2568
+      },
+      {
+        "profile": "full",
+        "profileLabel": "full",
+        "visibleToolNames": [
+          "pi_blitz_read",
+          "pi_blitz_edit",
+          "pi_blitz_batch",
+          "pi_blitz_apply",
+          "pi_blitz_replace_body_span",
+          "pi_blitz_insert_body_span",
+          "pi_blitz_wrap_body",
+          "pi_blitz_compose_body",
+          "pi_blitz_multi_body",
+          "pi_blitz_patch",
+          "pi_blitz_try_catch",
+          "pi_blitz_replace_return",
+          "pi_blitz_rename",
+          "pi_blitz_undo",
+          "pi_blitz_doctor"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.full.json",
+        "serializedToolSpecsTokens": 5517,
+        "serializedToolSpecsBytes": 25833
+      }
+    ],
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz-token-profile/skills/pi-blitz/SKILL.md",
+      "snapshotPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/skill.semantic.md",
+      "tokens": 444,
+      "bytes": 1741
+    },
+    "tokenizer": {
+      "toolSpecTokenizer": "cl100k_base via tiktoken",
+      "skillTokenizer": "cl100k_base via tiktoken",
+      "toolCallArgTokenizer": "cl100k_base via tiktoken",
+      "model": "gpt-5.5",
+      "provider": "openai-codex"
+    },
+    "metadataPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tokenizer.semantic.json"
+  },
+  "phase0Accounting": {
+    "visibleTools": [
+      "pi_blitz_patch",
+      "pi_blitz_try_catch",
+      "pi_blitz_replace_return"
+    ],
+    "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tool-specs.semantic.json",
+    "serializedToolSpecsTokens": 1152,
+    "residentSkillSnapshotPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/skill.semantic.md",
+    "residentSkillTokens": 444,
+    "tokenizerMetadataPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T02-25-21-688Z/tokenizer.semantic.json",
+    "tokScaleSessionJsonPaths": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/sessions/2026-06-09T02-25-22-713Z_019eaa32-e519-70e5-9e70-a0a1af2a7230.jsonl",
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/sessions/2026-06-09T02-25-29-810Z_019eaa33-00d2-7211-bcb8-74cb2d79f57e.jsonl"
+    ]
+  },
+  "profileCoverage": [
+    {
+      "profile": "minimal-v0",
+      "supportedFixtures": [],
+      "skippedFixtures": [
+        {
+          "fixture": "semantic/arrow-replace-return",
+          "reason": "unsupported by minimal-v0 registered tool profile"
+        }
+      ]
+    },
+    {
+      "profile": "semantic",
+      "supportedFixtures": [
+        "semantic/arrow-replace-return"
+      ],
+      "skippedFixtures": []
+    },
+    {
+      "profile": "structural",
+      "supportedFixtures": [],
+      "skippedFixtures": [
+        {
+          "fixture": "semantic/arrow-replace-return",
+          "reason": "unsupported by structural registered tool profile"
+        }
+      ]
+    },
+    {
+      "profile": "admin",
+      "supportedFixtures": [],
+      "skippedFixtures": [
+        {
+          "fixture": "semantic/arrow-replace-return",
+          "reason": "unsupported by admin registered tool profile"
+        }
+      ]
+    },
+    {
+      "profile": "full",
+      "supportedFixtures": [
+        "semantic/arrow-replace-return"
+      ],
+      "skippedFixtures": []
+    }
+  ],
+  "overheadComparisons": [
+    {
+      "profile": "minimal-v0",
+      "schemaTokens": 442,
+      "skillTokens": 444,
+      "combinedResidentTokens": 886,
+      "reductionVsFullPct": 85.13672202650562,
+      "meetsCommonLaneTarget": true
+    },
+    {
+      "profile": "semantic",
+      "schemaTokens": 1152,
+      "skillTokens": 444,
+      "combinedResidentTokens": 1596,
+      "reductionVsFullPct": 73.22596879718168,
+      "meetsCommonLaneTarget": true
+    },
+    {
+      "profile": "structural",
+      "schemaTokens": 1344,
+      "skillTokens": 444,
+      "combinedResidentTokens": 1788,
+      "reductionVsFullPct": 70.00503271263212,
+      "meetsCommonLaneTarget": true
+    },
+    {
+      "profile": "admin",
+      "schemaTokens": 622,
+      "skillTokens": 444,
+      "combinedResidentTokens": 1066,
+      "reductionVsFullPct": 82.1170944472404,
+      "meetsCommonLaneTarget": true
+    },
+    {
+      "profile": "full",
+      "schemaTokens": 5517,
+      "skillTokens": 444,
+      "combinedResidentTokens": 5961,
+      "reductionVsFullPct": 0,
+      "meetsCommonLaneTarget": false
+    }
+  ],
+  "tokScaleMode": "required",
+  "generatedAt": "2026-06-09T02:25:38.435Z",
+  "rows": [
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 271,
+      "argTokens": 74,
+      "outputTokens": 90,
+      "cacheRead": 3584,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 1,
+      "residualInputTokens": 3924,
+      "totalContextTokens": 8018,
+      "toolName": "edit",
+      "wallMsMedian": 6486,
+      "inputMedian": 3998,
+      "outputMedian": 90,
+      "cacheReadMedian": 3584,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 74,
+      "tokScaleInputMedian": 3998,
+      "tokScaleOutputMedian": 90,
+      "tokScaleCacheReadMedian": 3584,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 2,
+      "tokScaleCostSum": 0.024482000000000004,
+      "tokScaleProcessingTimeMsMedian": 13,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 1,
+      "costSum": 0.024482000000000004,
+      "exitCodes": [
+        0
+      ],
+      "timedOut": false,
+      "failure": ""
+    },
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "className": "arrow_replace_return",
+      "recommendedLane": "blitz",
+      "lane": "blitz",
+      "route": "ast_narrow",
+      "routeReasonCode": "lane_blitz_structured_tool",
+      "toolProfile": "semantic",
+      "visibleToolNames": [
+        "pi_blitz_patch",
+        "pi_blitz_try_catch",
+        "pi_blitz_replace_return"
+      ],
+      "toolSpecTokens": 1152,
+      "schemaTokens": 1152,
+      "skillTokens": 444,
+      "promptTokens": 369,
+      "argTokens": 66,
+      "outputTokens": 86,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 1,
+      "residualInputTokens": 6125,
+      "totalContextTokens": 9905,
+      "toolName": "pi_blitz_replace_return",
+      "wallMsMedian": 8581,
+      "inputMedian": 7787,
+      "outputMedian": 86,
+      "cacheReadMedian": 0,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 66,
+      "tokScaleInputMedian": 7787,
+      "tokScaleOutputMedian": 86,
+      "tokScaleCacheReadMedian": 0,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 2,
+      "tokScaleCostSum": 0.041515,
+      "tokScaleProcessingTimeMsMedian": 13,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 1,
+      "costSum": 0.041515,
+      "exitCodes": [
+        0
+      ],
+      "timedOut": false,
+      "failure": ""
+    }
+  ],
+  "pairwise": [
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "savingsCounted": false,
+      "coreOutputTokens": 90,
+      "blitzOutputTokens": 86,
+      "coreArgsTokens": 74,
+      "blitzArgsTokens": 66,
+      "coreTotalContextTokens": 8018,
+      "blitzTotalContextTokens": 9905,
+      "coreWallMs": 6486,
+      "blitzWallMs": 8581,
+      "coreCost": 0.024482000000000004,
+      "blitzCost": 0.041515,
+      "status": "both_correct",
+      "acceptedRoute": "core",
+      "routeDecisionReason": "core/apply_patch fallback: Blitz total context 9905 > core 8018",
+      "outputSavingsPct": 4.444444444444439,
+      "argsSavingsPct": 10.81081081081081,
+      "totalContextSavingsPct": -23.534547268645547,
+      "wallSavingsPct": -32.300339192106065,
+      "costSavingsPct": -69.57356425128664
+    }
+  ],
+  "runs": [
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "iter": 0,
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 271,
+      "argTokens": 74,
+      "outputTokens": 90,
+      "cacheRead": 3584,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 1,
+      "residualInputTokens": 3924,
+      "totalContextTokens": 8018,
+      "toolName": "edit",
+      "wallMs": 6486,
+      "inputTokens": 3998,
+      "cacheReadTokens": 3584,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 74,
+      "cost": 0.024482000000000004,
+      "tokScaleInput": 3998,
+      "tokScaleOutput": 90,
+      "tokScaleCacheRead": 3584,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 2,
+      "tokScaleCost": 0.024482000000000004,
+      "tokScaleProcessingTimeMs": 13,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "failure": "",
+      "runDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0",
+      "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/sessions",
+      "sessionFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/sessions/2026-06-09T02-25-22-713Z_019eaa32-e519-70e5-9e70-a0a1af2a7230.jsonl",
+      "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__core__0/exit.json"
+    },
+    {
+      "fixture": "semantic/arrow-replace-return",
+      "lane": "blitz",
+      "route": "ast_narrow",
+      "routeReasonCode": "lane_blitz_structured_tool",
+      "iter": 0,
+      "toolProfile": "semantic",
+      "visibleToolNames": [
+        "pi_blitz_patch",
+        "pi_blitz_try_catch",
+        "pi_blitz_replace_return"
+      ],
+      "toolSpecTokens": 1152,
+      "schemaTokens": 1152,
+      "skillTokens": 444,
+      "promptTokens": 369,
+      "argTokens": 66,
+      "outputTokens": 86,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 1,
+      "residualInputTokens": 6125,
+      "totalContextTokens": 9905,
+      "toolName": "pi_blitz_replace_return",
+      "wallMs": 8581,
+      "inputTokens": 7787,
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 66,
+      "cost": 0.041515,
+      "tokScaleInput": 7787,
+      "tokScaleOutput": 86,
+      "tokScaleCacheRead": 0,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 2,
+      "tokScaleCost": 0.041515,
+      "tokScaleProcessingTimeMs": 13,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "failure": "",
+      "runDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0",
+      "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/sessions",
+      "sessionFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/sessions/2026-06-09T02-25-29-810Z_019eaa33-00d2-7211-bcb8-74cb2d79f57e.jsonl",
+      "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T02-25-21-688Z/semantic_arrow-replace-return__blitz__0/exit.json"
+    }
+  ]
+}

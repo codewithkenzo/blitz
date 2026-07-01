@@ -1,0 +1,253 @@
+{
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "runner": "tmux",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z",
+  "tmuxSession": "pi-bench-2026-06-09T15-29-56-978Z",
+  "timeoutMs": 120000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "toolProfile": "full",
+  "accountingArtifacts": {
+    "artifactRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z",
+    "toolSpec": {
+      "profile": "full",
+      "profileLabel": "full",
+      "visibleToolNames": [
+        "pi_blitz_route_edit",
+        "pi_blitz_op",
+        "pi_blitz_read",
+        "pi_blitz_edit",
+        "pi_blitz_batch",
+        "pi_blitz_apply",
+        "pi_blitz_replace_body_span",
+        "pi_blitz_insert_body_span",
+        "pi_blitz_wrap_body",
+        "pi_blitz_compose_body",
+        "pi_blitz_multi_body",
+        "pi_blitz_patch",
+        "pi_blitz_try_catch",
+        "pi_blitz_replace_return",
+        "pi_blitz_rename",
+        "pi_blitz_undo",
+        "pi_blitz_doctor"
+      ],
+      "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/tool-specs.full.json",
+      "serializedToolSpecsTokens": 6595,
+      "serializedToolSpecsBytes": 30973
+    },
+    "toolSpecs": [
+      {
+        "profile": "full",
+        "profileLabel": "full",
+        "visibleToolNames": [
+          "pi_blitz_route_edit",
+          "pi_blitz_op",
+          "pi_blitz_read",
+          "pi_blitz_edit",
+          "pi_blitz_batch",
+          "pi_blitz_apply",
+          "pi_blitz_replace_body_span",
+          "pi_blitz_insert_body_span",
+          "pi_blitz_wrap_body",
+          "pi_blitz_compose_body",
+          "pi_blitz_multi_body",
+          "pi_blitz_patch",
+          "pi_blitz_try_catch",
+          "pi_blitz_replace_return",
+          "pi_blitz_rename",
+          "pi_blitz_undo",
+          "pi_blitz_doctor"
+        ],
+        "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/tool-specs.full.json",
+        "serializedToolSpecsTokens": 6595,
+        "serializedToolSpecsBytes": 30973
+      }
+    ],
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+      "snapshotPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/skill.full.md",
+      "tokens": 563,
+      "bytes": 2282
+    },
+    "tokenizer": {
+      "toolSpecTokenizer": "cl100k_base via tiktoken",
+      "skillTokenizer": "cl100k_base via tiktoken",
+      "toolCallArgTokenizer": "cl100k_base via tiktoken",
+      "model": "glm-4.5-air",
+      "provider": "zai"
+    },
+    "metadataPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/tokenizer.full.json"
+  },
+  "phase0Accounting": {
+    "visibleTools": [
+      "pi_blitz_route_edit",
+      "pi_blitz_op",
+      "pi_blitz_read",
+      "pi_blitz_edit",
+      "pi_blitz_batch",
+      "pi_blitz_apply",
+      "pi_blitz_replace_body_span",
+      "pi_blitz_insert_body_span",
+      "pi_blitz_wrap_body",
+      "pi_blitz_compose_body",
+      "pi_blitz_multi_body",
+      "pi_blitz_patch",
+      "pi_blitz_try_catch",
+      "pi_blitz_replace_return",
+      "pi_blitz_rename",
+      "pi_blitz_undo",
+      "pi_blitz_doctor"
+    ],
+    "serializedToolSpecsPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/tool-specs.full.json",
+    "serializedToolSpecsTokens": 6595,
+    "residentSkillSnapshotPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/skill.full.md",
+    "residentSkillTokens": 563,
+    "tokenizerMetadataPath": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/2026-06-09T15-29-56-978Z/tokenizer.full.json",
+    "tokScaleSessionJsonPaths": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/sessions/2026-06-09T15-29-58-247Z_019ead01-35e7-710c-b953-41afb66aa9df.jsonl"
+    ]
+  },
+  "profileCoverage": [
+    {
+      "profile": "full",
+      "supportedFixtures": [
+        "config/key-update"
+      ],
+      "skippedFixtures": []
+    }
+  ],
+  "overheadComparisons": [
+    {
+      "profile": "full",
+      "schemaTokens": 6595,
+      "skillTokens": 563,
+      "combinedResidentTokens": 7158,
+      "reductionVsFullPct": 0,
+      "meetsCommonLaneTarget": false
+    }
+  ],
+  "tokScaleMode": "required",
+  "generatedAt": "2026-06-09T15:30:11.862Z",
+  "rows": [
+    {
+      "fixture": "config/key-update",
+      "className": "config_key_update",
+      "recommendedLane": "core",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 163,
+      "argTokens": 73,
+      "outputTokens": 220,
+      "cacheRead": 4007,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 3,
+      "residualInputTokens": 3724,
+      "totalContextTokens": 8263,
+      "toolName": "edit",
+      "wallMsMedian": 10115,
+      "inputMedian": 3797,
+      "outputMedian": 220,
+      "cacheReadMedian": 4007,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 73,
+      "tokScaleInputMedian": 3797,
+      "tokScaleOutputMedian": 220,
+      "tokScaleCacheReadMedian": 4007,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 2,
+      "tokScaleCostSum": 0.00112161,
+      "tokScaleProcessingTimeMsMedian": 3487,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 1,
+      "costSum": 0,
+      "exitCodes": [
+        0
+      ],
+      "timedOut": false,
+      "failure": ""
+    }
+  ],
+  "pairwise": [
+    {
+      "fixture": "config/key-update",
+      "status": "incomplete",
+      "acceptedRoute": "none",
+      "routeDecisionReason": "Pair missing lane; savings not counted",
+      "savingsCounted": false
+    }
+  ],
+  "runs": [
+    {
+      "fixture": "config/key-update",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "iter": 0,
+      "toolProfile": "core",
+      "visibleToolNames": [
+        "edit"
+      ],
+      "toolSpecTokens": 0,
+      "schemaTokens": 0,
+      "skillTokens": 0,
+      "promptTokens": 163,
+      "argTokens": 73,
+      "outputTokens": 220,
+      "cacheRead": 4007,
+      "cacheWrite": 0,
+      "resultPayloadTokens": 3,
+      "residualInputTokens": 3724,
+      "totalContextTokens": 8263,
+      "toolName": "edit",
+      "wallMs": 10115,
+      "inputTokens": 3797,
+      "cacheReadTokens": 4007,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 73,
+      "cost": 0,
+      "tokScaleInput": 3797,
+      "tokScaleOutput": 220,
+      "tokScaleCacheRead": 4007,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 2,
+      "tokScaleCost": 0.00112161,
+      "tokScaleProcessingTimeMs": 3487,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "failure": "",
+      "tokenRouteDecision": {
+        "contextSavingsPct": null,
+        "schemaTokensExpected": 0,
+        "argTokensExpected": 73,
+        "outputTokensExpected": 220,
+        "fallbackContextTokensExpected": null,
+        "selectedBecause": "core lane selected as baseline/fallback"
+      },
+      "runDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0",
+      "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/sessions",
+      "sessionFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/sessions/2026-06-09T15-29-58-247Z_019ead01-35e7-710c-b953-41afb66aa9df.jsonl",
+      "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/2026-06-09T15-29-56-978Z/config_key-update__core__0/exit.json"
+    }
+  ]
+}

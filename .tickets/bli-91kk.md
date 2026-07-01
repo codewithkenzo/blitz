@@ -23,7 +23,7 @@ Rows cover exact tiny, same-file multi, cross-file, config set, doc/comment, imp
 
 **2026-06-19T06:46:44Z**
 
-start: implementing all edit-type harness rows from docs/plans/PLAN-0.5D-all-edit-type-gate.md. No model run; self-checks/harness rows only.
+start: implementing all edit-type harness rows from .pi/docs/plans/PLAN-0.5D-all-edit-type-gate.md. No model run; self-checks/harness rows only.
 
 **2026-06-19T06:50:21Z**
 

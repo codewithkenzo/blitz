@@ -31,4 +31,4 @@ start: implementing minimal blitz_edit resident/output tax reductions after bli-
 
 **2026-06-20T05:16:41Z**
 
-done: pi-blitz commit 565b607 adds minimal blitz_edit tax reductions and deterministic byte guards. Guard output: minimal-schema 690/760 bytes, resident-skill 781/850, success-output 29/32, decline-output 71/80. Verification: bun run check:tax && bun run typecheck && bun test && bun run build passed; git diff --check passed. No benchmark/model reruns; untracked pi-blitz research/ preserved.
+done: pi-blitz commit 565b607 adds minimal blitz_edit tax reductions and deterministic byte guards. Guard output: minimal-schema 690/760 bytes, resident-skill 781/850, success-output 29/32, decline-output 71/80. Verification: bun run check:tax && bun run typecheck && bun test && bun run build passed; git diff --check passed. No benchmark/model reruns; untracked pi-blitz .pi/research/ preserved.

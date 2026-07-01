@@ -56,8 +56,8 @@ Read nearest nested `AGENTS.md` before work in these subtrees:
 ## Working workflow
 
 For non-trivial work:
-1. read `docs/blitz.md` (full spec, mirrored from pi-rig)
-2. for 0.4/token work, read `docs/plans/PLAN-0.4-context-token-optimization.md`, `docs/plans/START-0.4-context-token-core.md`, and both `.pi/research/20260605-*` reports before planning
+1. read `.pi/docs/blitz.md` (full spec, mirrored from pi-rig)
+2. for 0.4/token work, read `.pi/docs/plans/PLAN-0.4-context-token-optimization.md`, `.pi/docs/plans/START-0.4-context-token-core.md`, and both `.pi/research/20260605-*` reports before planning
 3. check current sprint in the companion `pi-rig` tickets (`d1o-*` ids) when available; this repo may not have local `.tickets`
 4. implement the smallest safe diff
 5. `zig build && zig build test` before claiming done; token claims additionally require the benchmark workflow below
@@ -91,9 +91,9 @@ zig build -Dtarget=x86_64-windows-gnu
 
 ## Spec
 
-- `docs/blitz.md` — durable product/architecture spec; 0.4 token-first doctrine is authoritative for future edit surfaces
-- `docs/plans/PLAN-0.4-context-token-optimization.md` — active 0.4 plan to make Blitz a core-edit replacement through measured context/token savings
-- `docs/plans/START-0.4-context-token-core.md` — next-goal handoff prompt and acceptance contract
+- `.pi/docs/blitz.md` — durable product/architecture spec; 0.4 token-first doctrine is authoritative for future edit surfaces
+- `.pi/docs/plans/PLAN-0.4-context-token-optimization.md` — active 0.4 plan to make Blitz a core-edit replacement through measured context/token savings
+- `.pi/docs/plans/START-0.4-context-token-core.md` — next-goal handoff prompt and acceptance contract
 - `.pi/research/20260605-tool-schema-context-tax.md` — provider/MCP/schema-tax research
 - `.pi/research/20260605-token-efficient-edit-repos.md` — edit-format/repo research
 - `NOTICE.md` — third-party attribution

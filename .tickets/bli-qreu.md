@@ -23,11 +23,11 @@ Gate waits on relevant implementation tickets, caps model rows, uses Tokscale, r
 
 **2026-06-20T09:05:43Z**
 
-handoff: prompt prepared at docs/plans/PROMPT-0.5I-weighted-telemetry-gate.md; do not run telemetry until explicitly started; prerequisites fu5w/53tr closed
+handoff: prompt prepared at .pi/docs/plans/PROMPT-0.5I-weighted-telemetry-gate.md; do not run telemetry until explicitly started; prerequisites fu5w/53tr closed
 
 **2026-06-20T09:09:52Z**
 
-start: weighted telemetry gate started by user. Preflight tracked dirty: only expected .tickets/bli-pg9j.md in blitz; pi-blitz tracked clean. Constraints: bounded telemetry only, no rerun fishing, preserve reports/artifacts, no advanced structural telemetry unless explicit permit.
+start: weighted telemetry gate started by user. Preflight tracked dirty: only expected .tickets/bli-pg9j.md in blitz; pi-blitz tracked clean. Constraints: bounded telemetry only, no rerun fishing, preserve .pi/reports/artifacts, no advanced structural telemetry unless explicit permit.
 
 **2026-06-20T09:11:09Z**
 
@@ -35,4 +35,4 @@ cap: bounded telemetry fixed before execution: provider/model zai/glm-4.5-air on
 
 **2026-06-20T09:15:04Z**
 
-done: bounded weighted telemetry complete. Cap ran exactly 10 model rows (zai/glm-4.5-air; 5 scenarios; core+route; iters=1). Tokscale matched 10/10. Weighted selected-route savings -15.13%; no positive marketing claim. Advanced structural skipped/not permitted; forced-Blitz counterfactual not run. Reports: reports/SPRINT-I-WEIGHTED-TELEMETRY-GATE-20260620.{md,json}; run root reports/pi-accounting-runs/20260620-sprint-i-weighted-gate.
+done: bounded weighted telemetry complete. Cap ran exactly 10 model rows (zai/glm-4.5-air; 5 scenarios; core+route; iters=1). Tokscale matched 10/10. Weighted selected-route savings -15.13%; no positive marketing claim. Advanced structural skipped/not permitted; forced-Blitz counterfactual not run. Reports: .pi/reports/SPRINT-I-WEIGHTED-TELEMETRY-GATE-20260620.{md,json}; run root .pi/reports/pi-accounting-runs/20260620-sprint-i-weighted-gate.

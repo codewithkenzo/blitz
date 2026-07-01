@@ -16,7 +16,7 @@ tags: [blitz, 0.5, sprint-c, benchmark, core]
 
 **2026-06-19T03:25:07Z**
 
-source: bli-o1pd rerun after k296. class-c-structural-10 core-optimized status=caveated; Tokscale matched; route edit; failed path structural-10.ts. Artifacts: reports/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-rerun-after-k296.* and run root reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized. Gate stopped; no class-c blitz rerun in final lock.
+source: bli-o1pd rerun after k296. class-c-structural-10 core-optimized status=caveated; Tokscale matched; route edit; failed path structural-10.ts. Artifacts: .pi/reports/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-rerun-after-k296.* and run root .pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized. Gate stopped; no class-c blitz rerun in final lock.
 
 **2026-06-19T03:46:26Z**
 

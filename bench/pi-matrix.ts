@@ -116,11 +116,11 @@ const runRootArg = argFlag("--run-root", "");
 const runStamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runRoot =
 	runner === "tmux"
-		? runRootArg || join(REPO_ROOT, "reports/pi-tmux-runs", runStamp)
+		? runRootArg || join(REPO_ROOT, ".pi/reports/pi-tmux-runs", runStamp)
 		: runRootArg;
 const tmuxSession = `pi-bench-${runStamp}`;
 const artifactRoot = resolve(
-	artifactRootArg || join(REPO_ROOT, "reports/pi-accounting-runs", runStamp),
+	artifactRootArg || join(REPO_ROOT, ".pi/reports/pi-accounting-runs", runStamp),
 );
 const tokScaleRequired = argv.includes("--tokscale");
 const tokScaleDisabled = argv.includes("--no-tokscale");

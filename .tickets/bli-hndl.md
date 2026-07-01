@@ -23,4 +23,4 @@ Report states exact provider/model/profile/classes, pass/fail rows, token delta,
 
 **2026-06-20T03:19:03Z**
 
-audit complete: reports/SPRINT-D-ALL-EDIT-TYPE-CLAIM-AUDIT-20260620.md supports scoped Zai glm-4.5-air Sprint D all-edit-type claim only. Evidence: after-z13z report/lock JSON/run root. Core ctx=34923, Blitz ctx=24358, delta=10565 (30.25%). Forbidden: no provider-wide/universal/default replacement claim; old after-bli-t3cl excluded.
+audit complete: .pi/reports/SPRINT-D-ALL-EDIT-TYPE-CLAIM-AUDIT-20260620.md supports scoped Zai glm-4.5-air Sprint D all-edit-type claim only. Evidence: after-z13z report/lock JSON/run root. Core ctx=34923, Blitz ctx=24358, delta=10565 (30.25%). Forbidden: no provider-wide/universal/default replacement claim; old after-bli-t3cl excluded.

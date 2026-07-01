@@ -22,7 +22,7 @@ Coding agents are slow and expensive when they rewrite code they mostly want to 
 | Class method try/catch wrapper | 118 arg tokens | 40 arg tokens | 66.1% fewer tool-call arg tokens |
 | TSX return replacement | 67 arg tokens | 48 arg tokens | 28.4% fewer tool-call arg tokens |
 
-Full reports live under `reports/`. Public claims should keep correctness and token categories separate.
+Full reports live under `.pi/reports/`. Public claims should keep correctness and token categories separate.
 
 Good Blitz edits are usually:
 

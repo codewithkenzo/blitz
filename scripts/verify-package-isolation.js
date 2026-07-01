@@ -12,16 +12,16 @@ const platformPackages = [
 const attrPaths = [
 	"bench/natural-edit.ts",
 	"bench/fixtures/exact/tiny.ts",
-	"reports/natural-edit-harness/example.md",
-	"reports/natural-edit-runs/example/work/score.ts",
+	".pi/reports/natural-edit-harness/example.md",
+	".pi/reports/natural-edit-runs/example/work/score.ts",
 ];
 
 const forbiddenPackagePrefixes = [
 	"bench/",
-	"reports/",
+	".pi/reports/",
 	".pi/",
 	".tickets/",
-	"research/",
+	".pi/research/",
 	"zig-cache/",
 	"zig-out/",
 	"zig-pkg/",
@@ -32,7 +32,7 @@ const allowedRootFiles = new Set([
 	"NOTICE.md",
 	"README.md",
 	"bin/blitz.js",
-	"docs/blitz.md",
+	".pi/docs/blitz.md",
 	"mcp/blitz-mcp.js",
 	"mcp/blitz-mcp.ts",
 	"package.json",

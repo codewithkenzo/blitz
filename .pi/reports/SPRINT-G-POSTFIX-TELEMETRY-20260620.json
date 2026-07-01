@@ -1,0 +1,507 @@
+{
+  "report": "SPRINT-G-POSTFIX-TELEMETRY-20260620",
+  "status": "exploratory_telemetry_not_final_claim",
+  "generatedAt": "2026-06-20T06:29:55.895Z",
+  "constraints": {
+    "maxRawModelRuns": 12,
+    "actualRawModelRuns": 8,
+    "noRerunFishing": true,
+    "providersRun": [
+      "openai-codex/gpt-5.4-mini",
+      "zai/glm-4.5-air"
+    ],
+    "scenariosRun": [
+      "structural-body",
+      "tiny-exact"
+    ],
+    "lanesRun": [
+      "blitz",
+      "core"
+    ],
+    "tokscaleRequired": true,
+    "tokscaleMatchedRuns": 8
+  },
+  "source": {
+    "rawArtifactRoot": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix",
+    "piBlitzCommit": "e94a904",
+    "blitzCommit": "6059f8ef"
+  },
+  "summary": {
+    "pairs": [
+      {
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "structural-body",
+        "status": "blitz_red",
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 6588,
+        "blitzTokens": 6588,
+        "tokenDelta": 0,
+        "tokenDeltaPct": 0
+      },
+      {
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "tiny-exact",
+        "status": "both_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1554,
+        "blitzTokens": 1556,
+        "tokenDelta": 2,
+        "tokenDeltaPct": 0.1
+      },
+      {
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "structural-body",
+        "status": "blitz_red",
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 6927,
+        "blitzTokens": 13651,
+        "tokenDelta": 6724,
+        "tokenDeltaPct": 97.1
+      },
+      {
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "tiny-exact",
+        "status": "both_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2054,
+        "blitzTokens": 1769,
+        "tokenDelta": -285,
+        "tokenDeltaPct": -13.9
+      }
+    ],
+    "acceptedRuns": 6,
+    "correctRuns": 6,
+    "timeouts": 0,
+    "sideEffectRuns": 0
+  },
+  "notes": [
+    "Telemetry only; not a final token-savings claim.",
+    "OpenAI tiny-exact moved from +2.1% worse in Sprint F to +0.1% worse here; still not break-even.",
+    "Zai tiny-exact was both-green and Blitz cheaper by 13.9%.",
+    "Zai core structural-body is green after baseline prompt stabilization.",
+    "OpenAI structural-body Blitz remains strict red because output is canonical except missing final newline (semantic near-miss).",
+    "Zai structural-body Blitz remains red; model emitted an unsupported/incorrect 4-tuple old/new-ish rb shape that duplicated let total outside try."
+  ],
+  "rows": [
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "structural-body",
+      "lane": "blitz",
+      "accepted": false,
+      "correct": false,
+      "routeOutcome": "incorrect",
+      "outcome": "incorrect",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 27500,
+      "tokens": {
+        "total": 6588,
+        "input": 1780,
+        "output": 1736,
+        "cacheRead": 3072,
+        "cacheWrite": 0,
+        "cost": 0.009377400000000001
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "matchedExpected": null,
+          "gotSha": "da185d5a77567b96",
+          "expectedSha": "85705ff6ea1ca1c3",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-25-43-344Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-25-43-344Z/work/sessions-blitz",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-25-43-344Z/work/sessions-blitz/2026-06-20T06-25-43-877Z_019ee3b4-e5c5-7be9-8208-2abf1ea85c7a.jsonl",
+        "hash": "f032c5d68ed7cdc7"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-25-43-344Z.json",
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      }
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "structural-body",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 21046,
+      "tokens": {
+        "total": 6588,
+        "input": 1774,
+        "output": 1742,
+        "cacheRead": 3072,
+        "cacheWrite": 0,
+        "cost": 0.0093999
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "85705ff6ea1ca1c3",
+          "expectedSha": "85705ff6ea1ca1c3",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-25-22-191Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-25-22-191Z/work/sessions-core",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-25-22-191Z/work/sessions-core/2026-06-20T06-25-22-616Z_019ee3b4-92b8-7358-bff8-a3d04c21c417.jsonl",
+        "hash": "80e16a0942166ad9"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-25-22-191Z.json",
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      }
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4635,
+      "tokens": {
+        "total": 1556,
+        "input": 1506,
+        "output": 50,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0013545
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-25-17-449Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-25-17-449Z/work/sessions-blitz",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-25-17-449Z/work/sessions-blitz/2026-06-20T06-25-17-864Z_019ee3b4-8028-70c0-99ff-f82216a28fa4.jsonl",
+        "hash": "b341ae8ab7e8e3c1"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-25-17-449Z.json",
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      }
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4307,
+      "tokens": {
+        "total": 1554,
+        "input": 1499,
+        "output": 55,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0013717500000000001
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-25-13-030Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-25-13-030Z/work/sessions-core",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-25-13-030Z/work/sessions-core/2026-06-20T06-25-13-502Z_019ee3b4-6f1e-79ac-a1f4-f0eccbfce7b8.jsonl",
+        "hash": "bfae324ac2c9979a"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-25-13-030Z.json",
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "structural-body",
+      "lane": "blitz",
+      "accepted": false,
+      "correct": false,
+      "routeOutcome": "incorrect",
+      "outcome": "incorrect",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 49018,
+      "tokens": {
+        "total": 13651,
+        "input": 4711,
+        "output": 3436,
+        "cacheRead": 5504,
+        "cacheWrite": 0,
+        "cost": 0.00488692
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "matchedExpected": null,
+          "gotSha": "3e9d7861604af2bc",
+          "expectedSha": "85705ff6ea1ca1c3",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-26-46-435Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-26-46-435Z/work/sessions-blitz",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__blitz__0__2026-06-20T06-26-46-435Z/work/sessions-blitz/2026-06-20T06-26-46-882Z_019ee3b5-dbe2-7058-921c-9f8e047bed42.jsonl",
+        "hash": "4b6d30d6960f2aa1"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-26-46-435Z.json",
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "structural-body",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 22326,
+      "tokens": {
+        "total": 6927,
+        "input": 2889,
+        "output": 1734,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "cost": 0.00255432
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "85705ff6ea1ca1c3",
+          "expectedSha": "85705ff6ea1ca1c3",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-26-24-000Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-26-24-000Z/work/sessions-core",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/structural-body__core__0__2026-06-20T06-26-24-000Z/work/sessions-core/2026-06-20T06-26-24-428Z_019ee3b5-842c-750b-90a5-015e1ad7a0da.jsonl",
+        "hash": "5d5710d1751ba092"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-26-24-000Z.json",
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "tiny-exact",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5675,
+      "tokens": {
+        "total": 1769,
+        "input": 964,
+        "output": 37,
+        "cacheRead": 768,
+        "cacheWrite": 0,
+        "cost": 0.00025654
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-26-18-216Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-26-18-216Z/work/sessions-blitz",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T06-26-18-216Z/work/sessions-blitz/2026-06-20T06-26-18-687Z_019ee3b5-6dbf-7a7a-87c2-b41b95bdf110.jsonl",
+        "hash": "5e97c75c6b54cd56"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-26-18-216Z.json",
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "tiny-exact",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 7141,
+      "tokens": {
+        "total": 2054,
+        "input": 1185,
+        "output": 101,
+        "cacheRead": 768,
+        "cacheWrite": 0,
+        "cost": 0.00037114
+      },
+      "tokscale": {
+        "mode": "validate",
+        "status": "ok",
+        "match": true
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2",
+          "unchanged": false
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-26-10-967Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-26-10-967Z/work/sessions-core",
+      "sessionJsonl": {
+        "path": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-runs/tiny-exact__core__0__2026-06-20T06-26-10-967Z/work/sessions-core/2026-06-20T06-26-11-402Z_019ee3b5-514a-70d3-8dd9-5e9a714f5703.jsonl",
+        "hash": "9c5f8ba36b75d5d9"
+      },
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-g-postfix/natural-edit-harness/natural-edit-2026-06-20T06-26-10-967Z.json",
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      }
+    }
+  ]
+}

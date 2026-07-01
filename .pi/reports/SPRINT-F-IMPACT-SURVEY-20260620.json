@@ -1,0 +1,1582 @@
+{
+  "report": "SPRINT-F-IMPACT-SURVEY-20260620",
+  "status": "exploratory_telemetry_not_final_claim",
+  "generatedAt": "2026-06-20T05:47:31.052Z",
+  "mission": "Small Sprint F impact re-survey after pi-blitz/blitz prompt, route budget, tax guard, and structural-body fixes.",
+  "constraints": {
+    "maxRawModelRuns": 20,
+    "actualRawModelRuns": 20,
+    "noRerunFishing": true,
+    "implementationChangesDuringSurvey": false,
+    "tokscaleRequired": true
+  },
+  "preflight": {
+    "gitStatus": "branch feat/blitz-0.4-token-core-profile; pre-existing dirty .tickets/bli-pg9j.md plus report farm untracked preserved",
+    "tkReady": [
+      "bli-6uqs",
+      "bli-pg9j",
+      "bli-c9et"
+    ],
+    "routeBudgetSelfCheck": "pass",
+    "promptShapesSelfCheck": "pass",
+    "zigBuild": "pass"
+  },
+  "harness": "bench/natural-edit.ts spawn harness, --tokscale --keep-temp, core vs blitz lanes",
+  "rawArtifactRoot": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact",
+  "runLog": ".pi/reports/SPRINT-F-IMPACT-SURVEY-20260620.run.log",
+  "previousComparisonSource": ".pi/reports/PROVIDER-LANGUAGE-SURVEY-20260620.json",
+  "summary": {
+    "rawRuns": 20,
+    "providersRun": [
+      "zai/glm-4.5-air",
+      "openai-codex/gpt-5.4-mini"
+    ],
+    "scenarios": [
+      "tiny-exact",
+      "same-file-multi",
+      "same-file-doc-comments",
+      "config-env-update",
+      "structural-body"
+    ],
+    "lanes": [
+      "core",
+      "blitz"
+    ],
+    "tokscaleMatchedRuns": 20,
+    "timeouts": 0,
+    "sideEffectRuns": 0,
+    "acceptedRuns": 17,
+    "correctRuns": 17,
+    "pairStatuses": {
+      "blitz_red": 2,
+      "both_green": 7,
+      "core_red_blitz_green": 1
+    },
+    "systemicStopTriggered": false,
+    "authQuotaBlocks": []
+  },
+  "pairs": [
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "tiny-exact",
+      "coreAccepted": true,
+      "blitzAccepted": false,
+      "coreCorrect": true,
+      "blitzCorrect": false,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "incorrect",
+      "coreTokens": 1977,
+      "blitzTokens": 1812,
+      "tokenDelta": -165,
+      "tokenDeltaPct": -8.3,
+      "bothGreen": false,
+      "status": "blitz_red"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-multi",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 2493,
+      "blitzTokens": 2321,
+      "tokenDelta": -172,
+      "tokenDeltaPct": -6.9,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-doc-comments",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 2074,
+      "blitzTokens": 1808,
+      "tokenDelta": -266,
+      "tokenDeltaPct": -12.8,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "config-env-update",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 1993,
+      "blitzTokens": 1747,
+      "tokenDelta": -246,
+      "tokenDeltaPct": -12.3,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "structural-body",
+      "coreAccepted": false,
+      "blitzAccepted": true,
+      "coreCorrect": false,
+      "blitzCorrect": true,
+      "coreRoute": "incorrect",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 3621,
+      "blitzTokens": 11166,
+      "tokenDelta": 7545,
+      "tokenDeltaPct": 208.4,
+      "bothGreen": false,
+      "status": "core_red_blitz_green"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 1558,
+      "blitzTokens": 1590,
+      "tokenDelta": 32,
+      "tokenDeltaPct": 2.1,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-multi",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 2162,
+      "blitzTokens": 2124,
+      "tokenDelta": -38,
+      "tokenDeltaPct": -1.8,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-doc-comments",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 1572,
+      "blitzTokens": 1576,
+      "tokenDelta": 4,
+      "tokenDeltaPct": 0.3,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "config-env-update",
+      "coreAccepted": true,
+      "blitzAccepted": true,
+      "coreCorrect": true,
+      "blitzCorrect": true,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "blitz_success",
+      "coreTokens": 1479,
+      "blitzTokens": 1526,
+      "tokenDelta": 47,
+      "tokenDeltaPct": 3.2,
+      "bothGreen": true,
+      "status": "both_green"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "structural-body",
+      "coreAccepted": true,
+      "blitzAccepted": false,
+      "coreCorrect": true,
+      "blitzCorrect": false,
+      "coreRoute": "core_fallback",
+      "blitzRoute": "incorrect",
+      "coreTokens": 6524,
+      "blitzTokens": 4868,
+      "tokenDelta": -1656,
+      "tokenDeltaPct": -25.4,
+      "bothGreen": false,
+      "status": "blitz_red"
+    }
+  ],
+  "beforeAfter": [
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "tiny-exact",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2005,
+        "blitzTokens": 2183,
+        "tokenDeltaPct": 8.9
+      },
+      "current": {
+        "provider": "zai",
+        "model": "glm-4.5-air",
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "tiny-exact",
+        "coreAccepted": true,
+        "blitzAccepted": false,
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 1977,
+        "blitzTokens": 1812,
+        "tokenDelta": -165,
+        "tokenDeltaPct": -8.3,
+        "bothGreen": false,
+        "status": "blitz_red"
+      },
+      "deltaPctChange": -17.2,
+      "coreTokenChange": -28,
+      "blitzTokenChange": -371
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "same-file-multi",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2499,
+        "blitzTokens": 2709,
+        "tokenDeltaPct": 8.4
+      },
+      "current": {
+        "provider": "zai",
+        "model": "glm-4.5-air",
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "same-file-multi",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2493,
+        "blitzTokens": 2321,
+        "tokenDelta": -172,
+        "tokenDeltaPct": -6.9,
+        "bothGreen": true,
+        "status": "both_green"
+      },
+      "deltaPctChange": -15.3,
+      "coreTokenChange": -6,
+      "blitzTokenChange": -388
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "same-file-doc-comments",
+      "previousAvailable": false,
+      "current": {
+        "provider": "zai",
+        "model": "glm-4.5-air",
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "same-file-doc-comments",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2074,
+        "blitzTokens": 1808,
+        "tokenDelta": -266,
+        "tokenDeltaPct": -12.8,
+        "bothGreen": true,
+        "status": "both_green"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "config-env-update",
+      "previousAvailable": false,
+      "current": {
+        "provider": "zai",
+        "model": "glm-4.5-air",
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "config-env-update",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1993,
+        "blitzTokens": 1747,
+        "tokenDelta": -246,
+        "tokenDeltaPct": -12.3,
+        "bothGreen": true,
+        "status": "both_green"
+      }
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "structural-body",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_red_product",
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreAccepted": true,
+        "blitzAccepted": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 6865,
+        "blitzTokens": 5419,
+        "tokenDeltaPct": -21.1
+      },
+      "current": {
+        "provider": "zai",
+        "model": "glm-4.5-air",
+        "providerModel": "zai/glm-4.5-air",
+        "scenario": "structural-body",
+        "coreAccepted": false,
+        "blitzAccepted": true,
+        "coreCorrect": false,
+        "blitzCorrect": true,
+        "coreRoute": "incorrect",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 3621,
+        "blitzTokens": 11166,
+        "tokenDelta": 7545,
+        "tokenDeltaPct": 208.4,
+        "bothGreen": false,
+        "status": "core_red_blitz_green"
+      },
+      "deltaPctChange": 229.5,
+      "coreTokenChange": -3244,
+      "blitzTokenChange": 5747
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1552,
+        "blitzTokens": 1894,
+        "tokenDeltaPct": 22
+      },
+      "current": {
+        "provider": "openai-codex",
+        "model": "gpt-5.4-mini",
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "tiny-exact",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1558,
+        "blitzTokens": 1590,
+        "tokenDelta": 32,
+        "tokenDeltaPct": 2.1,
+        "bothGreen": true,
+        "status": "both_green"
+      },
+      "deltaPctChange": -19.9,
+      "coreTokenChange": 6,
+      "blitzTokenChange": -304
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "same-file-multi",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_green",
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2038,
+        "blitzTokens": 2490,
+        "tokenDeltaPct": 22.2
+      },
+      "current": {
+        "provider": "openai-codex",
+        "model": "gpt-5.4-mini",
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "same-file-multi",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 2162,
+        "blitzTokens": 2124,
+        "tokenDelta": -38,
+        "tokenDeltaPct": -1.8,
+        "bothGreen": true,
+        "status": "both_green"
+      },
+      "deltaPctChange": -24,
+      "coreTokenChange": 124,
+      "blitzTokenChange": -366
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "same-file-doc-comments",
+      "previousAvailable": false,
+      "current": {
+        "provider": "openai-codex",
+        "model": "gpt-5.4-mini",
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "same-file-doc-comments",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1572,
+        "blitzTokens": 1576,
+        "tokenDelta": 4,
+        "tokenDeltaPct": 0.3,
+        "bothGreen": true,
+        "status": "both_green"
+      }
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "config-env-update",
+      "previousAvailable": false,
+      "current": {
+        "provider": "openai-codex",
+        "model": "gpt-5.4-mini",
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "config-env-update",
+        "coreAccepted": true,
+        "blitzAccepted": true,
+        "coreCorrect": true,
+        "blitzCorrect": true,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "blitz_success",
+        "coreTokens": 1479,
+        "blitzTokens": 1526,
+        "tokenDelta": 47,
+        "tokenDeltaPct": 3.2,
+        "bothGreen": true,
+        "status": "both_green"
+      }
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "structural-body",
+      "previousAvailable": true,
+      "previous": {
+        "status": "survey_red_product",
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreAccepted": true,
+        "blitzAccepted": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 6524,
+        "blitzTokens": 6869,
+        "tokenDeltaPct": 5.3
+      },
+      "current": {
+        "provider": "openai-codex",
+        "model": "gpt-5.4-mini",
+        "providerModel": "openai-codex/gpt-5.4-mini",
+        "scenario": "structural-body",
+        "coreAccepted": true,
+        "blitzAccepted": false,
+        "coreCorrect": true,
+        "blitzCorrect": false,
+        "coreRoute": "core_fallback",
+        "blitzRoute": "incorrect",
+        "coreTokens": 6524,
+        "blitzTokens": 4868,
+        "tokenDelta": -1656,
+        "tokenDeltaPct": -25.4,
+        "bothGreen": false,
+        "status": "blitz_red"
+      },
+      "deltaPctChange": -30.7,
+      "coreTokenChange": 0,
+      "blitzTokenChange": -2001
+    }
+  ],
+  "failures": [
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "tiny-exact",
+      "lane": "blitz",
+      "routeOutcome": "incorrect",
+      "correct": false,
+      "exitCode": 0,
+      "timedOut": false,
+      "tokens": 1812,
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T05-41-59-180Z",
+      "files": [
+        {
+          "path": "small.ts",
+          "match": false,
+          "unchanged": true,
+          "matchedExpected": null,
+          "gotSha": "c72c321648b699e2",
+          "expectedSha": "551ba78d8ad12ba2"
+        }
+      ]
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "scenario": "structural-body",
+      "lane": "core",
+      "routeOutcome": "incorrect",
+      "correct": false,
+      "exitCode": 0,
+      "timedOut": false,
+      "tokens": 3621,
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__core__0__2026-06-20T05-42-46-674Z",
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "unchanged": false,
+          "matchedExpected": null,
+          "gotSha": "ee2eeb0b983bcd41",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ]
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "scenario": "structural-body",
+      "lane": "blitz",
+      "routeOutcome": "incorrect",
+      "correct": false,
+      "exitCode": 0,
+      "timedOut": false,
+      "tokens": 4868,
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__blitz__0__2026-06-20T05-44-59-418Z",
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "unchanged": false,
+          "matchedExpected": null,
+          "gotSha": "852a169ac3100e19",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "tiny-exact",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5786,
+      "tokens": {
+        "total": 1977,
+        "input": 863,
+        "output": 90,
+        "cacheRead": 1024,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__core__0__2026-06-20T05-41-50-683Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__core__0__2026-06-20T05-41-50-683Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-50-683Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "tiny-exact",
+      "lane": "blitz",
+      "accepted": false,
+      "correct": false,
+      "routeOutcome": "incorrect",
+      "outcome": "incorrect",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5773,
+      "tokens": {
+        "total": 1812,
+        "input": 1002,
+        "output": 42,
+        "cacheRead": 768,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": false,
+          "unchanged": true,
+          "matchedExpected": null,
+          "gotSha": "c72c321648b699e2",
+          "expectedSha": "551ba78d8ad12ba2"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T05-41-59-180Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T05-41-59-180Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-41-59-180Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-multi",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 6276,
+      "tokens": {
+        "total": 2493,
+        "input": 624,
+        "output": 205,
+        "cacheRead": 1664,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "multi.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "4125a5e1a3f04e55",
+          "expectedSha": "4125a5e1a3f04e55"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__core__0__2026-06-20T05-42-05-060Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__core__0__2026-06-20T05-42-05-060Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-05-060Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-multi",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 7058,
+      "tokens": {
+        "total": 2321,
+        "input": 762,
+        "output": 151,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "multi.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "4125a5e1a3f04e55",
+          "expectedSha": "4125a5e1a3f04e55"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__blitz__0__2026-06-20T05-42-11-445Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__blitz__0__2026-06-20T05-42-11-445Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-11-445Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-doc-comments",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 6498,
+      "tokens": {
+        "total": 2074,
+        "input": 542,
+        "output": 124,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "status.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "cb6759cb1fd45e99",
+          "expectedSha": "cb6759cb1fd45e99"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__core__0__2026-06-20T05-42-18-629Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__core__0__2026-06-20T05-42-18-629Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-18-629Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "same-file-doc-comments",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5290,
+      "tokens": {
+        "total": 1808,
+        "input": 477,
+        "output": 51,
+        "cacheRead": 1280,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "status.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "cb6759cb1fd45e99",
+          "expectedSha": "cb6759cb1fd45e99"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__blitz__0__2026-06-20T05-42-25-236Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__blitz__0__2026-06-20T05-42-25-236Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-25-236Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "config-env-update",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 11244,
+      "tokens": {
+        "total": 1993,
+        "input": 485,
+        "output": 100,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": ".env.example",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "e10afe3e5a569d0e",
+          "expectedSha": "e10afe3e5a569d0e"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__core__0__2026-06-20T05-42-30-633Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__core__0__2026-06-20T05-42-30-633Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-30-633Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "config-env-update",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4580,
+      "tokens": {
+        "total": 1747,
+        "input": 430,
+        "output": 37,
+        "cacheRead": 1280,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": ".env.example",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "e10afe3e5a569d0e",
+          "expectedSha": "e10afe3e5a569d0e"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__blitz__0__2026-06-20T05-42-41-989Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__blitz__0__2026-06-20T05-42-41-989Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-41-989Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "structural-body",
+      "lane": "core",
+      "accepted": false,
+      "correct": false,
+      "routeOutcome": "incorrect",
+      "outcome": "incorrect",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5761,
+      "tokens": {
+        "total": 3621,
+        "input": 1206,
+        "output": 111,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "unchanged": false,
+          "matchedExpected": null,
+          "gotSha": "ee2eeb0b983bcd41",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__core__0__2026-06-20T05-42-46-674Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__core__0__2026-06-20T05-42-46-674Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-46-674Z.json"
+    },
+    {
+      "provider": "zai",
+      "model": "glm-4.5-air",
+      "providerModel": "zai/glm-4.5-air",
+      "scenario": "structural-body",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 60212,
+      "tokens": {
+        "total": 11166,
+        "input": 3938,
+        "output": 2620,
+        "cacheRead": 4608,
+        "cacheWrite": 0,
+        "cost": 0
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "85705ff6ea1ca1c3",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__blitz__0__2026-06-20T05-42-52-546Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__blitz__0__2026-06-20T05-42-52-546Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-42-52-546Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4105,
+      "tokens": {
+        "total": 1558,
+        "input": 1500,
+        "output": 58,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.001386
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__core__0__2026-06-20T05-43-52-870Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__core__0__2026-06-20T05-43-52-870Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-52-870Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "tiny-exact",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4079,
+      "tokens": {
+        "total": 1590,
+        "input": 1540,
+        "output": 50,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.00138
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "small.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "551ba78d8ad12ba2",
+          "expectedSha": "551ba78d8ad12ba2"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T05-43-57-086Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/tiny-exact__blitz__0__2026-06-20T05-43-57-086Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-43-57-086Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-multi",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5685,
+      "tokens": {
+        "total": 2162,
+        "input": 1945,
+        "output": 217,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.00243525
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "multi.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "4125a5e1a3f04e55",
+          "expectedSha": "4125a5e1a3f04e55"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__core__0__2026-06-20T05-44-01-274Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__core__0__2026-06-20T05-44-01-274Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-01-274Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-multi",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5805,
+      "tokens": {
+        "total": 2124,
+        "input": 1950,
+        "output": 174,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0022455
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "multi.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "4125a5e1a3f04e55",
+          "expectedSha": "4125a5e1a3f04e55"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__blitz__0__2026-06-20T05-44-07-066Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-multi__blitz__0__2026-06-20T05-44-07-066Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-07-066Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-doc-comments",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4475,
+      "tokens": {
+        "total": 1572,
+        "input": 1492,
+        "output": 80,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0014789999999999998
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "status.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "cb6759cb1fd45e99",
+          "expectedSha": "cb6759cb1fd45e99"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__core__0__2026-06-20T05-44-12-978Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__core__0__2026-06-20T05-44-12-978Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-12-978Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "same-file-doc-comments",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 5380,
+      "tokens": {
+        "total": 1576,
+        "input": 1518,
+        "output": 58,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0013995
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "status.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "cb6759cb1fd45e99",
+          "expectedSha": "cb6759cb1fd45e99"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__blitz__0__2026-06-20T05-44-17-560Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/same-file-doc-comments__blitz__0__2026-06-20T05-44-17-560Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-17-560Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "config-env-update",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4415,
+      "tokens": {
+        "total": 1479,
+        "input": 1428,
+        "output": 51,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0013005
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": ".env.example",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "e10afe3e5a569d0e",
+          "expectedSha": "e10afe3e5a569d0e"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__core__0__2026-06-20T05-44-23-052Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__core__0__2026-06-20T05-44-23-052Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-23-052Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "config-env-update",
+      "lane": "blitz",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "blitz_success",
+      "outcome": "blitz_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 4530,
+      "tokens": {
+        "total": 1526,
+        "input": 1475,
+        "output": 51,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "cost": 0.0013357500000000001
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": ".env.example",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "e10afe3e5a569d0e",
+          "expectedSha": "e10afe3e5a569d0e"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__blitz__0__2026-06-20T05-44-27-577Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/config-env-update__blitz__0__2026-06-20T05-44-27-577Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-27-577Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "structural-body",
+      "lane": "core",
+      "accepted": true,
+      "correct": true,
+      "routeOutcome": "core_fallback",
+      "outcome": "core_mutated",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 27086,
+      "tokens": {
+        "total": 6524,
+        "input": 1710,
+        "output": 1742,
+        "cacheRead": 3072,
+        "cacheWrite": 0,
+        "cost": 0.0093519
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "(core-no-extension)",
+        "skillPath": "(core-no-skill)",
+        "visibleTools": "edit",
+        "toolProfile": "full"
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": true,
+          "unchanged": false,
+          "matchedExpected": "canonical",
+          "gotSha": "85705ff6ea1ca1c3",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__core__0__2026-06-20T05-44-32-220Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__core__0__2026-06-20T05-44-32-220Z/work/sessions-core",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-32-220Z.json"
+    },
+    {
+      "provider": "openai-codex",
+      "model": "gpt-5.4-mini",
+      "providerModel": "openai-codex/gpt-5.4-mini",
+      "scenario": "structural-body",
+      "lane": "blitz",
+      "accepted": false,
+      "correct": false,
+      "routeOutcome": "incorrect",
+      "outcome": "incorrect",
+      "exitCode": 0,
+      "timedOut": false,
+      "wallMs": 12726,
+      "tokens": {
+        "total": 4868,
+        "input": 1930,
+        "output": 890,
+        "cacheRead": 2048,
+        "cacheWrite": 0,
+        "cost": 0.005606099999999999
+      },
+      "tokscale": {
+        "mode": "validate",
+        "match": true,
+        "reason": null
+      },
+      "provenance": {
+        "extensionPath": "/home/kenzo/dev/pi-blitz/dist/index.js",
+        "skillPath": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+        "visibleTools": "blitz_edit",
+        "toolProfile": "minimal"
+      },
+      "files": [
+        {
+          "path": "medium.ts",
+          "match": false,
+          "unchanged": false,
+          "matchedExpected": null,
+          "gotSha": "852a169ac3100e19",
+          "expectedSha": "85705ff6ea1ca1c3"
+        }
+      ],
+      "sideEffects": [],
+      "runDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__blitz__0__2026-06-20T05-44-59-418Z",
+      "sessionDir": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-runs/structural-body__blitz__0__2026-06-20T05-44-59-418Z/work/sessions-blitz",
+      "sourceReport": ".pi/reports/pi-accounting-runs/20260620-sprint-f-impact/natural-edit-harness/natural-edit-2026-06-20T05-44-59-418Z.json"
+    }
+  ]
+}

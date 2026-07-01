@@ -17,7 +17,7 @@ tags: [blitz, 0.5, sprint-c, benchmark, structural]
 
 **2026-06-19T03:03:23Z**
 
-source: bli-o1pd 20260619 final lock. class-c-structural-10 blitz-edit returned status=caveated; Tokscale matched; route tool=blitz_edit; failed path structural-10.ts hash f641a38b60761f57 != expected bf098d15725e76dd. Artifacts under reports/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-blitz-edit and reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-lock.*
+source: bli-o1pd 20260619 final lock. class-c-structural-10 blitz-edit returned status=caveated; Tokscale matched; route tool=blitz_edit; failed path structural-10.ts hash f641a38b60761f57 != expected bf098d15725e76dd. Artifacts under .pi/reports/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-blitz-edit and .pi/reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-lock.*
 
 **2026-06-19T03:11:17Z**
 

@@ -3,31 +3,31 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 
 const candidateFiles = [
-	"reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json",
-	"reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json",
-	"reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json",
-	"reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json",
-	"reports/pi-tmux-phase7-format-config-core-20260609-d5.json",
-	"reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json",
-	"reports/pi-tmux-phase7-config-core-20260609-d5.json",
-	"reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json",
-	"reports/pi-tmux-phase7-router-semantic-rerun-20260609.json",
-	"reports/pi-tmux-phase7-router-pilot-20260609-d5.json",
-	"reports/pi-tmux-phase7-structural-core-20260609-d5.json",
-	"reports/pi-tmux-phase7-structural-current-20260609-d5.json",
-	"reports/pi-tmux-phase7-structural-router-20260609-d5.json",
-	"reports/pi-tmux-phase7-semantic-core-20260609-d5.json",
-	"reports/pi-tmux-phase7-semantic-router-20260609-d5.json",
-	"reports/pi-tmux-phase7-wrapbody-rerun-20260610-d5.json",
-	"reports/pi-tmux-phase7-wrapbody-rerun2-20260610-d5.json",
-	"reports/pi-tmux-phase7-wrapbody-zigfix-20260610-d5.json",
-	"reports/pi-tmux-phase7-longsection-rerun-20260610-d5.json",
-	"reports/pi-tmux-phase7-longsection-router-rerun-20260610-d5.json",
+	".pi/reports/pi-tmux-phase7-text-alias-router-escapes-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-text-alias-core-escapes-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-markdown-core-escapes-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-format-config-router-sk-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-format-config-core-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-config-router-sk2-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-config-core-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-router-semantic-parserfix-20260609.json",
+	".pi/reports/pi-tmux-phase7-router-semantic-rerun-20260609.json",
+	".pi/reports/pi-tmux-phase7-router-pilot-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-structural-core-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-structural-current-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-structural-router-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-semantic-core-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-semantic-router-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-wrapbody-rerun-20260610-d5.json",
+	".pi/reports/pi-tmux-phase7-wrapbody-rerun2-20260610-d5.json",
+	".pi/reports/pi-tmux-phase7-wrapbody-zigfix-20260610-d5.json",
+	".pi/reports/pi-tmux-phase7-longsection-rerun-20260610-d5.json",
+	".pi/reports/pi-tmux-phase7-longsection-router-rerun-20260610-d5.json",
 ];
 
 const outJson =
-	"reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json";
-const outMd = "reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.md";
+	".pi/reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json";
+const outMd = ".pi/reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.md";
 
 type Row = {
 	fixture: string;

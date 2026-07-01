@@ -22,7 +22,7 @@ structural-body survey fixture passes for default Blitz route with supported rb/
 
 **2026-06-20T05:01:30Z**
 
-start: linked provider-independent structural-body survey red fix. Evidence sources: reports/PROVIDER-LANGUAGE-SURVEY-20260620.md/json and reports/pi-accounting-runs/20260620-provider-language-survey/.
+start: linked provider-independent structural-body survey red fix. Evidence sources: .pi/reports/PROVIDER-LANGUAGE-SURVEY-20260620.md/json and .pi/reports/pi-accounting-runs/20260620-provider-language-survey/.
 
 **2026-06-20T05:05:46Z**
 

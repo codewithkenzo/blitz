@@ -27,4 +27,4 @@ Sprint I slice started. Preflight done. Existing report farm and .tickets/bli-pg
 
 **2026-06-20T07:08:24Z**
 
-Closed with report reports/SPRINT-I-ROUTE-OPTIMIZER-TOKEN-TARGET-MATH-20260620.md. Report uses existing artifacts only, defines per-class bands, route formula, forbidden wording, weighted savings formula, and plausible 60-80% row families.
+Closed with report .pi/reports/SPRINT-I-ROUTE-OPTIMIZER-TOKEN-TARGET-MATH-20260620.md. Report uses existing artifacts only, defines per-class bands, route formula, forbidden wording, weighted savings formula, and plausible 60-80% row families.

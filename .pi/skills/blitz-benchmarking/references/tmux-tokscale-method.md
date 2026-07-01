@@ -23,7 +23,7 @@ Do not use as sole evidence when user asks for interactive/piloted benching.
 Per-run artifacts live under:
 
 ```text
-reports/pi-tmux-runs/<timestamp>/<fixture>__<lane>__<iter>/
+.pi/reports/pi-tmux-runs/<timestamp>/<fixture>__<lane>__<iter>/
 ├── command.sh
 ├── exit.json
 ├── prompt.md
@@ -130,7 +130,7 @@ Allowed cleanup after user approval:
 
 ```bash
 tmux kill-session -t pi-bench-<timestamp>
-/bin/rm -rf reports/pi-tmux-runs/<timestamp>
+/bin/rm -rf .pi/reports/pi-tmux-runs/<timestamp>
 ```
 
 Do not use bare `rm` in this environment if shell aliases route it through missing wrappers; use `/bin/rm` when cleanup is approved.

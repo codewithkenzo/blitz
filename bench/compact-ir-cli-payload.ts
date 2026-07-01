@@ -31,7 +31,7 @@ type Row = {
 
 const repoRoot = resolve(process.cwd());
 const blitzBin = join(repoRoot, "zig-out/bin/blitz");
-const reportPath = join(repoRoot, "reports/compact-ir-cli-payload-20260610.md");
+const reportPath = join(repoRoot, ".pi/reports/compact-ir-cli-payload-20260610.md");
 
 const cases: CaseDef[] = [
 	{

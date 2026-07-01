@@ -1,0 +1,337 @@
+{
+  "generatedAt": "2026-06-19T19:02:07.965Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "core-optimized",
+  "scenario": "tiny-10",
+  "scenarioTitle": "10 tiny/core-like edits",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized",
+  "tmuxSession": "pi-true-streak-2026-06-19T19-01-52-342Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "profileDump": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 3219,\n      \"output\": 712,\n      \"cacheRead\": 1792,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.0014807599999999998\n    }\n  ],\n  \"totalInput\": 3219,\n  \"totalOutput\": 712,\n  \"totalCacheRead\": 1792,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.0014807599999999998,\n  \"processingTimeMs\": 2822\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 3219,
+      "output": 712,
+      "cacheRead": 1792,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 11956,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/sessions/2026-06-19T19-01-53-059Z_019ee142-d123-7b37-a3e3-0ec5afb1d843.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work"
+  },
+  "steps": [
+    {
+      "id": "tiny-01.ts",
+      "path": "tiny-01.ts",
+      "correct": true,
+      "expectedSha": "f879209f4275cd8a",
+      "actualSha": "f879209f4275cd8a"
+    },
+    {
+      "id": "tiny-02.ts",
+      "path": "tiny-02.ts",
+      "correct": true,
+      "expectedSha": "3bbcf24ccaf46861",
+      "actualSha": "3bbcf24ccaf46861"
+    },
+    {
+      "id": "tiny-03.ts",
+      "path": "tiny-03.ts",
+      "correct": true,
+      "expectedSha": "9b1a9192034529cc",
+      "actualSha": "9b1a9192034529cc"
+    },
+    {
+      "id": "tiny-04.ts",
+      "path": "tiny-04.ts",
+      "correct": true,
+      "expectedSha": "e72559f979ba163f",
+      "actualSha": "e72559f979ba163f"
+    },
+    {
+      "id": "tiny-05.ts",
+      "path": "tiny-05.ts",
+      "correct": true,
+      "expectedSha": "838a5e478ba077d3",
+      "actualSha": "838a5e478ba077d3"
+    },
+    {
+      "id": "tiny-06.ts",
+      "path": "tiny-06.ts",
+      "correct": true,
+      "expectedSha": "6cd6e775c9eab1bf",
+      "actualSha": "6cd6e775c9eab1bf"
+    },
+    {
+      "id": "tiny-07.ts",
+      "path": "tiny-07.ts",
+      "correct": true,
+      "expectedSha": "7a901eb623e22c14",
+      "actualSha": "7a901eb623e22c14"
+    },
+    {
+      "id": "tiny-08.ts",
+      "path": "tiny-08.ts",
+      "correct": true,
+      "expectedSha": "11d1e00f19651fdf",
+      "actualSha": "11d1e00f19651fdf"
+    },
+    {
+      "id": "tiny-09.ts",
+      "path": "tiny-09.ts",
+      "correct": true,
+      "expectedSha": "9fd3e993ccfafb8d",
+      "actualSha": "9fd3e993ccfafb8d"
+    },
+    {
+      "id": "tiny-10.ts",
+      "path": "tiny-10.ts",
+      "correct": true,
+      "expectedSha": "e7fef6f4d6e05769",
+      "actualSha": "e7fef6f4d6e05769"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-01.ts",
+        "edits": [
+          {
+            "oldText": "\"old-1\"",
+            "newText": "\"new-1\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-02.ts",
+        "edits": [
+          {
+            "oldText": "\"old-2\"",
+            "newText": "\"new-2\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-03.ts",
+        "edits": [
+          {
+            "oldText": "\"old-3\"",
+            "newText": "\"new-3\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-04.ts",
+        "edits": [
+          {
+            "oldText": "\"old-4\"",
+            "newText": "\"new-4\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-05.ts",
+        "edits": [
+          {
+            "oldText": "\"old-5\"",
+            "newText": "\"new-5\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-06.ts",
+        "edits": [
+          {
+            "oldText": "\"old-6\"",
+            "newText": "\"new-6\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-07.ts",
+        "edits": [
+          {
+            "oldText": "\"old-7\"",
+            "newText": "\"new-7\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-08.ts",
+        "edits": [
+          {
+            "oldText": "\"old-8\"",
+            "newText": "\"new-8\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-09.ts",
+        "edits": [
+          {
+            "oldText": "\"old-9\"",
+            "newText": "\"new-9\""
+          }
+        ]
+      },
+      "argTokens": 65
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-10.ts",
+        "edits": [
+          {
+            "oldText": "\"old-10\"",
+            "newText": "\"new-10\""
+          }
+        ]
+      },
+      "argTokens": 65
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-01.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-02.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-03.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-04.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-05.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-06.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-07.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-08.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-09.ts.",
+      "resultPayloadTokens": 47
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-after-bli-t3cl/tiny-10-core-optimized/work/tiny-10.ts.",
+      "resultPayloadTokens": 47
+    }
+  ],
+  "usage": {
+    "input": 3219,
+    "output": 712,
+    "cacheRead": 1792,
+    "cacheWrite": 0,
+    "totalTokens": 5723,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 1216,
+    "argTokens": 650,
+    "outputTokens": 712,
+    "cacheRead": 1792,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 470,
+    "residualInputTokens": 2003,
+    "totalContextTokens": 5723
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

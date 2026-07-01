@@ -16,7 +16,7 @@ tags: [pi-blitz, token-core, strict-gate]
 
 minimal/default claim scope excludes rb/structural-body unless strict supported tuple shape passes deterministic validation
 unsupported/malformed rb shapes decline clearly
-docs/reports/skills do not imply structural replacement in minimal profile
+docs/.pi/reports/skills do not imply structural replacement in minimal profile
 exact/simple/config/doc route remains default focus
 
 
@@ -24,7 +24,7 @@ exact/simple/config/doc route remains default focus
 
 **2026-06-20T06:32:52Z**
 
-start: preflight done. blitz branch feat/blitz-0.4-token-core-profile has preserved dirty .tickets/bli-pg9j.md + report farm; pi-blitz branch feat/blitz-0.4-token-core-profile-canonical has untracked research/. No model/provider telemetry allowed.
+start: preflight done. blitz branch feat/blitz-0.4-token-core-profile has preserved dirty .tickets/bli-pg9j.md + report farm; pi-blitz branch feat/blitz-0.4-token-core-profile-canonical has untracked .pi/research/. No model/provider telemetry allowed.
 
 **2026-06-20T06:36:40Z**
 

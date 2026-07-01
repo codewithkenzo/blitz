@@ -1,0 +1,1159 @@
+{
+  "generatedAt": "2026-06-11T18:48:18.262Z",
+  "status": "caveated",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "same-file-multi",
+  "scenarioTitle": "same-file multi-edit scenario",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z",
+  "tmuxSession": "pi-true-streak-2026-06-11T18-44-17-734Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 949,\n      \"output\": 11585,\n      \"cacheRead\": 343976,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 35,\n      \"cost\": 0.023252580000000002\n    }\n  ],\n  \"totalInput\": 949,\n  \"totalOutput\": 11585,\n  \"totalCacheRead\": 343976,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 35,\n  \"totalCost\": 0.023252580000000002,\n  \"processingTimeMs\": 16\n}\n",
+    "stderr": ""
+  },
+  "exit": {
+    "status": -1,
+    "wallMs": 240319.080367,
+    "timedOut": true
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/sessions/2026-06-11T18-44-18-322Z_019eb7ff-d912-703a-b353-33d1376c0c05.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work"
+  },
+  "steps": [
+    {
+      "id": "same.ts",
+      "path": "same.ts",
+      "correct": false,
+      "expectedSha": "616c6c4a5520d180",
+      "actualSha": "b5324c75e355f343"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    },
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"old-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"old-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-44-17-734Z/work/same.ts",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"old-c\";",
+            "export const a = \"new-a\";\nexport const b = \"new-b\";\nexport const c = \"new-c\";"
+          ]
+        ]
+      },
+      "argTokens": 313
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    },
+    {
+      "toolName": "blitz_edit",
+      "text": "pi-blitz blitz-error: ",
+      "resultPayloadTokens": 7
+    }
+  ],
+  "usage": {
+    "input": 949,
+    "output": 11585,
+    "cacheRead": 343976,
+    "cacheWrite": 0,
+    "totalTokens": 356510
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 343,
+    "argTokens": 10955,
+    "outputTokens": 11585,
+    "cacheRead": 343976,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 245,
+    "residualInputTokens": 606,
+    "totalContextTokens": 356510
+  },
+  "caveats": [
+    "schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

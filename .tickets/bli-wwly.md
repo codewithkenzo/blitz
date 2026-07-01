@@ -16,7 +16,7 @@ Prove bench/dev assets are excluded from language stats, npm root package, platf
 
 ## Acceptance Criteria
 
-git check-attr proves bench exclusion; npm pack dry-runs prove no bench/reports/dev farm in root tarball; platform tarballs contain only binary payload + metadata; release guard documented or scripted.
+git check-attr proves bench exclusion; npm pack dry-runs prove no bench/.pi/reports/dev farm in root tarball; platform tarballs contain only binary payload + metadata; release guard documented or scripted.
 
 
 ## Notes

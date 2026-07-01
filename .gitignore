@@ -9,16 +9,24 @@ node_modules/
 .DS_Store
 # Local notes
 .pi/*
+!.pi/docs/
+!.pi/docs/**
+!.pi/research/
+!.pi/research/**
+!.pi/reports/
+!.pi/reports/**
+!.pi/sprints/
+!.pi/sprints/**
 !.pi/skills/
 !.pi/skills/**
 # Generated benchmark/session artifacts. Commit durable summaries explicitly.
-reports/pi-tmux-runs/
-reports/pi-accounting-runs/
-reports/natural-edit-runs/
-reports/natural-edit-harness/
-reports/subagents/
-reports/provider-matrix-logs/
-reports/bench-logs/
-reports/profile-dumps/
+.pi/reports/pi-tmux-runs/
+.pi/reports/pi-accounting-runs/
+.pi/reports/natural-edit-runs/
+.pi/reports/natural-edit-harness/
+.pi/reports/subagents/
+.pi/reports/provider-matrix-logs/
+.pi/reports/bench-logs/
+.pi/reports/profile-dumps/
 .tokensave/
 bin/blitz

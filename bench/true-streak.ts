@@ -20,7 +20,7 @@ const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";
 const DEFAULT_PI_BLITZ_SKILL = "/home/kenzo/dev/pi-blitz/skills/pi-blitz";
 const DEFAULT_PI_BLITZ_PROFILE_DUMP =
-	"/home/kenzo/dev/pi-blitz/reports/profile-dumps/minimal-blitz-edit-20260611.json";
+	"/home/kenzo/dev/pi-blitz/.pi/reports/profile-dumps/minimal-blitz-edit-20260611.json";
 
 type Lane = "core" | "router" | "blitz-edit" | "core-optimized";
 type ScenarioId =
@@ -160,7 +160,7 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runRoot = resolve(
 	argFlag(
 		"--run-root",
-		join(REPO_ROOT, "reports/pi-tmux-runs", `true-streak-${stamp}`),
+		join(REPO_ROOT, ".pi/reports/pi-tmux-runs", `true-streak-${stamp}`),
 	),
 );
 const jsonOut = resolve(

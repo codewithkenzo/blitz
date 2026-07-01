@@ -1,0 +1,828 @@
+{
+  "generatedAt": "2026-06-19T03:24:51.664Z",
+  "ticket": "bli-o1pd",
+  "status": "failed",
+  "failure": {
+    "scenario": "class-c-structural-10",
+    "lane": "core-optimized",
+    "reason": "new correctness failure in optimized core baseline; final structural-10.ts hash mismatch",
+    "stopRule": "stop at first new correctness/route/Tokscale failure",
+    "note": "Rerun stopped before class-c blitz-edit and class-d rows. No rerun fishing."
+  },
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "plan": ".pi/docs/plans/PLAN-0.5C-token-replacement-gate.md",
+  "repos": {
+    "blitz": "21561015",
+    "piBlitz": "f38f52d"
+  },
+  "metadata": {
+    "profileDump": {
+      "path": "/home/kenzo/dev/blitz/.pi/reports/profile-dumps/minimal-blitz-edit-20260619-rerun-after-k296.json",
+      "bytes": 1803,
+      "sha256": "cdf525b6c4facb2c85f54ff60992115d79e705ff991de54091101610d0eb645b"
+    },
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+      "bytes": 973,
+      "sha256": "1c7efb7f038b48826a9815655a4ed83683ad7a8401d48aa8e393251470865c94"
+    },
+    "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296",
+    "suffix": "20260619-rerun-after-k296"
+  },
+  "rows": [
+    {
+      "scenario": "tiny-10",
+      "class": "A",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 3411,
+          "output": 762,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6093,
+      "usage": {
+        "input": 3411,
+        "output": 762,
+        "cacheRead": 1920,
+        "cacheWrite": 0,
+        "totalTokens": 6093,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 1296,
+        "argTokens": 690,
+        "outputTokens": 762,
+        "cacheRead": 1920,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 510,
+        "residualInputTokens": 2115,
+        "totalContextTokens": 6093
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 11408,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-20-03-099Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-rerun-after-k296.json",
+        "bytes": 11507,
+        "sha256": "c8bed609909ac473cb7a54213e1ed6d56666babc58962d29b7a9908d901664ff"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-rerun-after-k296.md",
+        "bytes": 1675,
+        "sha256": "7104333d958f577cf634917a46c9b4b3e69ed803dceabc2ab5e4b9f3d7dba2f2"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/sessions/2026-06-19T03-20-03-588Z_019edde4-8d04-770f-ba05-638d8c1a01b0.jsonl",
+          "bytes": 18343,
+          "sha256": "72af56aea83cfb7ecacfa27ae7437d00309c0224bb06eb79e847bd662500a91b"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/sessions/2026-06-19T03-20-03-588Z_019edde4-8d04-770f-ba05-638d8c1a01b0.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-core-optimized/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "tiny-10",
+      "class": "A",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 1403,
+          "output": 582,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 3905,
+      "usage": {
+        "input": 1403,
+        "output": 582,
+        "cacheRead": 1920,
+        "cacheWrite": 0,
+        "totalTokens": 3905,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 419,
+        "skillTokens": 268,
+        "promptTokens": 614,
+        "argTokens": 584,
+        "outputTokens": 582,
+        "cacheRead": 1920,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 102,
+        "totalContextTokens": 3905
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 13551,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-20-33-745Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-tiny-10-blitz-edit-20260619-rerun-after-k296.json",
+        "bytes": 8127,
+        "sha256": "d6715dd02c7ffd4cdd906ac055f16bd245064217305d9ef665d918ca9c80b595"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-tiny-10-blitz-edit-20260619-rerun-after-k296.md",
+        "bytes": 1668,
+        "sha256": "e4de8c6eb77159b17109c0da690a6f5b5670671fde91adf8479cc1d9d09af160"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/sessions/2026-06-19T03-20-34-273Z_019edde5-04e1-7dc7-a9ef-39b9a1fe71d9.jsonl",
+          "bytes": 6209,
+          "sha256": "c2350607cc28894c95fb3cb371889441a7712892d3e0705c244297f9f9b63752"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/sessions/2026-06-19T03-20-34-273Z_019edde5-04e1-7dc7-a9ef-39b9a1fe71d9.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/tiny-10-blitz-edit/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "mixed-20",
+      "class": "A/B/D",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 5091,
+          "output": 1370,
+          "cacheRead": 3712,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 10173,
+      "usage": {
+        "input": 5091,
+        "output": 1370,
+        "cacheRead": 3712,
+        "cacheWrite": 0,
+        "totalTokens": 10173,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 2412,
+        "argTokens": 1192,
+        "outputTokens": 1370,
+        "cacheRead": 3712,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 994,
+        "residualInputTokens": 2679,
+        "totalContextTokens": 10173
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 21621,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-20-48-005Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-mixed-20-core-optimized-20260619-rerun-after-k296.json",
+        "bytes": 18134,
+        "sha256": "6b742fb62f097a9e4d4aaeeded4b800240cf484683acc42fcea330762c12c59f"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-mixed-20-core-optimized-20260619-rerun-after-k296.md",
+        "bytes": 2269,
+        "sha256": "6252ac31b77a8b069784598868054a24adb9d81859bbf065ee354d83377fde97"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/sessions/2026-06-19T03-20-48-505Z_019edde5-3c78-7d4b-a775-2c352de1dede.jsonl",
+          "bytes": 33843,
+          "sha256": "1ac5c292472521e0fb416cb3cff29d34f4d5ef6d0bdea65527b36d6115186b3d"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/sessions/2026-06-19T03-20-48-505Z_019edde5-3c78-7d4b-a775-2c352de1dede.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-core-optimized/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "mixed-20",
+      "class": "A/B/D",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2455,
+          "output": 1142,
+          "cacheRead": 2432,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6029,
+      "usage": {
+        "input": 2455,
+        "output": 1142,
+        "cacheRead": 2432,
+        "cacheWrite": 0,
+        "totalTokens": 6029,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 419,
+        "skillTokens": 268,
+        "promptTokens": 1106,
+        "argTokens": 1076,
+        "outputTokens": 1142,
+        "cacheRead": 2432,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 662,
+        "totalContextTokens": 6029
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 23217,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-21-10-307Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260619-rerun-after-k296.json",
+        "bytes": 12089,
+        "sha256": "3fcfeda9fa1ce5aea2fdb9108a762b337e2fe9ab0b773611e85e9b5ccb762078"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-mixed-20-blitz-edit-20260619-rerun-after-k296.md",
+        "bytes": 2262,
+        "sha256": "3575e34ec2ec3331a13245f523a2446d39555ef68998f0dd8c2a74aeb17bc9af"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/sessions/2026-06-19T03-21-10-846Z_019edde5-93be-7d74-8a5b-e8f05fcf7f89.jsonl",
+          "bytes": 9458,
+          "sha256": "3ecf9c524ee3057429b261d7994136ee7e2490da4db0ee3cd6455275003b5c71"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/sessions/2026-06-19T03-21-10-846Z_019edde5-93be-7d74-8a5b-e8f05fcf7f89.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/mixed-20-blitz-edit/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "same-file-multi",
+      "class": "A",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 482,
+          "output": 118,
+          "cacheRead": 1408,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 2008,
+      "usage": {
+        "input": 482,
+        "output": 118,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "totalTokens": 2008,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 129,
+        "argTokens": 98,
+        "outputTokens": 118,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 50,
+        "residualInputTokens": 353,
+        "totalContextTokens": 2008
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 6888,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-21-34-091Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-same-file-multi-core-optimized-20260619-rerun-after-k296.json",
+        "bytes": 4708,
+        "sha256": "8613050ce85e82b026483cf559d740e6739a953d58e48c99fe16e3f5bdd156b6"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-same-file-multi-core-optimized-20260619-rerun-after-k296.md",
+        "bytes": 1153,
+        "sha256": "42fd248f9bacc5a6a1c8f090d06450a892ec2ad1b2a8169605b122e7d3d5f3be"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/sessions/2026-06-19T03-21-34-629Z_019edde5-f0a5-7eab-90c4-5549b4cf46b9.jsonl",
+          "bytes": 3920,
+          "sha256": "9db99a95618e002ef196334f8b4852e57b10435a110e1ad218b529b51db6e35b"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/sessions/2026-06-19T03-21-34-629Z_019edde5-f0a5-7eab-90c4-5549b4cf46b9.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-core-optimized/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "same-file-multi",
+      "class": "A",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 576,
+          "output": 177,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 2289,
+      "usage": {
+        "input": 576,
+        "output": 177,
+        "cacheRead": 1536,
+        "cacheWrite": 0,
+        "totalTokens": 2289,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 419,
+        "skillTokens": 268,
+        "promptTokens": 199,
+        "argTokens": 169,
+        "outputTokens": 177,
+        "cacheRead": 1536,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 0,
+        "totalContextTokens": 2289
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 8506,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-21-41-403Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-same-file-multi-blitz-edit-20260619-rerun-after-k296.json",
+        "bytes": 5037,
+        "sha256": "a61872b00f5340db05dc9ca20789711182fc522eedc98214cdf550229979be95"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-same-file-multi-blitz-edit-20260619-rerun-after-k296.md",
+        "bytes": 1148,
+        "sha256": "b6680ea947999df7d249d325db25cbd3db04c085acf4654a965ea3ee545f855d"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/sessions/2026-06-19T03-21-41-961Z_019edde6-0d49-7d2e-9137-880bf6b1d4de.jsonl",
+          "bytes": 3906,
+          "sha256": "27eafa0217a29e4d82f1e2cdc8b367ec262d324c109a58e807f2e88deb51cbd4"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/sessions/2026-06-19T03-21-41-961Z_019edde6-0d49-7d2e-9137-880bf6b1d4de.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/same-file-multi-blitz-edit/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "class-b-inserts-10",
+      "class": "B",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2987,
+          "output": 747,
+          "cacheRead": 2816,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6550,
+      "usage": {
+        "input": 2987,
+        "output": 747,
+        "cacheRead": 2816,
+        "cacheWrite": 0,
+        "totalTokens": 6550,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 1476,
+        "argTokens": 680,
+        "outputTokens": 747,
+        "cacheRead": 2816,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 530,
+        "residualInputTokens": 1511,
+        "totalContextTokens": 6550
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 15454,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-21-50-671Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-b-inserts-10-core-optimized-20260619-rerun-after-k296.json",
+        "bytes": 11388,
+        "sha256": "5328c7fae931394a610891f0b8083c47960d4f7b63a95cd8051657022789c026"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-b-inserts-10-core-optimized-20260619-rerun-after-k296.md",
+        "bytes": 1708,
+        "sha256": "5b6bb945b70b6ccd0979a2db0f9e96f73d8323a5d6dca5a752bfdf5848896152"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/sessions/2026-06-19T03-21-51-192Z_019edde6-3158-7769-807d-6b54604e48db.jsonl",
+          "bytes": 20262,
+          "sha256": "0755ae42f4e2e1e7bf58e1541ae65b89d57915baeb03e7afc67ed6242f39c8e0"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/sessions/2026-06-19T03-21-51-192Z_019edde6-3158-7769-807d-6b54604e48db.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-core-optimized/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "class-b-inserts-10",
+      "class": "B",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 1497,
+          "output": 673,
+          "cacheRead": 2048,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 4218,
+      "usage": {
+        "input": 1497,
+        "output": 673,
+        "cacheRead": 2048,
+        "cacheWrite": 0,
+        "totalTokens": 4218,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 419,
+        "skillTokens": 268,
+        "promptTokens": 654,
+        "argTokens": 624,
+        "outputTokens": 673,
+        "cacheRead": 2048,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 156,
+        "totalContextTokens": 4218
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 13954,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-22-06-950Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-b-inserts-10-blitz-edit-20260619-rerun-after-k296.json",
+        "bytes": 8449,
+        "sha256": "6a044975659ff75e0d5b7b41dfe31ee2cce7b9a18750ee2d1932c7ee131ac683"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-b-inserts-10-blitz-edit-20260619-rerun-after-k296.md",
+        "bytes": 1701,
+        "sha256": "8abf46d497f97c48e1cf7615b73304f84394372f6287b52af35a7f4fd35d579c"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/sessions/2026-06-19T03-22-07-476Z_019edde6-70f4-739d-9608-874c118c8ff7.jsonl",
+          "bytes": 6622,
+          "sha256": "fc3f57068894e557b1e790bf753a9ecab3ac27898b3545b03c90629bca4fc194"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/sessions/2026-06-19T03-22-07-476Z_019edde6-70f4-739d-9608-874c118c8ff7.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-b-inserts-10-blitz-edit/work"
+      },
+      "failedSteps": []
+    },
+    {
+      "scenario": "class-c-structural-10",
+      "class": "C",
+      "lane": "core-optimized",
+      "status": "caveated",
+      "correct": false,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2460,
+          "output": 796,
+          "cacheRead": 2304,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 5560,
+      "usage": {
+        "input": 2460,
+        "output": 796,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "totalTokens": 5560,
+        "messages": 2
+      },
+      "totals": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 974,
+        "argTokens": 680,
+        "outputTokens": 796,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 565,
+        "residualInputTokens": 1486,
+        "totalContextTokens": 5560
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 15818,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-22-21-713Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-rerun-after-k296.json",
+        "bytes": 10532,
+        "sha256": "367e621f3f6d55c0e21f01322817e5b5d5e8084b78641d3f85a49f8e5eb9a081"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-rerun-after-k296.md",
+        "bytes": 1176,
+        "sha256": "dbb124414c0cdb889a8a9f926ceb6d3a19483cb06f147e4869485e0f067e54ff"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/sessions/2026-06-19T03-22-22-215Z_019edde6-aa87-7311-9b80-d91e945e8ed1.jsonl",
+          "bytes": 20472,
+          "sha256": "e71e7be2a96d07160cccbee717605bf2b829aaa6c594cdd68cc6202a56eb985f"
+        }
+      ],
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/sessions/2026-06-19T03-22-22-215Z_019edde6-aa87-7311-9b80-d91e945e8ed1.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate-rerun-after-k296/class-c-structural-10-core-optimized/work"
+      },
+      "failedSteps": [
+        {
+          "id": "structural-10.ts",
+          "path": "structural-10.ts",
+          "correct": false,
+          "expectedSha": "bf098d15725e76dd",
+          "actualSha": "abfcc412451e46e1"
+        }
+      ]
+    }
+  ],
+  "decision": "failed: optimized core Class C baseline failed correctness before corrected Blitz structural decline row could run; default-replacement gate remains open and qgz1 stays blocked."
+}

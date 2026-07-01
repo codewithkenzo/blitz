@@ -43,7 +43,7 @@ Keep Blitz benchmark claims honest: real Pi sessions, inspectable tmux runs, Tok
 - User asks to bench Blitz, pi-blitz, edit tools, token savings, or wall time.
 - User mentions Tokscale, tmux benching, Pi shell args, or interactive piloting.
 - Agent changes `bench/pi-matrix.ts`, benchmark fixtures, or report files.
-- Agent writes or updates reports under `reports/pi-*.md/json`.
+- Agent writes or updates reports under `.pi/reports/pi-*.md/json`.
 
 # Do not load when
 
@@ -130,8 +130,8 @@ bun bench/pi-matrix.ts \
   --iters 1 \
   --timeout-ms 120000 \
   --tokscale \
-  --md-out reports/pi-tmux-matrix-2026-05-25.md \
-  --json-out reports/pi-tmux-matrix-2026-05-25.json
+  --md-out .pi/reports/pi-tmux-matrix-2026-05-25.md \
+  --json-out .pi/reports/pi-tmux-matrix-2026-05-25.json
 ```
 
 Targeted unstable-row pilot:
@@ -177,13 +177,13 @@ Every benchmark report must include:
 - Do not treat Tokscale cost disagreement as parser failure when provider JSONL omits cost.
 - Do not hide failed attempts; model variance is benchmark evidence.
 - Do not rely only on spawned non-interactive harness when user asked for tmux/pilot mode.
-- Do not overwrite `reports/pi-local-matrix-2026-05-25.*` unless user asks.
+- Do not overwrite `.pi/reports/pi-local-matrix-2026-05-25.*` unless user asks.
 - Do not count generic tokenizer estimates as source of truth when Tokscale can validate real Pi session JSONL.
 - Do not clean tmux panes/logs before user can inspect, unless user asks.
 
 # References
 
 - `references/tmux-tokscale-method.md`
-- `reports/pi-tmux-bench-plan-2026-05-25.md`
-- `reports/pi-local-matrix-2026-05-25.md`
-- `reports/pi-tmux-matrix-2026-05-25.md`
+- `.pi/reports/pi-tmux-bench-plan-2026-05-25.md`
+- `.pi/reports/pi-local-matrix-2026-05-25.md`
+- `.pi/reports/pi-tmux-matrix-2026-05-25.md`

@@ -14,15 +14,15 @@ import { dirname, join } from "node:path";
 const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const DEFAULT_SYNTHESIS = join(
 	REPO_ROOT,
-	"reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json",
+	".pi/reports/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json",
 );
 const DEFAULT_JSON_OUT = join(
 	REPO_ROOT,
-	"reports/pi-tmux-streak-synthesis-20260610-d5.json",
+	".pi/reports/pi-tmux-streak-synthesis-20260610-d5.json",
 );
 const DEFAULT_MD_OUT = join(
 	REPO_ROOT,
-	"reports/pi-tmux-streak-synthesis-20260610-d5.md",
+	".pi/reports/pi-tmux-streak-synthesis-20260610-d5.md",
 );
 
 type TokenRow = {
@@ -373,7 +373,7 @@ const output = {
 		streakSupport:
 			"Existing harness runs one edit per isolated Pi/tmux command. This report aggregates accepted real rows as smallest honest approximation; true same-session sequential streak runner remains next slice.",
 		artifactPreservation:
-			"Source reports and reports/pi-tmux-runs/* raw run roots remain referenced; this script does not delete or overwrite them.",
+			"Source reports and .pi/reports/pi-tmux-runs/* raw run roots remain referenced; this script does not delete or overwrite them.",
 	},
 	sourceReports,
 	scenarios,
@@ -407,7 +407,7 @@ mdLines.push(
 	"- This is cumulative synthesis from independent real Pi/tmux/Tokscale rows, not true same-session sequential execution.",
 );
 mdLines.push(
-	"- Raw artifacts remain in source report run roots under `reports/pi-tmux-runs/`.",
+	"- Raw artifacts remain in source report run roots under `.pi/reports/pi-tmux-runs/`.",
 );
 mdLines.push("");
 mdLines.push("## Cumulative scenarios");

@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-06-10T06:28:54.000Z",
+  "status": "exploratory-not-default-ready",
+  "baseline": "Pi core edit only",
+  "applyPatchScope": "out-of-scope",
+  "method": "one Pi tmux command/session per row; ordered multi-edit prompt; Tokscale per session",
+  "rows": [
+    {"scenario":"tiny-10","lane":"core","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":85988,"schemaTokens":0,"skillTokens":0,"promptTokens":1419,"argTokens":820,"outputTokens":2011,"cacheRead":67487,"cacheWrite":0,"resultPayloadTokens":500,"residualInputTokens":4125,"totalContextTokens":75042,"report":".pi/reports/pi-tmux-true-streak-tiny-10-core-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-19-38-581Z"},
+    {"scenario":"tiny-10","lane":"router","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":86139,"schemaTokens":0,"skillTokens":580,"promptTokens":1593,"argTokens":789,"outputTokens":1737,"cacheRead":73920,"cacheWrite":0,"resultPayloadTokens":753,"residualInputTokens":3890,"totalContextTokens":81720,"report":".pi/reports/pi-tmux-true-streak-tiny-10-router-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-21-10-699Z"},
+    {"scenario":"mixed-20","lane":"core","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":114593,"schemaTokens":0,"skillTokens":0,"promptTokens":2641,"argTokens":1538,"outputTokens":2604,"cacheRead":162582,"cacheWrite":0,"resultPayloadTokens":974,"residualInputTokens":8595,"totalContextTokens":176422,"report":".pi/reports/pi-tmux-true-streak-mixed-20-core-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-22-46-312Z"},
+    {"scenario":"mixed-20","lane":"router","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":142751,"schemaTokens":0,"skillTokens":580,"promptTokens":2967,"argTokens":1923,"outputTokens":4164,"cacheRead":238189,"cacheWrite":0,"resultPayloadTokens":1523,"residualInputTokens":1124,"totalContextTokens":247024,"report":".pi/reports/pi-tmux-true-streak-mixed-20-router-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-25-55-499Z"},
+    {"scenario":"same-file-multi","lane":"core","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":22144,"schemaTokens":0,"skillTokens":0,"promptTokens":461,"argTokens":348,"outputTokens":616,"cacheRead":17129,"cacheWrite":0,"resultPayloadTokens":144,"residualInputTokens":223,"totalContextTokens":18429,"report":".pi/reports/pi-tmux-true-streak-same-file-multi-core-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-24-48-530Z"},
+    {"scenario":"same-file-multi","lane":"router","status":"accepted","correct":true,"tokScaleStatus":0,"wallMs":33822,"schemaTokens":0,"skillTokens":580,"promptTokens":516,"argTokens":366,"outputTokens":1019,"cacheRead":19895,"cacheWrite":0,"resultPayloadTokens":250,"residualInputTokens":3364,"totalContextTokens":25374,"report":".pi/reports/pi-tmux-true-streak-same-file-multi-router-20260610-d5.json","runRoot":".pi/reports/pi-tmux-runs/true-streak-2026-06-10T06-25-11-305Z"}
+  ],
+  "comparisons": [
+    {"scenario":"tiny-10","routerTotal":81720,"coreTotal":75042,"deltaVsCore":-6678,"savingsVsCorePct":-8.9,"verdict":"core cheaper"},
+    {"scenario":"mixed-20","routerTotal":247024,"coreTotal":176422,"deltaVsCore":-70602,"savingsVsCorePct":-40.0,"verdict":"core cheaper"},
+    {"scenario":"same-file-multi","routerTotal":25374,"coreTotal":18429,"deltaVsCore":-6945,"savingsVsCorePct":-37.7,"verdict":"core cheaper"}
+  ],
+  "caveats": [
+    "schemaTokens=0 because current Pi JSONL does not expose serialized resident core/tool schema separately; residualInputTokens carries unclassified provider input.",
+    "True sequential means one Pi process/session with ordered tool calls from one prompt, not multiple user turns in interactive TUI.",
+    "Router/blitz rows are benchmark-only pi_blitz_route_edit runs, not product-real default fallback."
+  ],
+  "defaultReadinessVerdict": "not default-ready"
+}

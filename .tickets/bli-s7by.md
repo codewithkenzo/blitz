@@ -27,4 +27,4 @@ start: diagnosing green-row token regression from existing artifacts only. Sourc
 
 **2026-06-20T05:09:59Z**
 
-done: wrote reports/SPRINT-F-GREEN-ROW-TOKEN-REGRESSION-20260620.md/json from existing artifacts only. Compared Sprint D all-edit-type lock (-10565 Blitz delta) vs provider-language survey green rows (+4790 Blitz delta). Component split covers resident schema, resident skill, prompt, tool args, output, cache, result payload. Follow-up notes added to bli-r9jv/bli-lcde; new route-budget ticket bli-krvm created. No benchmark/model reruns.
+done: wrote .pi/reports/SPRINT-F-GREEN-ROW-TOKEN-REGRESSION-20260620.md/json from existing artifacts only. Compared Sprint D all-edit-type lock (-10565 Blitz delta) vs provider-language survey green rows (+4790 Blitz delta). Component split covers resident schema, resident skill, prompt, tool args, output, cache, result payload. Follow-up notes added to bli-r9jv/bli-lcde; new route-budget ticket bli-krvm created. No benchmark/model reruns.

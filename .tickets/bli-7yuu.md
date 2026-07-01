@@ -23,7 +23,7 @@ Default/minimal structural-body fixture passes for supported rb/function/name/bo
 
 **2026-06-20T05:01:30Z**
 
-start: Sprint F structural-body default-route fix. Preflight: blitz branch feat/blitz-0.4-token-core-profile dirty .tickets/bli-pg9j.md + report farm; pi-blitz branch feat/blitz-0.4-token-core-profile-canonical dirty untracked research/. No blocked tickets. Scope: no benchmark/model reruns.
+start: Sprint F structural-body default-route fix. Preflight: blitz branch feat/blitz-0.4-token-core-profile dirty .tickets/bli-pg9j.md + report farm; pi-blitz branch feat/blitz-0.4-token-core-profile-canonical dirty untracked .pi/research/. No blocked tickets. Scope: no benchmark/model reruns.
 
 **2026-06-20T05:05:46Z**
 

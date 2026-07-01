@@ -9,7 +9,7 @@ type Mode = "cold" | "warm";
 
 const workspace = resolve(process.env.BLITZ_WORKSPACE ?? process.cwd());
 const file = process.env.BLITZ_MCP_BENCH_FILE ?? "README.md";
-const reportPath = resolve(workspace, process.env.BLITZ_MCP_BENCH_REPORT ?? `reports/mcp-warm-cache-bench-${new Date().toISOString().replaceAll(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}.md`);
+const reportPath = resolve(workspace, process.env.BLITZ_MCP_BENCH_REPORT ?? `.pi/reports/mcp-warm-cache-bench-${new Date().toISOString().replaceAll(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}.md`);
 const iterations = Number(process.env.BLITZ_MCP_BENCH_ITERS ?? "25");
 if (!Number.isSafeInteger(iterations) || iterations < 5 || iterations > 200) throw new Error("BLITZ_MCP_BENCH_ITERS must be 5..200");
 if (!existsSync(resolve(workspace, file))) throw new Error(`bench file missing: ${file}`);

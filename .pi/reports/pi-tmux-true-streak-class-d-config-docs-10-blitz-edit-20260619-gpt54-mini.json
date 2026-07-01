@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-06-19T08:19:49.009Z",
+  "status": "accepted",
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "class-d-config-docs-10",
+  "scenarioTitle": "Class D 10 config/docs exact edits",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit",
+  "tmuxSession": "pi-true-streak-2026-06-19T08-19-38-783Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "profileDump": "/home/kenzo/dev/pi-blitz/.pi/reports/profile-dumps/minimal-blitz-edit-20260611.json",
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"gpt-5.4-mini\",\n      \"provider\": \"openai-codex\",\n      \"input\": 1705,\n      \"output\": 483,\n      \"cacheRead\": 1024,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.0035290500000000006\n    }\n  ],\n  \"totalInput\": 1705,\n  \"totalOutput\": 483,\n  \"totalCacheRead\": 1024,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.0035290500000000006,\n  \"processingTimeMs\": 20\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 1705,
+      "output": 483,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 9672,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/sessions/2026-06-19T08-19-39-507Z_019edef6-d773-7c02-af5c-e0bc3c75662b.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work"
+  },
+  "steps": [
+    {
+      "id": "config-1.json",
+      "path": "config-1.json",
+      "correct": true,
+      "expectedSha": "bf1df48649bba0e5",
+      "actualSha": "bf1df48649bba0e5"
+    },
+    {
+      "id": "doc-2.md",
+      "path": "doc-2.md",
+      "correct": true,
+      "expectedSha": "074c8d2f6a4bc640",
+      "actualSha": "074c8d2f6a4bc640"
+    },
+    {
+      "id": "config-3.json",
+      "path": "config-3.json",
+      "correct": true,
+      "expectedSha": "bc74d2d6bf625f8c",
+      "actualSha": "bc74d2d6bf625f8c"
+    },
+    {
+      "id": "doc-4.md",
+      "path": "doc-4.md",
+      "correct": true,
+      "expectedSha": "12183b3893ffbf5b",
+      "actualSha": "12183b3893ffbf5b"
+    },
+    {
+      "id": "config-5.json",
+      "path": "config-5.json",
+      "correct": true,
+      "expectedSha": "e077ca0fbf565d2a",
+      "actualSha": "e077ca0fbf565d2a"
+    },
+    {
+      "id": "doc-6.md",
+      "path": "doc-6.md",
+      "correct": true,
+      "expectedSha": "9c1084817b45d386",
+      "actualSha": "9c1084817b45d386"
+    },
+    {
+      "id": "config-7.json",
+      "path": "config-7.json",
+      "correct": true,
+      "expectedSha": "88d86320e9189795",
+      "actualSha": "88d86320e9189795"
+    },
+    {
+      "id": "doc-8.md",
+      "path": "doc-8.md",
+      "correct": true,
+      "expectedSha": "cf8edb2757fedd93",
+      "actualSha": "cf8edb2757fedd93"
+    },
+    {
+      "id": "config-9.json",
+      "path": "config-9.json",
+      "correct": true,
+      "expectedSha": "35a246f8240ca85b",
+      "actualSha": "35a246f8240ca85b"
+    },
+    {
+      "id": "doc-10.md",
+      "path": "doc-10.md",
+      "correct": true,
+      "expectedSha": "734b26d28109fc3f",
+      "actualSha": "734b26d28109fc3f"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/config-1.json",
+            "false",
+            "true"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/doc-2.md",
+            "draft",
+            "ready"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/config-3.json",
+            "false",
+            "true"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/doc-4.md",
+            "draft",
+            "ready"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/config-5.json",
+            "false",
+            "true"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/doc-6.md",
+            "draft",
+            "ready"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/config-7.json",
+            "false",
+            "true"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/doc-8.md",
+            "draft",
+            "ready"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/config-9.json",
+            "false",
+            "true"
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-gpt54-mini/class-d-config-docs-10-blitz-edit/work/doc-10.md",
+            "draft",
+            "ready"
+          ]
+        ]
+      },
+      "argTokens": 464
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=10 files=10 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true",
+      "resultPayloadTokens": 25
+    }
+  ],
+  "usage": {
+    "input": 1705,
+    "output": 483,
+    "cacheRead": 1024,
+    "cacheWrite": 0,
+    "totalTokens": 3212,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 350,
+    "skillTokens": 268,
+    "promptTokens": 494,
+    "argTokens": 464,
+    "outputTokens": 483,
+    "cacheRead": 1024,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 25,
+    "residualInputTokens": 593,
+    "totalContextTokens": 3212
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

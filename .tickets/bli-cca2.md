@@ -27,4 +27,4 @@ start: defining one-provider all edit-type gate before any run. Scope: zai/glm-4
 
 **2026-06-19T06:46:16Z**
 
-verify: wrote docs/plans/PLAN-0.5D-all-edit-type-gate.md. Defines provider/model, E01-E18 edit classes, pass criteria, stop rules, artifact names, and claim language. No benchmark run.
+verify: wrote .pi/docs/plans/PLAN-0.5D-all-edit-type-gate.md. Defines provider/model, E01-E18 edit classes, pass criteria, stop rules, artifact names, and claim language. No benchmark run.

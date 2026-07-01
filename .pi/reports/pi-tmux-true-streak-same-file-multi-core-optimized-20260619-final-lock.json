@@ -1,0 +1,119 @@
+{
+  "generatedAt": "2026-06-19T02:59:31.760Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "core-optimized",
+  "scenario": "same-file-multi",
+  "scenarioTitle": "same-file multi-edit scenario",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized",
+  "tmuxSession": "pi-true-streak-2026-06-19T02-59-24-577Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "profileDump": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 426,\n      \"output\": 103,\n      \"cacheRead\": 1408,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00024074\n    }\n  ],\n  \"totalInput\": 426,\n  \"totalOutput\": 103,\n  \"totalCacheRead\": 1408,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00024074,\n  \"processingTimeMs\": 16\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 426,
+      "output": 103,
+      "cacheRead": 1408,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 6892,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/sessions/2026-06-19T02-59-25-077Z_019eddd1-a715-7911-9505-b46aaa7f9791.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/work"
+  },
+  "steps": [
+    {
+      "id": "same.ts",
+      "path": "same.ts",
+      "correct": true,
+      "expectedSha": "616c6c4a5520d180",
+      "actualSha": "616c6c4a5520d180"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/work/same.ts",
+        "edits": [
+          {
+            "oldText": "\"old-a\"",
+            "newText": "\"new-a\""
+          },
+          {
+            "oldText": "\"old-b\"",
+            "newText": "\"new-b\""
+          },
+          {
+            "oldText": "\"old-c\"",
+            "newText": "\"new-c\""
+          }
+        ]
+      },
+      "argTokens": 92
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 3 block(s) in /home/kenzo/dev/blitz/.pi/reports/pi-accounting-runs/20260619-replacement-gate/same-file-multi-core-optimized/work/same.ts.",
+      "resultPayloadTokens": 44
+    }
+  ],
+  "usage": {
+    "input": 426,
+    "output": 103,
+    "cacheRead": 1408,
+    "cacheWrite": 0,
+    "totalTokens": 1937,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 123,
+    "argTokens": 92,
+    "outputTokens": 103,
+    "cacheRead": 1408,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 44,
+    "residualInputTokens": 303,
+    "totalContextTokens": 1937
+  },
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

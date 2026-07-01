@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-06-11T18:53:51.418Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "same-file-multi",
+  "scenarioTitle": "same-file multi-edit scenario",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z",
+  "tmuxSession": "pi-true-streak-2026-06-11T18-53-44-247Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 269,\n      \"output\": 181,\n      \"cacheRead\": 7565,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00047985\n    }\n  ],\n  \"totalInput\": 269,\n  \"totalOutput\": 181,\n  \"totalCacheRead\": 7565,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00047985,\n  \"processingTimeMs\": 14\n}\n",
+    "stderr": ""
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 6827,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/sessions/2026-06-11T18-53-44-767Z_019eb808-7dbf-7d61-95e3-478936d581f3.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work"
+  },
+  "steps": [
+    {
+      "id": "same.ts",
+      "path": "same.ts",
+      "correct": true,
+      "expectedSha": "616c6c4a5520d180",
+      "actualSha": "616c6c4a5520d180"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work/same.ts",
+            "\"old-a\"",
+            "\"new-a\""
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work/same.ts",
+            "\"old-b\"",
+            "\"new-b\""
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T18-53-44-247Z/work/same.ts",
+            "\"old-c\"",
+            "\"new-c\""
+          ]
+        ]
+      },
+      "argTokens": 163
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=3",
+      "resultPayloadTokens": 4
+    }
+  ],
+  "usage": {
+    "input": 269,
+    "output": 181,
+    "cacheRead": 7565,
+    "cacheWrite": 0,
+    "totalTokens": 8015
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 193,
+    "argTokens": 163,
+    "outputTokens": 181,
+    "cacheRead": 7565,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 4,
+    "residualInputTokens": 76,
+    "totalContextTokens": 8015
+  },
+  "caveats": [
+    "schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

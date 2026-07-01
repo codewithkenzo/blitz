@@ -25,4 +25,4 @@ decision: policy A strict default replacement. For universal/exodia 0.5, Class C
 
 **2026-06-19T04:43:10Z**
 
-verify: docs/plans/PLAN-0.5C-token-replacement-gate.md and .pi/sprints/SPRINT-0.5-exodia-implementation.md updated with strict Class C policy. Opened bli-sh7d and added as o1pd dependency. No lock rerun; qgz1 remains blocked.
+verify: .pi/docs/plans/PLAN-0.5C-token-replacement-gate.md and .pi/sprints/SPRINT-0.5-exodia-implementation.md updated with strict Class C policy. Opened bli-sh7d and added as o1pd dependency. No lock rerun; qgz1 remains blocked.

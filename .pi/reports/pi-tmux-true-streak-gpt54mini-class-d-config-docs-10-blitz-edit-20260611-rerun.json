@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-06-11T20:16:56.905Z",
+  "status": "caveated",
+  "provider": "openai-codex",
+  "model": "gpt-5.4-mini",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "class-d-config-docs-10",
+  "scenarioTitle": "Class D 10 config/docs exact edits",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z",
+  "tmuxSession": "pi-true-streak-2026-06-11T20-16-52-213Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"gpt-5.4-mini\",\n      \"provider\": \"openai-codex\",\n      \"input\": 0,\n      \"output\": 0,\n      \"cacheRead\": 0,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 1,\n      \"cost\": 0.0\n    }\n  ],\n  \"totalInput\": 0,\n  \"totalOutput\": 0,\n  \"totalCacheRead\": 0,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 1,\n  \"totalCost\": 0.0,\n  \"processingTimeMs\": 17\n}\n",
+    "stderr": ""
+  },
+  "exit": {
+    "status": 1,
+    "wallMs": 4143,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/sessions/2026-06-11T20-16-52-919Z_019eb854-9ab7-76d1-9de9-f806ce7d5897.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/true-streak-2026-06-11T20-16-52-213Z/work"
+  },
+  "steps": [
+    {
+      "id": "config-1.json",
+      "path": "config-1.json",
+      "correct": false,
+      "expectedSha": "bf1df48649bba0e5",
+      "actualSha": "fe2f793493899b42"
+    },
+    {
+      "id": "doc-2.md",
+      "path": "doc-2.md",
+      "correct": false,
+      "expectedSha": "074c8d2f6a4bc640",
+      "actualSha": "41e14d462b56fb8d"
+    },
+    {
+      "id": "config-3.json",
+      "path": "config-3.json",
+      "correct": false,
+      "expectedSha": "bc74d2d6bf625f8c",
+      "actualSha": "69d0cc117e0a7adb"
+    },
+    {
+      "id": "doc-4.md",
+      "path": "doc-4.md",
+      "correct": false,
+      "expectedSha": "12183b3893ffbf5b",
+      "actualSha": "23cc61b339615e86"
+    },
+    {
+      "id": "config-5.json",
+      "path": "config-5.json",
+      "correct": false,
+      "expectedSha": "e077ca0fbf565d2a",
+      "actualSha": "022a7231bd850537"
+    },
+    {
+      "id": "doc-6.md",
+      "path": "doc-6.md",
+      "correct": false,
+      "expectedSha": "9c1084817b45d386",
+      "actualSha": "33d5ca7923cfeb18"
+    },
+    {
+      "id": "config-7.json",
+      "path": "config-7.json",
+      "correct": false,
+      "expectedSha": "88d86320e9189795",
+      "actualSha": "49f1a5921ad5f9c6"
+    },
+    {
+      "id": "doc-8.md",
+      "path": "doc-8.md",
+      "correct": false,
+      "expectedSha": "cf8edb2757fedd93",
+      "actualSha": "add3f0981776c0cb"
+    },
+    {
+      "id": "config-9.json",
+      "path": "config-9.json",
+      "correct": false,
+      "expectedSha": "35a246f8240ca85b",
+      "actualSha": "4218a2a778272dc3"
+    },
+    {
+      "id": "doc-10.md",
+      "path": "doc-10.md",
+      "correct": false,
+      "expectedSha": "734b26d28109fc3f",
+      "actualSha": "ea2253776cb3ebfa"
+    }
+  ],
+  "toolCalls": [],
+  "toolResults": [],
+  "usage": {
+    "input": 0,
+    "output": 0,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "totalTokens": 0
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 514,
+    "argTokens": 0,
+    "outputTokens": 0,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 0,
+    "residualInputTokens": 0,
+    "totalContextTokens": 0
+  },
+  "caveats": [
+    "schemaTokens=0 unless Pi exposes serialized resident core/tool schema in session JSONL; residualInputTokens captures unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

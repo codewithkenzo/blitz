@@ -1,0 +1,92 @@
+{
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "iters": 1,
+  "runner": "tmux",
+  "runRoot": ".pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406",
+  "tmuxSession": "pi-bench-2026-05-25T10-24-06-592Z",
+  "timeoutMs": 120000,
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "blitzBinPathPrepend": "/home/kenzo/dev/blitz/zig-out/bin",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "tokScaleMode": "required",
+  "generatedAt": "2026-05-25T10:24:25.355Z",
+  "rows": [
+    {
+      "fixture": "readme/core-smoke",
+      "className": "markdown_core_only",
+      "recommendedLane": "core",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "toolName": "edit",
+      "wallMsMedian": 14743,
+      "inputMedian": 3121,
+      "outputMedian": 356,
+      "cacheReadMedian": 3446,
+      "cacheWriteMedian": 0,
+      "argsTokensMedian": 98,
+      "tokScaleInputMedian": 3121,
+      "tokScaleOutputMedian": 356,
+      "tokScaleCacheReadMedian": 3446,
+      "tokScaleCacheWriteMedian": 0,
+      "tokScaleMessagesMedian": 2,
+      "tokScaleCostSum": 0.00111918,
+      "tokScaleProcessingTimeMsMedian": 3514,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correctRate": 1,
+      "costSum": 0,
+      "exitCodes": [
+        0
+      ],
+      "timedOut": false,
+      "failure": ""
+    }
+  ],
+  "pairwise": [
+    {
+      "fixture": "readme/core-smoke",
+      "status": "incomplete"
+    }
+  ],
+  "runs": [
+    {
+      "fixture": "readme/core-smoke",
+      "lane": "core",
+      "route": "core_edit",
+      "routeReasonCode": "lane_core_edit",
+      "iter": 0,
+      "toolName": "edit",
+      "wallMs": 14743,
+      "inputTokens": 3121,
+      "outputTokens": 356,
+      "cacheReadTokens": 3446,
+      "cacheWriteTokens": 0,
+      "toolCallArgTokens": 98,
+      "cost": 0,
+      "tokScaleInput": 3121,
+      "tokScaleOutput": 356,
+      "tokScaleCacheRead": 3446,
+      "tokScaleCacheWrite": 0,
+      "tokScaleMessages": 2,
+      "tokScaleCost": 0.00111918,
+      "tokScaleProcessingTimeMs": 3514,
+      "tokScaleTokenMatchesParser": true,
+      "tokScaleMatchesParser": true,
+      "tokScaleDetails": "",
+      "correct": true,
+      "exitCode": 0,
+      "timedOut": false,
+      "failure": "",
+      "runDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0",
+      "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0/sessions",
+      "commandFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0/command.sh",
+      "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0/stdout.log",
+      "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0/stderr.log",
+      "exitFile": "/home/kenzo/dev/blitz/.pi/reports/pi-tmux-runs/readme-core-glm-fixed-20260525-122406/readme_core-smoke__core__0/exit.json"
+    }
+  ]
+}
