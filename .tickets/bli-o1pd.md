@@ -23,11 +23,11 @@ Paired core vs Blitz rows for agreed classes have Tokscale match, route truth, c
 
 **2026-06-19T02:57:27Z**
 
-start: focused final token replacement lock. Following .pi/docs/plans/PLAN-0.5C-token-replacement-gate.md exactly; stop at first correctness/route/Tokscale failure; no rerun fishing.
+start: focused final token replacement lock. Following .pi/docs/plans/current/PLAN-0.5C-token-replacement-gate.md exactly; stop at first correctness/route/Tokscale failure; no rerun fishing.
 
 **2026-06-19T03:03:17Z**
 
-finding: final lock failed stop-rule on class-c-structural-10 blitz-edit. Route=blitz_edit, Tokscale matched zero deltas, but final structural-10.ts hash mismatched. No rerun performed. Planned class-d rows also ran after failure due local validation-script bug; preserved but not counted as pass claim. Reports: .pi/reports/REPLACEMENT-GATE-LOCK-20260619.json and .pi/reports/REPLACEMENT-GATE-20260619.md. Ticket remains open.
+finding: final lock failed stop-rule on class-c-structural-10 blitz-edit. Route=blitz_edit, Tokscale matched zero deltas, but final structural-10.ts hash mismatched. No rerun performed. Planned class-d rows also ran after failure due local validation-script bug; preserved but not counted as pass claim. Reports: .pi/reports/archive/history/REPLACEMENT-GATE-LOCK-20260619.json and .pi/reports/archive/history/REPLACEMENT-GATE-20260619.md. Ticket remains open.
 
 **2026-06-19T03:19:28Z**
 
@@ -43,7 +43,7 @@ start: bli-ta7v closed; starting exactly one final replacement lock after ta7v w
 
 **2026-06-19T03:56:11Z**
 
-finding: final-after-ta7v lock ran once after ta7v. All core rows and A/B/D blitz rows accepted with Tokscale match. Class C blitz-edit declined with unsupported_structural_op_minimal/no mutation; route truth ok, no hidden fallback. Gate decision failed under current plan because declined structural work cannot count as default replacement. Artifacts: .pi/reports/REPLACEMENT-GATE-LOCK-20260619-final-after-ta7v.json and .pi/reports/REPLACEMENT-GATE-20260619-final-after-ta7v.md. Created blocker bli-7kz8; qgz1 remains blocked.
+finding: final-after-ta7v lock ran once after ta7v. All core rows and A/B/D blitz rows accepted with Tokscale match. Class C blitz-edit declined with unsupported_structural_op_minimal/no mutation; route truth ok, no hidden fallback. Gate decision failed under current plan because declined structural work cannot count as default replacement. Artifacts: .pi/reports/archive/history/REPLACEMENT-GATE-LOCK-20260619-final-after-ta7v.json and .pi/reports/archive/history/REPLACEMENT-GATE-20260619-final-after-ta7v.md. Created blocker bli-7kz8; qgz1 remains blocked.
 
 **2026-06-19T04:43:10Z**
 
@@ -55,4 +55,4 @@ start: final-after-sh7d lock after closed/pushed bli-sh7d. Same settings: zai/gl
 
 **2026-06-19T05:07:47Z**
 
-result: final-after-sh7d lock passed. 12/12 accepted/correct; class-c-structural-10 blitz-edit accepted via blitz_edit (not declined); Tokscale matched all rows; route truth ok; core total context 36094, Blitz 24141, delta 33.12%; tiny guard pass (5950 core vs 3890 Blitz). Artifacts: .pi/reports/REPLACEMENT-GATE-LOCK-20260619-final-after-sh7d.json and .pi/reports/REPLACEMENT-GATE-20260619-final-after-sh7d.md. qgz1 not started.
+result: final-after-sh7d lock passed. 12/12 accepted/correct; class-c-structural-10 blitz-edit accepted via blitz_edit (not declined); Tokscale matched all rows; route truth ok; core total context 36094, Blitz 24141, delta 33.12%; tiny guard pass (5950 core vs 3890 Blitz). Artifacts: .pi/reports/archive/history/REPLACEMENT-GATE-LOCK-20260619-final-after-sh7d.json and .pi/reports/archive/history/REPLACEMENT-GATE-20260619-final-after-sh7d.md. qgz1 not started.

@@ -20,11 +20,11 @@ start: user asked to audit and clean stale benchmark artifacts/docs/scripts/work
 
 **2026-07-01T13:49:30Z**
 
-phase1: read-only explorers completed. Cleaned untracked generated benchmark artifacts from .pi/reports/* generated dirs, reducing status from 968 entries to 16. Added .gitignore entries for generated benchmark/session dirs. Pruned stale git worktree metadata for missing /tmp worktrees; remaining worktrees are active main + two closed-ticket manual-review worktrees. Added .pi/docs/plans/README.md index for current vs historical plans.
+phase1: read-only explorers completed. Cleaned untracked generated benchmark artifacts from .pi/reports/* generated dirs, reducing status from 968 entries to 16. Added .gitignore entries for generated benchmark/session dirs. Pruned stale git worktree metadata for missing /tmp worktrees; remaining worktrees are active main + two closed-ticket manual-review worktrees. Added .pi/docs/plans/archive/README.md index for current vs historical plans.
 
 **2026-07-01T13:50:33Z**
 
-phase2: removed tracked generated benchmark/session artifact directories from git: pi-tmux-runs, natural-edit-runs, natural-edit-harness, subagents, provider-matrix-logs, bench-logs, profile-dumps, and stale pi-accounting-runs siblings. Preserved weighted gate top-level report and .pi/reports/pi-accounting-runs/20260620-sprint-i-weighted-gate (42 tracked files). Staged deletions: 3410 files / 309,929 lines.
+phase2: removed tracked generated benchmark/session artifact directories from git: pi-tmux-runs, natural-edit-runs, natural-edit-harness, subagents, provider-matrix-logs, bench-logs, profile-dumps, and stale pi-accounting-runs siblings. Preserved weighted gate top-level report and .pi/reports/current/pi-accounting-runs/20260620-sprint-i-weighted-gate (42 tracked files). Staged deletions: 3410 files / 309,929 lines.
 
 **2026-07-01T13:57:25Z**
 

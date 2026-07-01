@@ -2,7 +2,7 @@
 
 Model/provider: `openai-codex/gpt-5.4-mini`
 Iterations: 1
-Harness: `bench/pi-matrix.ts`
+Harness: `.pi/bench/pi-matrix.ts`
 Case: `multi/large-structural`
 
 Task:

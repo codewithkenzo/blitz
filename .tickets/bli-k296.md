@@ -17,7 +17,7 @@ tags: [blitz, 0.5, sprint-c, benchmark, structural]
 
 **2026-06-19T03:03:23Z**
 
-source: bli-o1pd 20260619 final lock. class-c-structural-10 blitz-edit returned status=caveated; Tokscale matched; route tool=blitz_edit; failed path structural-10.ts hash f641a38b60761f57 != expected bf098d15725e76dd. Artifacts under .pi/reports/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-blitz-edit and .pi/reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-lock.*
+source: bli-o1pd 20260619 final lock. class-c-structural-10 blitz-edit returned status=caveated; Tokscale matched; route tool=blitz_edit; failed path structural-10.ts hash f641a38b60761f57 != expected bf098d15725e76dd. Artifacts under .pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-blitz-edit and .pi/reports/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-lock.*
 
 **2026-06-19T03:11:17Z**
 
@@ -25,7 +25,7 @@ start: diagnosing failed 20260619 class-c-structural-10 blitz_edit lock row. Rou
 
 **2026-06-19T03:16:33Z**
 
-finding: Artifact shows blitz_edit returned explicit decline text: unsupported_structural_op_minimal no_mutation=true. structural-10.ts remained unchanged; mismatch was harness/final-lock classification expecting structural mutation under minimal profile despite Sprint A quarantine. Root cause: bench/true-streak.ts only classified final file equality, not intentional minimal structural decline.
+finding: Artifact shows blitz_edit returned explicit decline text: unsupported_structural_op_minimal no_mutation=true. structural-10.ts remained unchanged; mismatch was harness/final-lock classification expecting structural mutation under minimal profile despite Sprint A quarantine. Root cause: .pi/bench/true-streak.ts only classified final file equality, not intentional minimal structural decline.
 
 **2026-06-19T03:16:33Z**
 

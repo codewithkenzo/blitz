@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-06-19T05:05:22.740Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "blitz-edit",
+  "scenario": "same-file-multi",
+  "scenarioTitle": "same-file multi-edit scenario",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit",
+  "tmuxSession": "pi-true-streak-2026-06-19T05-05-15-003Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": "/home/kenzo/dev/pi-blitz/dist/index.js",
+  "skill": "/home/kenzo/dev/pi-blitz/skills/pi-blitz",
+  "profileDump": "/home/kenzo/dev/pi-blitz/.pi/reports/profile-dumps/minimal-blitz-edit-20260611.json",
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 542,\n      \"output\": 171,\n      \"cacheRead\": 1536,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 2,\n      \"cost\": 0.00034258\n    }\n  ],\n  \"totalInput\": 542,\n  \"totalOutput\": 171,\n  \"totalCacheRead\": 1536,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 2,\n  \"totalCost\": 0.00034258,\n  \"processingTimeMs\": 19\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 542,
+      "output": 171,
+      "cacheRead": 1536,
+      "cacheWrite": 0,
+      "messages": 2
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 7252,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/sessions/2026-06-19T05-05-15-570Z_019ede44-dd32-7167-a561-be58981a3828.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/work"
+  },
+  "steps": [
+    {
+      "id": "same.ts",
+      "path": "same.ts",
+      "correct": true,
+      "expectedSha": "616c6c4a5520d180",
+      "actualSha": "616c6c4a5520d180"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "blitz_edit",
+      "arguments": {
+        "e": [
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/work/same.ts",
+            "\"old-a\"",
+            "\"new-a\""
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/work/same.ts",
+            "\"old-b\"",
+            "\"new-b\""
+          ],
+          [
+            "x",
+            "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-sh7d/same-file-multi-blitz-edit/work/same.ts",
+            "\"old-c\"",
+            "\"new-c\""
+          ]
+        ]
+      },
+      "argTokens": 166
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "blitz_edit",
+      "text": "ok c=3 files=1 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true",
+      "resultPayloadTokens": 25
+    }
+  ],
+  "usage": {
+    "input": 542,
+    "output": 171,
+    "cacheRead": 1536,
+    "cacheWrite": 0,
+    "totalTokens": 2249,
+    "messages": 2
+  },
+  "totals": {
+    "schemaTokens": 350,
+    "skillTokens": 268,
+    "promptTokens": 196,
+    "argTokens": 166,
+    "outputTokens": 171,
+    "cacheRead": 1536,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 25,
+    "residualInputTokens": 0,
+    "totalContextTokens": 2249
+  },
+  "decline": null,
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

@@ -27,4 +27,4 @@ start: Sprint C second item after bli-09ru closed/pushed. Writing exact gate pla
 
 **2026-06-19T02:55:30Z**
 
-verify: wrote .pi/docs/plans/PLAN-0.5C-token-replacement-gate.md with provider/model list, 12 primary rows, classes, retry/timeout policy, pass/fail thresholds, required artifacts, schema/skill token capture, and stop rules. No benchmark/model run.
+verify: wrote .pi/docs/plans/current/PLAN-0.5C-token-replacement-gate.md with provider/model list, 12 primary rows, classes, retry/timeout policy, pass/fail thresholds, required artifacts, schema/skill token capture, and stop rules. No benchmark/model run.

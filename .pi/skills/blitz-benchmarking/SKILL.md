@@ -42,7 +42,7 @@ Keep Blitz benchmark claims honest: real Pi sessions, inspectable tmux runs, Tok
 
 - User asks to bench Blitz, pi-blitz, edit tools, token savings, or wall time.
 - User mentions Tokscale, tmux benching, Pi shell args, or interactive piloting.
-- Agent changes `bench/pi-matrix.ts`, benchmark fixtures, or report files.
+- Agent changes `.pi/bench/pi-matrix.ts`, benchmark fixtures, or report files.
 - Agent writes or updates reports under `.pi/reports/pi-*.md/json`.
 
 # Do not load when
@@ -74,7 +74,7 @@ Optional:
    - Run `npm install -g .` when verifying package-installed `blitz` behavior.
    - Check `blitz --version` and `blitz doctor`.
 3. Prefer tmux runner for method-locking.
-   - Use `bench/pi-matrix.ts --runner tmux` for inspectable real Pi runs.
+   - Use `.pi/bench/pi-matrix.ts --runner tmux` for inspectable real Pi runs.
    - Keep `--tokscale` on for locked runs.
    - Use new report paths for new methods; do not overwrite baseline reports accidentally.
 4. Require Tokscale validation.
@@ -98,7 +98,7 @@ Optional:
 Smoke harness parse/build:
 
 ```bash
-bun build bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js
+bun build .pi/bench/pi-matrix.ts --target=bun --outfile=/tmp/pi-matrix-check.js
 ```
 
 Fresh CLI sanity:
@@ -121,7 +121,7 @@ tokscale --json --light --client pi --today --benchmark --no-spinner
 Single tmux smoke:
 
 ```bash
-bun bench/pi-matrix.ts \
+bun .pi/bench/pi-matrix.ts \
   --runner tmux \
   --provider zai \
   --model glm-4.5-air \
@@ -130,14 +130,14 @@ bun bench/pi-matrix.ts \
   --iters 1 \
   --timeout-ms 120000 \
   --tokscale \
-  --md-out .pi/reports/pi-tmux-matrix-2026-05-25.md \
-  --json-out .pi/reports/pi-tmux-matrix-2026-05-25.json
+  --md-out .pi/reports/archive/history/pi-tmux-matrix-2026-05-25.md \
+  --json-out .pi/reports/archive/history/pi-tmux-matrix-2026-05-25.json
 ```
 
 Targeted unstable-row pilot:
 
 ```bash
-bun bench/pi-matrix.ts \
+bun .pi/bench/pi-matrix.ts \
   --runner tmux \
   --provider zai \
   --model glm-4.5-air \
@@ -184,6 +184,6 @@ Every benchmark report must include:
 # References
 
 - `references/tmux-tokscale-method.md`
-- `.pi/reports/pi-tmux-bench-plan-2026-05-25.md`
-- `.pi/reports/pi-local-matrix-2026-05-25.md`
-- `.pi/reports/pi-tmux-matrix-2026-05-25.md`
+- `.pi/reports/archive/history/pi-tmux-bench-plan-2026-05-25.md`
+- `.pi/reports/archive/history/pi-local-matrix-2026-05-25.md`
+- `.pi/reports/archive/history/pi-tmux-matrix-2026-05-25.md`

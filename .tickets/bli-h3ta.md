@@ -27,11 +27,11 @@ start: preflight done. Blitz worktree /home/kenzo/dev/blitz-bli-h3ta and pi-blit
 
 **2026-06-20T06:21:35Z**
 
-finding: implemented deterministic input-visible overhead cuts without model reruns. pi-blitz tk/bli-h3ta-tiny-exact commit e94a904 trims minimal schema 690->666 bytes (-24) and resident skill 781->713 bytes (-68), locks tax caps to new floor; success/decline outputs unchanged 29/71. bench/natural-edit Blitz preamble 440->366 bytes (-74), tiny-exact Blitz prompt 895->821 bytes (-74), required safety phrases still pass.
+finding: implemented deterministic input-visible overhead cuts without model reruns. pi-blitz tk/bli-h3ta-tiny-exact commit e94a904 trims minimal schema 690->666 bytes (-24) and resident skill 781->713 bytes (-68), locks tax caps to new floor; success/decline outputs unchanged 29/71. .pi/bench/natural-edit Blitz preamble 440->366 bytes (-74), tiny-exact Blitz prompt 895->821 bytes (-74), required safety phrases still pass.
 
 **2026-06-20T06:21:35Z**
 
-verify: pi-blitz pass: bun run check:tax (schema 666/666, skill 713/713, success 29/32, decline 71/80), bun run typecheck, bun test, bun run build. blitz pass: bun bench/natural-edit.ts --self-check-route-budget (deterministic floor recorded: coreBytes 890, blitzBytes 2312, residentBytes 1379, outputBytes 112, deltaBytes +1422, selected core), bun bench/natural-edit.ts --self-check-prompt-shapes (preamble 366, tiny prompt 821, safety checks pass), bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js, git diff --check. zig build skipped: bench/docs only.
+verify: pi-blitz pass: bun run check:tax (schema 666/666, skill 713/713, success 29/32, decline 71/80), bun run typecheck, bun test, bun run build. blitz pass: bun .pi/bench/natural-edit.ts --self-check-route-budget (deterministic floor recorded: coreBytes 890, blitzBytes 2312, residentBytes 1379, outputBytes 112, deltaBytes +1422, selected core), bun .pi/bench/natural-edit.ts --self-check-prompt-shapes (preamble 366, tiny prompt 821, safety checks pass), bun build .pi/bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js, git diff --check. zig build skipped: .pi/bench/docs only.
 
 **2026-06-20T06:21:35Z**
 

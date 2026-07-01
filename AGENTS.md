@@ -30,14 +30,14 @@ For Blitz 0.4 and later:
 
 - `kenzo-zig` — Zig 0.16 patterns (std.Io, allocators, error handling)
 - `kenzo-zig-build` — build.zig, build.zig.zon, cross-compile, C interop
-- `.pi/skills/blitz-benchmarking` — repo-local Pi/tmux/Tokscale benchmark method; load before benchmark reports, token-savings claims, or `bench/pi-matrix.ts` changes
+- `.pi/skills/blitz-benchmarking` — repo-local Pi/tmux/Tokscale benchmark method; load before benchmark reports, token-savings claims, or `.pi/bench/pi-matrix.ts` changes
 
 ## Nested AGENTS.md map
 
 Read nearest nested `AGENTS.md` before work in these subtrees:
 - `src/` — Zig CLI core, command architecture, tree-sitter bindings, file safety.
 - `src/apply/` — structured edit IR, target resolution, validation, token-facing op behavior.
-- `bench/` — Bun/TypeScript benchmark harness, Pi/tmux/Tokscale artifacts, token accounting.
+- `.pi/bench/` — Bun/TypeScript benchmark harness, Pi/tmux/Tokscale artifacts, token accounting.
 - `mcp/` — standalone Blitz MCP server and schema/token-tax guardrails.
 - `packages/` — platform npm package metadata and binary distribution constraints.
 - `grammars/` — vendored tree-sitter grammar guardrails.
@@ -56,8 +56,8 @@ Read nearest nested `AGENTS.md` before work in these subtrees:
 ## Working workflow
 
 For non-trivial work:
-1. read `.pi/docs/blitz.md` (full spec, mirrored from pi-rig)
-2. for 0.4/token work, read `.pi/docs/plans/PLAN-0.4-context-token-optimization.md`, `.pi/docs/plans/START-0.4-context-token-core.md`, and both `.pi/research/20260605-*` reports before planning
+1. read `.pi/docs/product/blitz.md` (full spec, mirrored from pi-rig)
+2. for 0.4/token work, read `.pi/docs/plans/archive/PLAN-0.4-context-token-optimization.md`, `.pi/docs/plans/archive/START-0.4-context-token-core.md`, and both `.pi/research/20260605-*` reports before planning
 3. check current sprint in the companion `pi-rig` tickets (`d1o-*` ids) when available; this repo may not have local `.tickets`
 4. implement the smallest safe diff
 5. `zig build && zig build test` before claiming done; token claims additionally require the benchmark workflow below
@@ -69,7 +69,7 @@ Load `.pi/skills/blitz-benchmarking` before any Blitz/pi-blitz benchmark or toke
 Rules:
 - benchmark claims require real Pi session artifacts, correctness status, wall time, and token accounting;
 - locked runs require Tokscale validation with `--tokscale`; `tokscale token match` means input/output/cache/message totals match, not cost parity;
-- tmux runner is preferred for method-locking and interactive/piloted rows: `bun bench/pi-matrix.ts --runner tmux ...`;
+- tmux runner is preferred for method-locking and interactive/piloted rows: `bun .pi/bench/pi-matrix.ts --runner tmux ...`;
 - keep existing baseline reports unless user explicitly asks to regenerate or replace them;
 - push benchmark work after method is locked, artifacts are preserved, and the diff is verified; no extra user confirmation needed for safe task branches;
 - if model variance causes newline drift, retries, or timeouts, preserve tmux run dirs and report failed attempts separately from accepted rows.
@@ -91,11 +91,11 @@ zig build -Dtarget=x86_64-windows-gnu
 
 ## Spec
 
-- `.pi/docs/blitz.md` — durable product/architecture spec; 0.4 token-first doctrine is authoritative for future edit surfaces
-- `.pi/docs/plans/PLAN-0.4-context-token-optimization.md` — active 0.4 plan to make Blitz a core-edit replacement through measured context/token savings
-- `.pi/docs/plans/START-0.4-context-token-core.md` — next-goal handoff prompt and acceptance contract
-- `.pi/research/20260605-tool-schema-context-tax.md` — provider/MCP/schema-tax research
-- `.pi/research/20260605-token-efficient-edit-repos.md` — edit-format/repo research
+- `.pi/docs/product/blitz.md` — durable product/architecture spec; 0.4 token-first doctrine is authoritative for future edit surfaces
+- `.pi/docs/plans/archive/PLAN-0.4-context-token-optimization.md` — active 0.4 plan to make Blitz a core-edit replacement through measured context/token savings
+- `.pi/docs/plans/archive/START-0.4-context-token-core.md` — next-goal handoff prompt and acceptance contract
+- `.pi/research/archive/20260605-tool-schema-context-tax.md` — provider/MCP/schema-tax research
+- `.pi/research/archive/20260605-token-efficient-edit-repos.md` — edit-format/repo research
 - `NOTICE.md` — third-party attribution
 
 ## Constraints

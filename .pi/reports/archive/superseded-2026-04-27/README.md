@@ -8,4 +8,4 @@ Canonical release evidence lives in:
 
 - `.pi/reports/pi-matrix-wrap-n5-2026-04-27.{json,md}`
 - `.pi/reports/pi-matrix-patch-large-blitz-n5-restricted-2026-04-27.{json,md}`
-- `.pi/reports/strong-classes-n5-summary-2026-04-27.md`
+- `.pi/reports/archive/history/strong-classes-n5-summary-2026-04-27.md`

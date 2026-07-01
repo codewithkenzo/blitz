@@ -23,4 +23,4 @@ E06 import edit, E07 rename/local usage, E10 wrap/try-catch, E11 delete range, a
 
 **2026-06-19T07:22:20Z**
 
-start: materializing Sprint D success rows E06/E07/E10/E11/E12 in bench/true-streak.ts; no provider/model benchmark or focused lock.
+start: materializing Sprint D success rows E06/E07/E10/E11/E12 in .pi/bench/true-streak.ts; no provider/model benchmark or focused lock.

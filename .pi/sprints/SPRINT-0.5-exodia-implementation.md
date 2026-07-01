@@ -22,7 +22,7 @@ Tickets:
 
 Exit criteria:
 
-- `bench/` cannot pollute package/install/runtime/language stats.
+- `.pi/bench/` cannot pollute package/install/runtime/language stats.
 - Broken `rb`/`ia` cannot corrupt files and return `ok`.
 - Exact `x` path has durable tests for filetypes, ambiguity, no-match, no-op, path escape, symlink escape, stale content, rollback.
 - Tool/bench outcomes use canonical route truth.

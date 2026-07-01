@@ -27,8 +27,8 @@ start: implementing deterministic provider preflight/smoke harness; preserving u
 
 **2026-06-19T02:15:06Z**
 
-finding: added deterministic --self-check-provider-preflight guard in bench/natural-edit.ts; mandatory providers explicit; hidden fallback rows classify non-success; no live provider loop.
+finding: added deterministic --self-check-provider-preflight guard in .pi/bench/natural-edit.ts; mandatory providers explicit; hidden fallback rows classify non-success; no live provider loop.
 
 **2026-06-19T02:15:06Z**
 
-verify: bun bench/natural-edit.ts --self-check-provider-preflight plus route taxonomy self-check plus bun build bench/natural-edit.ts PASS.
+verify: bun .pi/bench/natural-edit.ts --self-check-provider-preflight plus route taxonomy self-check plus bun build .pi/bench/natural-edit.ts PASS.

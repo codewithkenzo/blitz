@@ -56,7 +56,7 @@ jobs:
 
       - name: Smoke benchmark regression gate
         if: matrix.target == 'x86_64-linux-musl'
-        run: bun run bench/run.ts
+        run: bun run .pi/bench/run.ts
 
       - name: Test (native only)
         if: matrix.target == 'x86_64-linux-musl' || matrix.target == 'aarch64-macos'

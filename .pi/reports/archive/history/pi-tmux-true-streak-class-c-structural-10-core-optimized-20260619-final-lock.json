@@ -1,0 +1,291 @@
+{
+  "generatedAt": "2026-06-19T03:00:27.298Z",
+  "status": "accepted",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "lane": "core-optimized",
+  "scenario": "class-c-structural-10",
+  "scenarioTitle": "Class C 10 structural body replacements",
+  "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized",
+  "tmuxSession": "pi-true-streak-2026-06-19T03-00-09-091Z",
+  "piBin": "/home/kenzo/.local/bin/pi",
+  "extension": null,
+  "skill": null,
+  "profileDump": null,
+  "tokScaleMode": "required",
+  "tokScale": {
+    "status": 0,
+    "stdout": "{\n  \"groupBy\": \"client,model\",\n  \"entries\": [\n    {\n      \"client\": \"pi\",\n      \"mergedClients\": null,\n      \"model\": \"glm-4.5-air\",\n      \"provider\": \"zai\",\n      \"input\": 2438,\n      \"output\": 807,\n      \"cacheRead\": 4992,\n      \"cacheWrite\": 0,\n      \"reasoning\": 0,\n      \"messageCount\": 3,\n      \"cost\": 0.00152506\n    }\n  ],\n  \"totalInput\": 2438,\n  \"totalOutput\": 807,\n  \"totalCacheRead\": 4992,\n  \"totalCacheWrite\": 0,\n  \"totalMessages\": 3,\n  \"totalCost\": 0.00152506,\n  \"processingTimeMs\": 15\n}\n",
+    "stderr": ""
+  },
+  "tokScaleMatch": {
+    "matched": true,
+    "totals": {
+      "input": 2438,
+      "output": 807,
+      "cacheRead": 4992,
+      "cacheWrite": 0,
+      "messages": 3
+    },
+    "deltas": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "messages": 0
+    }
+  },
+  "exit": {
+    "status": 0,
+    "wallMs": 17809,
+    "timedOut": false
+  },
+  "artifacts": {
+    "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/prompt.md",
+    "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/command.sh",
+    "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/stdout.log",
+    "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/stderr.log",
+    "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/exit.json",
+    "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/sessions",
+    "sessionFiles": [
+      "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/sessions/2026-06-19T03-00-09-619Z_019eddd2-5513-74e9-8c9b-0b5cc5cd91d3.jsonl"
+    ],
+    "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work"
+  },
+  "steps": [
+    {
+      "id": "structural-10.ts",
+      "path": "structural-10.ts",
+      "correct": true,
+      "expectedSha": "bf098d15725e76dd",
+      "actualSha": "bf098d15725e76dd"
+    }
+  ],
+  "toolCalls": [
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 1",
+            "newText": "* 2"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 2",
+            "newText": "* 3"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 3",
+            "newText": "* 4"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 4",
+            "newText": "* 5"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 5",
+            "newText": "* 6"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 6",
+            "newText": "* 7"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 7",
+            "newText": "* 8"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 8",
+            "newText": "* 9"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 9",
+            "newText": "* 10"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "+ 10",
+            "newText": "* 11"
+          }
+        ]
+      },
+      "argTokens": 62
+    },
+    {
+      "name": "edit",
+      "arguments": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts",
+        "edits": [
+          {
+            "oldText": "export function node1(value: number): number {\n  return value + 1;\n}",
+            "newText": "export function node1(value: number): number {\n  return value * 2;\n}"
+          }
+        ]
+      },
+      "argTokens": 97
+    }
+  ],
+  "toolResults": [
+    {
+      "toolName": "edit",
+      "text": "Found 2 occurrences of the text in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts. The text must be unique. Please provide more context to make it unique.",
+      "resultPayloadTokens": 64
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    },
+    {
+      "toolName": "edit",
+      "text": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate/class-c-structural-10-core-optimized/work/structural-10.ts.",
+      "resultPayloadTokens": 49
+    }
+  ],
+  "usage": {
+    "input": 2438,
+    "output": 807,
+    "cacheRead": 4992,
+    "cacheWrite": 0,
+    "totalTokens": 8237,
+    "messages": 3
+  },
+  "totals": {
+    "schemaTokens": 0,
+    "skillTokens": 0,
+    "promptTokens": 908,
+    "argTokens": 717,
+    "outputTokens": 807,
+    "cacheRead": 4992,
+    "cacheWrite": 0,
+    "resultPayloadTokens": 554,
+    "residualInputTokens": 1530,
+    "totalContextTokens": 8237
+  },
+  "caveats": [
+    "schema/skill tokens are counted from current local artifacts when available; residualInputTokens captures remaining unclassified provider input.",
+    "true sequential proof means one Pi command/session and ordered tool calls in one prompt, not isolated per-row synthesis."
+  ]
+}

@@ -31,7 +31,7 @@ start: focused Sprint D all edit-type lock run. One bounded run only; no rerun f
 
 **2026-06-19T07:54:46Z**
 
-blocked: one bounded focused lock attempt stopped at first row tiny-10/core-optimized due provider usage limit before tool calls. No rerun. Created blocker bli-t3cl. Artifacts under .pi/reports/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized and .pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.{json,md}.
+blocked: one bounded focused lock attempt stopped at first row tiny-10/core-optimized due provider usage limit before tool calls. No rerun. Created blocker bli-t3cl. Artifacts under .pi/reports/current/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized and .pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.{json,md}.
 
 **2026-06-19T08:13:36Z**
 
@@ -55,8 +55,8 @@ blocked: Zai after-bli-t3cl run completed provider rows, but validation found al
 
 **2026-06-20T03:13:19Z**
 
-done: fixed Zai all-edit-type lock passed after bli-z13z. Evidence: .pi/reports/ALL-EDIT-TYPE-GATE-20260619-after-z13z.md and .pi/reports/ALL-EDIT-TYPE-GATE-LOCK-20260619-after-z13z.json. Provider/model zai/glm-4.5-air; self-check rows=18/classes=18/success=12/safety=6; row files=14; all accepted/correct/Tokscale matched; all-edit-types-gate reported scenario all-edit-types-gate; Blitz tools only blitz_edit; schema/skill accounting present; core ctx=34923, blitz ctx=24358, delta=10565 (30.25%). Old 20260619-after-bli-t3cl excluded. bli-hndl not started.
+done: fixed Zai all-edit-type lock passed after bli-z13z. Evidence: .pi/reports/archive/history/ALL-EDIT-TYPE-GATE-20260619-after-z13z.md and .pi/reports/archive/history/ALL-EDIT-TYPE-GATE-LOCK-20260619-after-z13z.json. Provider/model zai/glm-4.5-air; self-check rows=18/classes=18/success=12/safety=6; row files=14; all accepted/correct/Tokscale matched; all-edit-types-gate reported scenario all-edit-types-gate; Blitz tools only blitz_edit; schema/skill accounting present; core ctx=34923, blitz ctx=24358, delta=10565 (30.25%). Old 20260619-after-bli-t3cl excluded. bli-hndl not started.
 
 **2026-06-20T03:19:03Z**
 
-claim audit completed under bli-hndl: .pi/reports/SPRINT-D-ALL-EDIT-TYPE-CLAIM-AUDIT-20260620.md. Scoped claim supported for zai/glm-4.5-air after-z13z only; provider-wide/universal residual remains outside gate.
+claim audit completed under bli-hndl: .pi/reports/current/SPRINT-D-ALL-EDIT-TYPE-CLAIM-AUDIT-20260620.md. Scoped claim supported for zai/glm-4.5-air after-z13z only; provider-wide/universal residual remains outside gate.

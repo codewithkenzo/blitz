@@ -23,7 +23,7 @@ Rows cover exact tiny, same-file multi, cross-file, config set, doc/comment, imp
 
 **2026-06-19T06:46:44Z**
 
-start: implementing all edit-type harness rows from .pi/docs/plans/PLAN-0.5D-all-edit-type-gate.md. No model run; self-checks/harness rows only.
+start: implementing all edit-type harness rows from .pi/docs/plans/current/PLAN-0.5D-all-edit-type-gate.md. No model run; self-checks/harness rows only.
 
 **2026-06-19T06:50:21Z**
 
@@ -31,4 +31,4 @@ verify: added all-edit-type row registry and --self-check-all-edit-types. Self-c
 
 **2026-06-19T06:50:21Z**
 
-verify: bun build bench/true-streak.ts --target=bun --outfile=/tmp/true-streak-check.js PASS; bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js PASS.
+verify: bun build .pi/bench/true-streak.ts --target=bun --outfile=/tmp/true-streak-check.js PASS; bun build .pi/bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js PASS.

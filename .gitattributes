@@ -7,5 +7,5 @@ grammars/**/src/parser.c linguist-generated
 grammars/**/src/scanner.c linguist-generated
 
 # Bench harnesses, synthetic fixtures, and generated run reports are not product/runtime code.
-bench/** linguist-vendored
+.pi/bench/** linguist-vendored
 reports/** linguist-generated

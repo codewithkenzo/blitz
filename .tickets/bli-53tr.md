@@ -27,4 +27,4 @@ start: advanced structural profile plan; separate from minimal/default; no model
 
 **2026-06-20T09:04:49Z**
 
-done: plan saved .pi/docs/plans/PLAN-0.5I-advanced-structural-profile.md; minimal profile keeps structural rb decline-only; no model/provider runs
+done: plan saved .pi/docs/plans/current/PLAN-0.5I-advanced-structural-profile.md; minimal profile keeps structural rb decline-only; no model/provider runs

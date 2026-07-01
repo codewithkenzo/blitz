@@ -27,4 +27,4 @@ Started after bli-6gb1 report e62c2dfd. Delegating implementation to d5. Constra
 
 **2026-06-20T07:16:34Z**
 
-Main verification passed after one small LSP fix in bench/natural-edit.ts: route budget self-check, prompt-shape self-check, Bun build, git diff --check, and LSP diagnostics clean. No provider/model benchmark loops; pi-blitz untouched.
+Main verification passed after one small LSP fix in .pi/bench/natural-edit.ts: route budget self-check, prompt-shape self-check, Bun build, git diff --check, and LSP diagnostics clean. No provider/model benchmark loops; pi-blitz untouched.

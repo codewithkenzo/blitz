@@ -16,7 +16,7 @@ tags: [blitz, 0.5, sprint-d, benchmark, blocker]
 
 **2026-06-19T07:54:46Z**
 
-blocker: first Sprint D focused lock attempt stopped on provider usage limit before any tool call. Row tiny-10/core-optimized exited 1 with stderr: 429 Usage limit reached for 5 hour. Your limit will reset at 2026-06-19 18:03:59. Artifacts: .pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.{json,md}; .pi/reports/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized/. No rerun performed.
+blocker: first Sprint D focused lock attempt stopped on provider usage limit before any tool call. Row tiny-10/core-optimized exited 1 with stderr: 429 Usage limit reached for 5 hour. Your limit will reset at 2026-06-19 18:03:59. Artifacts: .pi/reports/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.{json,md}; .pi/reports/current/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized/. No rerun performed.
 
 **2026-06-19T08:13:36Z**
 

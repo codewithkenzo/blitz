@@ -23,4 +23,4 @@ Plan names providers/models, language fixtures, edit classes, max row count, tim
 
 **2026-06-20T04:11:10Z**
 
-verify: wrote .pi/docs/plans/PLAN-0.5E-provider-language-survey.md. Survey is bounded: max 40 rows, Zai+GPT minimum if available, no claim, no rerun fishing.
+verify: wrote .pi/docs/plans/current/PLAN-0.5E-provider-language-survey.md. Survey is bounded: max 40 rows, Zai+GPT minimum if available, no claim, no rerun fishing.

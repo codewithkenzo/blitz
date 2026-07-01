@@ -1,0 +1,1786 @@
+{
+  "generatedAt": "2026-06-19T03:55:56.478Z",
+  "ticket": "bli-o1pd",
+  "status": "failed",
+  "decision": "failed: minimal blitz_edit declined Class C structural row (unsupported_structural_op_minimal/no mutation). Route truth and Tokscale are valid, but default-replacement gate cannot count declined structural work as a replacement win under the plan.",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "runner": "tmux",
+  "plan": ".pi/docs/plans/current/PLAN-0.5C-token-replacement-gate.md",
+  "artifactSuffix": "20260619-final-after-ta7v",
+  "repos": {
+    "blitz": {
+      "path": "/home/kenzo/dev/blitz",
+      "sha": "343927d2a9b67eb9551cd93389381408c6430761"
+    },
+    "piBlitz": {
+      "path": "/home/kenzo/dev/pi-blitz",
+      "sha": "f38f52df7930627a9700c3517eafd15440b3292e"
+    }
+  },
+  "metadata": {
+    "profileDump": {
+      "path": "/home/kenzo/dev/blitz/.pi/reports/profile-dumps/minimal-blitz-edit-20260619.json",
+      "bytes": 1802,
+      "sha256": "5445b8d15f2990a9c953e66847d7710f1a7ff7eadeba9ed0e8ab9df236423726"
+    },
+    "skill": {
+      "path": "/home/kenzo/dev/pi-blitz/skills/pi-blitz/SKILL.md",
+      "bytes": 973,
+      "sha256": "1c7efb7f038b48826a9815655a4ed83683ad7a8401d48aa8e393251470865c94"
+    }
+  },
+  "aggregate": {
+    "coreTotalContextTokens": 36300,
+    "blitzTotalContextTokens": 24310,
+    "aggregateSavingsPct": 33.03030303030303,
+    "allTokscaleMatched": true,
+    "routeTruthOk": true,
+    "acceptedRows": 11,
+    "totalRows": 12,
+    "declinedRows": [
+      {
+        "scenario": "class-c-structural-10",
+        "lane": "blitz-edit",
+        "decline": {
+          "reason": "unsupported_structural_op_minimal",
+          "noMutation": true,
+          "note": "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back."
+        }
+      }
+    ]
+  },
+  "rows": [
+    {
+      "scenario": "tiny-10",
+      "class": "A",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2707,
+          "output": 752,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6019,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 1276,
+        "argTokens": 680,
+        "outputTokens": 752,
+        "cacheRead": 2560,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 500,
+        "residualInputTokens": 1431,
+        "totalContextTokens": 6019
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 16670,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-52-07-324Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-tiny-10-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 11509,
+        "sha256": "615032b98be682c6a9969b99f6a7ddf6d257728ff76f225d8683f4f7477c4837"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-tiny-10-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 1675,
+        "sha256": "4e11351add4922f7ab855c341b96d21d35f29a188716ddde4f2bbf2fb899a564"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/sessions/2026-06-19T03-52-07-822Z_019ede01-e98e-7065-950a-126d616ad6f0.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/sessions/2026-06-19T03-52-07-822Z_019ede01-e98e-7065-950a-126d616ad6f0.jsonl",
+          "bytes": 18345,
+          "sha256": "a6b7211cf9904d336938e791d1deb8577a7268c3d456134730fe0703e136126e"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "76e03bfb05f87fbf38fa17f0e34fef44841967a8cbe2801cc71fbd07346390a2"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "70ac9e1b5718d2ec0744d1e2f2cd9b08384a8153fa563c833f39af06f20d51b9"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "c09697d60811a41a7a1bd320de131b8b0e75d8281cca89215ce64611400cb259"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "3f80739f157d7e3fa47546e7095b04ad64e9476a9cd484810c2f9057f280d72a"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "d377bbec06d8f920a3ee6906a91f3fde8a0ec6763b61e1b163e9d9301c8ffea9"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "f22506ba09f8805f5837047cf9504bef145a2bad18f651b990b2bfbfe3cc4e46"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "1c00d60fc05bfe20b9ee70643e391612e2b9cb943e4f565c77e9d7a51dad3312"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "07e92989026f5f7dbd8dec50e5ffaab1c11714195725dab95a981a2e1e35b881"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "b08acc5f3236cab0759de563fc8b4251558625ff475ba30ab60c28a8cec3039c"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "f3c5558103b16219a19d01a2301b679345d94ff844315efae0b6f3992fe59f8a"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "47273b946d80662e424afc06969c8927d2d4c20a3074e7458dc3529595968ecb",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "5172daa4021155c84a3a96abfbccb05d21469b7ba14827bd5c7637ea674c1215",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "67d9a7f69078de21e8102958c6b62130012361aa5b2bcc4b3d9147ec3c840f18",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "fadde204983673830f945fd3cc31c44a7bd2117f203677d9d3589a133c78ac21",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "591af629f8b3a57b44cf82ecdb974b7cb431b345eb9feb54c9356359ae4bfe1a",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "27f3e4538dbbb763081f7d25e3cac5c6811b1d1be3bd30aa74ed39a68a855d2d",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "a342f5c05c858f9149f00aeb091f8906948373ad2ac7e576ad4786442b8e6e4f",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "41dde290e65b5efeac02f7c52fe6c28fc212bd533ff331da239283d51c13bede",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "bb4206b29b16afb43a49be66bdff23f7fe84a0c6d83b48513e6483f0cf35d6e3",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "204b90136da2f90d52dce643772f685e546f077903a293b7901dcd6222569eeb",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-core-optimized/work/tiny"
+        }
+      ]
+    },
+    {
+      "scenario": "tiny-10",
+      "class": "A",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2009,
+          "output": 578,
+          "cacheRead": 1280,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 3867,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 604,
+        "argTokens": 574,
+        "outputTokens": 578,
+        "cacheRead": 1280,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 787,
+        "totalContextTokens": 3867
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 12267,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-52-24-595Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-tiny-10-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 8109,
+        "sha256": "fffb21af50122f99d832342c6fbc10bda860bbe1e935042b5829cfa399b45804"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-tiny-10-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 1668,
+        "sha256": "31d90f25a04a09b51fe4ffd192492df8ec0f912ed73c245b3a996d52784956c4"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/sessions/2026-06-19T03-52-25-086Z_019ede02-2cfe-7a24-a5f9-72150b8998d7.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/tiny-10-blitz-edit/sessions/2026-06-19T03-52-25-086Z_019ede02-2cfe-7a24-a5f9-72150b8998d7.jsonl",
+          "bytes": 6227,
+          "sha256": "1595c51333227eafcb0d59e403d4cc99fb4987ea579f2f475815d2b57f05c9ec"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 574,
+          "argumentsSha256": "4f2141f507eb948858ab75e922ff7b8995b2d0cd317dcd496c452ca75856efeb"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 25,
+          "textSha256": "eb26914ea5245e9d7d955396d69b4195c1f907075489848c57e69052417f6a7b",
+          "textPreview": "ok c=10 files=10 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true"
+        }
+      ]
+    },
+    {
+      "scenario": "mixed-20",
+      "class": "A/B/D",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 5091,
+          "output": 1475,
+          "cacheRead": 3712,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 10278,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 2372,
+        "argTokens": 1272,
+        "outputTokens": 1475,
+        "cacheRead": 3712,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 974,
+        "residualInputTokens": 2719,
+        "totalContextTokens": 10278
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 19984,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-52-37-359Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-mixed-20-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 19354,
+        "sha256": "217208cd598af3ee3ece7da5d8241b8954f8c046a435a15e85f4c4be2ac345b0"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-mixed-20-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 2269,
+        "sha256": "40ee02527a4e1f951c3e0de62b9942526a104f2df5b7268c13fc7bbc0d034494"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/sessions/2026-06-19T03-52-37-862Z_019ede02-5ee6-7ae7-95fe-e91d1dd6a3b1.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/sessions/2026-06-19T03-52-37-862Z_019ede02-5ee6-7ae7-95fe-e91d1dd6a3b1.jsonl",
+          "bytes": 34084,
+          "sha256": "a84e6a76a940c937180d2a366605dbfe880b9b1fbf3306e05b9ffd502dc148b8"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "f47cbc86adf7df9d7f00303b6c04e9d7ad48fe7cf2a05fb673ac0f6a9c377d15"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "6e9969c3cf5834ea5164e0f5435d9468eae4c0f3cf3f8cb5232768c345e3f5b6"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "f4f772878fdf7a6aeb07f54dc6b22b235445c4a7ac43693458560706eb04b6e3"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "f55943b75c208972220f6737a8afcfc5d43d90d680f38086ad8abf0e2e50b80b"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "78b3002239ecc2fa05067b84386763ee318d15b851a1dc8ac81bb3ecb744ce8f"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "225d950d09c244f54fe08c395a285bd1b0f002ffef1b869a956adf9db680d186"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "57a1805e8ae8f107494069082c3cf3f4e88915272da8f5f389115e276d51a15c"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "4904dc8abc9c2e0ecf0b3dce8d3bd7a3f16083d4fd462ad11a5a018a0ced70df"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "36cb06a6c3d69948099c9d0daca75077f4164fd4eebb97075ec4810ae1cf110e"
+        },
+        {
+          "name": "edit",
+          "argTokens": 68,
+          "argumentsSha256": "440a57e04f5eb98fc0d99d6918cc68950548d2ee07e1f7bd8e1e3c5d218f85c5"
+        },
+        {
+          "name": "edit",
+          "argTokens": 69,
+          "argumentsSha256": "d5dfad11ccb2231d22393139e0ca1987930ab424634a148c5cc6d5d722b11d79"
+        },
+        {
+          "name": "edit",
+          "argTokens": 58,
+          "argumentsSha256": "1125be0922eb2c9ab939244877335216c2e18f4abae015c5c5a717f4bf115588"
+        },
+        {
+          "name": "edit",
+          "argTokens": 57,
+          "argumentsSha256": "b8956d91cb9db0e0cc0e3c9670137fecaf66d43117ba5a1efbc6d0d9ae5ee23d"
+        },
+        {
+          "name": "edit",
+          "argTokens": 57,
+          "argumentsSha256": "bebe070a75ba031c32fbdb6773ef08e403f34049083289a779d9cbcfa99319db"
+        },
+        {
+          "name": "edit",
+          "argTokens": 59,
+          "argumentsSha256": "f83835e481b111eccc5963dd6a862c2f6abd9d9406756c234e3d60aa9ce4d371"
+        },
+        {
+          "name": "edit",
+          "argTokens": 58,
+          "argumentsSha256": "2561d9d842fb069bcf301b7a84492b867becbadf758cafa16c362ec3dfd78ea7"
+        },
+        {
+          "name": "edit",
+          "argTokens": 57,
+          "argumentsSha256": "04ff228cd1b38310e4a05be6a0ebf19ca76615231ef785159bb33c54bec8a205"
+        },
+        {
+          "name": "edit",
+          "argTokens": 61,
+          "argumentsSha256": "a88d2dcfff2d7779f23a478d6e9e9b0c7688949364f5d2dddce570687e36dcfa"
+        },
+        {
+          "name": "edit",
+          "argTokens": 58,
+          "argumentsSha256": "d2d4c34464d166c70a11f7c6776ede12de710abd676a6915df8f4d5d1015b323"
+        },
+        {
+          "name": "edit",
+          "argTokens": 58,
+          "argumentsSha256": "8a5ccd26c3c3b777e7ccc4a0d9b8be9e98dfe71b805fe728e358f08eaade2731"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "33dc94bc573581158ed57b99de3d76c7e892455db44930ea62009bd941cb6e87",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "ca694ca0ba901f71035d9b6bab00302613de640094aecd8227a523a262149351",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "57d274d4dfd7614dcebd4325838584256cf624e273a59e5bfc65ca672bfaebf3",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "b016849d87b5d006ed85c4f99117830d79f9d01eed74640d0918a680949aead4",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "de3a1c6fb2dd8caeddef01f0cc3668bdc3fb494bb60bb46d3d67d02be0dc0768",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "07c644982f189d0d5b4dafdbd9b57b978f799b6194cae384d32443d721f99d3d",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "a4ff9dee1c9555a890ef0a3fe398b44b4e461bf25ad853149fd352e134645162",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "e682b5c1d7b6b3c5e67ff85ee5164eedb600e66d4ee06a4e1b03b3cb7896615c",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "40cdc360cf085450f9da4496fe3829a6cb0d05ad669dcb4445e064fa008f406e",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 50,
+          "textSha256": "cda2810e12aea52308a121903c43661213b5170dc2a6af1b3fbe0b515d7ecec2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/tin"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "d633f2b5fd65de1702d45303df5133c21049e1f7cb0632165575a79433873e7c",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/pac"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 48,
+          "textSha256": "c8ff3d395000c9793525d33d9f2cb187c18ad8f0514db2621739fa103ecc00f0",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/REA"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "9e0cec16c7e61610bd742773ededfa586f606e704eb632e41398ad3996b8002a",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/sty"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "0bf1ac84887b996a70591d6c66dc9d8b6d7ebce328700cff04145329ea9d7993",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/ind"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "e929acfa1d27d8f80f5cfb33f284619a42266da60a79d87d9320b8cc8e60840c",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/con"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 48,
+          "textSha256": "5de3b3375bf067b5dccfe0fdf9f99fe4136a6286c29ccc04c7bde144664db134",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/set"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "3c6cae2a835c132e8b4eca880dfdef7537cb7914f6c836608f7f9bdcc4cf1004",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/uti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 47,
+          "textSha256": "2114bef65d0e5084646fd840bd440a0cffe3e5ba18f8ee6154525bdf5d2e4947",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/typ"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 48,
+          "textSha256": "918e56d9e6948ff721ab6c69d33ad5be3827fa95bf22dab31fbe7e6df73505f0",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/not"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 48,
+          "textSha256": "d331fcc0f7b00ac41104e9d6a289110d08e3033446035270e519b7521f36a77e",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-core-optimized/work/.en"
+        }
+      ]
+    },
+    {
+      "scenario": "mixed-20",
+      "class": "A/B/D",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2391,
+          "output": 1108,
+          "cacheRead": 2432,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 5931,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 1086,
+        "argTokens": 1056,
+        "outputTokens": 1108,
+        "cacheRead": 2432,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 687,
+        "totalContextTokens": 5931
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 20424,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-52-58-134Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-mixed-20-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 12119,
+        "sha256": "0a02b1d7e01927ef96d8cb74381853d03afdfec99a9244b8cddf0b98f9a1190a"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-mixed-20-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 2262,
+        "sha256": "184cd4d253d1684e53a00ab024fea813f631bb4750373811bafdff19fdb19aa4"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/sessions/2026-06-19T03-52-58-644Z_019ede02-b014-7565-a481-c2b04bafe716.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/mixed-20-blitz-edit/sessions/2026-06-19T03-52-58-644Z_019ede02-b014-7565-a481-c2b04bafe716.jsonl",
+          "bytes": 9380,
+          "sha256": "e88499995475f0b418df9c00f3c08884d59ab7b579f6655dea798f4bcc59a2f3"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 1056,
+          "argumentsSha256": "6c9d41fb809a0192d8a79125021029d019865a3fc829ffc9b20c9d1e44f97697"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 25,
+          "textSha256": "2c076df3e24bc8bda249e06887d633c07ac01be5f0396ac2c5d5e0a621f6e455",
+          "textPreview": "ok c=20 files=20 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true"
+        }
+      ]
+    },
+    {
+      "scenario": "same-file-multi",
+      "class": "A",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 474,
+          "output": 109,
+          "cacheRead": 1408,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 1991,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 128,
+        "argTokens": 97,
+        "outputTokens": 109,
+        "cacheRead": 1408,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 49,
+        "residualInputTokens": 346,
+        "totalContextTokens": 1991
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 6452,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-53-18-978Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-same-file-multi-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 4708,
+        "sha256": "b9e6de5ce82b2f9c637a4116a8b99c62c266616b9b88220d98c6351daac99f16"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-same-file-multi-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 1153,
+        "sha256": "5fae6d72b5e2b7f1e88e850eed216df18fd55c0c074f7c2e68ece16bd63cda70"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/sessions/2026-06-19T03-53-19-554Z_019ede03-01c2-7901-847c-3af6af9225c1.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/sessions/2026-06-19T03-53-19-554Z_019ede03-01c2-7901-847c-3af6af9225c1.jsonl",
+          "bytes": 3891,
+          "sha256": "4c5eb3aefd52497479020077c67b535ebc0b5228a67a24d14da0801a65fd4495"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 97,
+          "argumentsSha256": "f5ff6126b498ffbb2c6455739e1cca1fe7ac028bc13035c22a4ffa8045019dd7"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 49,
+          "textSha256": "6b5935995b37ed95fa3ea00a38d456cc6e872f8a0524c99aa256c03d1b47a518",
+          "textPreview": "Successfully replaced 3 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-core-optimized/w"
+        }
+      ]
+    },
+    {
+      "scenario": "same-file-multi",
+      "class": "A",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 563,
+          "output": 183,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 2282,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 196,
+        "argTokens": 166,
+        "outputTokens": 183,
+        "cacheRead": 1536,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 0,
+        "totalContextTokens": 2282
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 7709,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-53-26-284Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-same-file-multi-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 5045,
+        "sha256": "6d08ceb6a4a1b2475c3c7cce4f785433391b11ce40352636c6f063800af10231"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-same-file-multi-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 1148,
+        "sha256": "7f2386c681e2403b279465873957511a6f09ac711adfe21805b71625b1c89fb3"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/sessions/2026-06-19T03-53-26-875Z_019ede03-1e5b-7216-ab58-82a880481a8f.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/same-file-multi-blitz-edit/sessions/2026-06-19T03-53-26-875Z_019ede03-1e5b-7216-ab58-82a880481a8f.jsonl",
+          "bytes": 3936,
+          "sha256": "357970c0786bf7c95c79e0e186da5c78ba7ac1d069fed03faf2d2bfcf6ccb090"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 166,
+          "argumentsSha256": "54e489bed3c8339c7631e27049efa8523fe4283d3f10412bee6eef65531604ea"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 25,
+          "textSha256": "7613b24e668954922da0a4b30c452820637242ca4f8358320a49723fff6d3c80",
+          "textPreview": "ok c=3 files=1 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true"
+        }
+      ]
+    },
+    {
+      "scenario": "class-b-inserts-10",
+      "class": "B",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2923,
+          "output": 732,
+          "cacheRead": 2816,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6471,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 1456,
+        "argTokens": 670,
+        "outputTokens": 732,
+        "cacheRead": 2816,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 520,
+        "residualInputTokens": 1467,
+        "totalContextTokens": 6471
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 19366,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-53-34-551Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-b-inserts-10-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 11388,
+        "sha256": "7870868350a81ca36730db5715487bcc676709d63d7bc7606bebae4b19b04f11"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-b-inserts-10-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 1708,
+        "sha256": "ce52bcf6b7048445831458412f645567c1ce1839ac5e2198dad9bc51f9f3287e"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/sessions/2026-06-19T03-53-35-068Z_019ede03-3e5c-74e7-90df-71a62b570d28.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimized/sessions/2026-06-19T03-53-35-068Z_019ede03-3e5c-74e7-90df-71a62b570d28.jsonl",
+          "bytes": 20242,
+          "sha256": "b99b9841e9d9983156aa362ad2679c32c4cb2aaf4ae3815f036c1466efa26249"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "74bd93aefa05f27b627868dea8d799ca477267a837a23dce4d6ca95bc8b1da24"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "a46d72de556629669bdf26d97d1cfa8bb433a687eb448c6e9ecf4a23b03bd8f3"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "5981f403aaae596d761c2459a4d29d4b0c583e03cf741c00dc9a87c42903ae35"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "ef1e60288e0075b7b2de4370ba0a8e671f98867c089aa3ee15a0b976167d3b02"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "d7969b120e9268a4b44ad99cf6e27bdb4352048ab10c8235f7d6cdc5d5c7ae13"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "755f1d85d1e27d6068ce3b36bc0aab4f8152689281f039c71ced14d8831df2cc"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "7fc33635749c68bcb421e5a79bccd3216ffb9eea5a495152f54327570e1e8a68"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "fa817f4663c17d1dce1bd357fd2e47cef12fc94818c59b80f7961349dbb5f770"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "c06e842ce3b10498cfbf9895a6ee5bf9b7e51b1b86433c747c659f9b54612d43"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "907dee89f31853d98f6559baec1c6412137dd36c18370bfa8fd1f113890af70b"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "4334f8eb84dcc07d60a6eb92c09db6784463c66fbf960fa59d86e7f1bb605b15",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "ae2e10ee67b4aada60610c74f2f9f1828be4c4eabdee39b7a2d816df6365e948",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "048e9a37fa0da1ac21deb40adb28e44fb0f8cfbf79d173270b6a9f358ab7f694",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "68562f4b4f94b74913518219e07da50627f88799a12c8bb33e81eecf239f76ea",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "f23706b313a5ef3c6a38a10f6329ba244ae9e19805df2278bb7d6cc13a84039f",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "f15455caeb0fa4abf053c3c5cbbc42509a10a900fdcabe3ad283eb94b3ede41f",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "495a0a788bba11d011b9f42cb606281a706a95b88bf8db368b55607cc0d28344",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "837fde7ee7e1dbefe00ea299c5f29bff4fe1aee66b55662f0042e1ee75b04096",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "593c4820f5d077080b74aefc6d6401d78e8f104fe18ad8ad7005cbae7c4a94d8",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "e3efe4f8291e4e2fa0e1d5983860afedbc415ae007b2e726ce8fba2f4084e832",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-core-optimize"
+        }
+      ]
+    },
+    {
+      "scenario": "class-b-inserts-10",
+      "class": "B",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 1463,
+          "output": 668,
+          "cacheRead": 2048,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 4179,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 644,
+        "argTokens": 614,
+        "outputTokens": 668,
+        "cacheRead": 2048,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 201,
+        "totalContextTokens": 4179
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 13407,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-53-54-321Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-b-inserts-10-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 8479,
+        "sha256": "d5d8c3eaed465bdd96b89af6f39385af572c2456868cdc23b7d167b3d39e9639"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-b-inserts-10-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 1701,
+        "sha256": "b5e71586256f987c78f319f28bec69cf339f26648a3055ef510de736e2f41b21"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/sessions/2026-06-19T03-53-54-800Z_019ede03-8b70-7841-8df1-96e71721ead2.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-b-inserts-10-blitz-edit/sessions/2026-06-19T03-53-54-800Z_019ede03-8b70-7841-8df1-96e71721ead2.jsonl",
+          "bytes": 6639,
+          "sha256": "91a564ccea4c3dc2d2005569f24ee1920c6df19c8d0a321f1f28947d3c74fa60"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 614,
+          "argumentsSha256": "d0d64ca79e41c3865c148cc49ed2bb3a54df4ee0145d082fb352c7939e6cebab"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 25,
+          "textSha256": "eb26914ea5245e9d7d955396d69b4195c1f907075489848c57e69052417f6a7b",
+          "textPreview": "ok c=10 files=10 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true"
+        }
+      ]
+    },
+    {
+      "scenario": "class-c-structural-10",
+      "class": "C",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2404,
+          "output": 763,
+          "cacheRead": 2304,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 5471,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 965,
+        "argTokens": 672,
+        "outputTokens": 763,
+        "cacheRead": 2304,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 540,
+        "residualInputTokens": 1439,
+        "totalContextTokens": 5471
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 11646,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-54-08-124Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 10440,
+        "sha256": "e991626f7ecc497d57eb1fb4a2f6303ff8d0173267e560c703520e683f1da758"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-c-structural-10-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 1177,
+        "sha256": "aa31b138760bc5f4b5f35fef35ccfd560143ae8e9573c361df64087a7ca00165"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/sessions/2026-06-19T03-54-08-705Z_019ede03-c1c1-78c2-8a0a-f0554943a9d5.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optimized/sessions/2026-06-19T03-54-08-705Z_019ede03-c1c1-78c2-8a0a-f0554943a9d5.jsonl",
+          "bytes": 21036,
+          "sha256": "d8b6972b43d8378fbfa59b296655fac80258dec84bf44472150d5c2850920380"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 69,
+          "argumentsSha256": "1fed68182ca2a07854f2c55b6bb542d7ef6ef738f09c989e5d362211fc26dba9"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "1caf3c6f87b57c4d8aafbdc9cb786b543a481543c882ef8073f0fd9d9103aa44"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "67b5e7ce899175eebaf5d076ab3dfaee232e38883cfbd1162247fa4f876f308f"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "7118185013457f11b7c31635846a0506018d79735cead8141ee072528a3d26b3"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "d27ed36e9f815c4a17ea020dd96914445b62b165ed1cff2fbbc966640ca65283"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "47a80f78fdf934a84c06f3f59c2d5a34ba81c7ba754d9a9ddb3a41b9cc5f55a2"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "b1755a0b409c51f00a6c513c6b25853fb4d0d83ff14674e5e363295309d8d54c"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "5c768699ed61ba974b98ddc642cf1584ebf80d2d44684ab693954cc40b106503"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "2235cce324c30ac6b74a92f6560cd7b68fd4918e58d061c4289d507bf15ad9cb"
+        },
+        {
+          "name": "edit",
+          "argTokens": 67,
+          "argumentsSha256": "58bc709bf85295fb1f50522e8b81f826caf5d6f24438b9d70e0ed650066b627c"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 54,
+          "textSha256": "836c9a9d2a39a58451e41162dd5d5e04db066793ee594141fc4f9e5ed80532c2",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-core-optim"
+        }
+      ]
+    },
+    {
+      "scenario": "class-c-structural-10",
+      "class": "C",
+      "lane": "blitz-edit",
+      "status": "declined",
+      "correct": false,
+      "declined": true,
+      "decline": {
+        "reason": "unsupported_structural_op_minimal",
+        "noMutation": true,
+        "note": "Minimal blitz_edit intentionally declines structural rb in Class C instead of mutating or falling back."
+      },
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 1509,
+          "output": 711,
+          "cacheRead": 2048,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 4268,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 674,
+        "argTokens": 644,
+        "outputTokens": 711,
+        "cacheRead": 2048,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 32,
+        "residualInputTokens": 217,
+        "totalContextTokens": 4268
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 14084,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-54-20-446Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 7699,
+        "sha256": "d80a802308edf8f5f1a5ddabf27a7593aefa16f4574cfa87fe0128bdc7f2052f"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-c-structural-10-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 1325,
+        "sha256": "c48b2398abb31af15c9fbe9e292228a4082b184393c52466bf2f29622dcb8c8f"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/sessions/2026-06-19T03-54-20-997Z_019ede03-f1c5-7733-8115-994bc2e3a916.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-c-structural-10-blitz-edit/sessions/2026-06-19T03-54-20-997Z_019ede03-f1c5-7733-8115-994bc2e3a916.jsonl",
+          "bytes": 6891,
+          "sha256": "b24791b0642e96cdb1d1a978eb50a78c924ef2fe8f00d432d10dfd24c3c94670"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 644,
+          "argumentsSha256": "00838db794663f70a14b5583df671c61c1c32e61ae4f1899ea43aa53bab73041"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 32,
+          "textSha256": "5aef096cb6887dc13b505dbc20e45cfaafc6a1cb40fa8febeaf440f84561a591",
+          "textPreview": "decline op=rb reason=unsupported_structural_op_minimal no_mutation=true use core/apply_patch or PI_BLITZ_TOOL_PROFILE=structural"
+        }
+      ]
+    },
+    {
+      "scenario": "class-d-config-docs-10",
+      "class": "D",
+      "lane": "core-optimized",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 2763,
+          "output": 747,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 6070,
+      "accounting": {
+        "schemaTokens": 0,
+        "skillTokens": 0,
+        "promptTokens": 1241,
+        "argTokens": 620,
+        "outputTokens": 747,
+        "cacheRead": 2560,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 520,
+        "residualInputTokens": 1522,
+        "totalContextTokens": 6070
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 12450,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-54-35-221Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-d-config-docs-10-core-optimized-20260619-final-after-ta7v.json",
+        "bytes": 11907,
+        "sha256": "14ec0731d21531a49004c3361478eaa7c4f4df91e51731c5edab5b3cca2ef18c"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-d-config-docs-10-core-optimized-20260619-final-after-ta7v.md",
+        "bytes": 1711,
+        "sha256": "2b7ae4874e9e36a6554c37a1b8401b902ce439bbdded3c916904047547e3505e"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/sessions/2026-06-19T03-54-35-732Z_019ede04-2b54-72f8-8603-fa1c269d2e4f.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-optimized/sessions/2026-06-19T03-54-35-732Z_019ede04-2b54-72f8-8603-fa1c269d2e4f.jsonl",
+          "bytes": 19015,
+          "sha256": "63aedbe5fa5780f8368ccc4e0404c1e151a81c2077a958e4ff302f052b739e19"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "047cc29476605b2d7d23a0a68d6c773cac84521c081eec7ee83474c9d22317a5"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "7655e3ed5829b47e870419ca552032cb5deab5bb1edb9792f0e1b1d42a2352c5"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "bd8973ef6197dc16392482120b574e4620de042d30e6eefbfc4fc346b1003646"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "d70308eb7a82d47e42789904de9f545a50a64abfb7e0d9c7db87372a47451de6"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "0697c627a49f39b1a9c4d197931ebed85a7f1b22f75f935881b1c12c77e9a9b1"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "c6125c5c5646b7e3c19e4482397f61f715ea0f920820aceea2d3156130955772"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "c5d0314644e83362c29401b6c3542ec21483f6dcbf9c886312d0f4988d44ea11"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "5ac34887ecd2e96da754bf73ff6474b8fc4547bcf380e4ce0b5d8b4e27ed1ca6"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "64aca85858522715b44e49bff3a45afacf72fe71ffe24795bb246597f20d45de"
+        },
+        {
+          "name": "edit",
+          "argTokens": 62,
+          "argumentsSha256": "a29f6e1d2e96484819a51339cd10f0ed99ce3a6e77769e512c3769fd94737fd5"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "4f37a3b48f05631c08451431b1de2d71651e270efcf3ccd2b3ce6aee4a9072a1",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "748eb5aaa4498caf65bdf066d6807fa9b225856b70f59e8bd255d41a81ae80f3",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "5b6f7b771f92bb33fe0d00824978d7408436efcf88dfb8018572ce0d589464ea",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "77f2c2961354998ff762b23b11b32febd882711b369f7091b3683455074d26a8",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "7248da213a4723311101e11923fb3fa07c7011b0936d49fb63a2dadc60eaf535",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "d27ff777430366fd16b8419279869549d144122373c974336da1bf4b3bd7450a",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "f6cb063a5de3128b8cb44e7af6b397fa11789b6cc338339a639d6fd88052026c",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "d23812ea3af1afce70addea7ec9af8ad3b03d8a25d4f816cde62cdff979ab865",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "f1a190cf1727b3241d87c7d67f84970c115f7d5175478d190c20f85459e9a55c",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        },
+        {
+          "toolName": "edit",
+          "resultPayloadTokens": 52,
+          "textSha256": "12dac920fb11eff2e1518a13a112daa900d42fa7981e5d95bc410bbe92ff54cc",
+          "textPreview": "Successfully replaced 1 block(s) in /home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-core-opti"
+        }
+      ]
+    },
+    {
+      "scenario": "class-d-config-docs-10",
+      "class": "D",
+      "lane": "blitz-edit",
+      "status": "accepted",
+      "correct": true,
+      "declined": false,
+      "decline": null,
+      "routeTools": [
+        "blitz_edit"
+      ],
+      "tokScaleMatch": {
+        "matched": true,
+        "totals": {
+          "input": 1295,
+          "output": 568,
+          "cacheRead": 1920,
+          "cacheWrite": 0,
+          "messages": 2
+        },
+        "deltas": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "messages": 0
+        }
+      },
+      "totalContextTokens": 3783,
+      "accounting": {
+        "schemaTokens": 350,
+        "skillTokens": 268,
+        "promptTokens": 544,
+        "argTokens": 514,
+        "outputTokens": 568,
+        "cacheRead": 1920,
+        "cacheWrite": 0,
+        "resultPayloadTokens": 25,
+        "residualInputTokens": 133,
+        "totalContextTokens": 3783
+      },
+      "exit": {
+        "status": 0,
+        "wallMs": 12784,
+        "timedOut": false
+      },
+      "runRoot": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit",
+      "tmuxSession": "pi-true-streak-2026-06-19T03-54-47-985Z",
+      "json": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-d-config-docs-10-blitz-edit-20260619-final-after-ta7v.json",
+        "bytes": 8353,
+        "sha256": "bd150c82cf888e9b0ac47c5b3be79d89b03b355427f6d7a02db404f2a2cbe285"
+      },
+      "md": {
+        "path": "/home/kenzo/dev/blitz/.pi/reports/archive/history/pi-tmux-true-streak-class-d-config-docs-10-blitz-edit-20260619-final-after-ta7v.md",
+        "bytes": 1704,
+        "sha256": "ec3353b99f5d579a7ac0beb444611d750c87eb1653b6126e40e0bae54948572a"
+      },
+      "artifacts": {
+        "promptFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/prompt.md",
+        "commandFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/command.sh",
+        "stdoutLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/stdout.log",
+        "stderrLog": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/stderr.log",
+        "exitFile": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/exit.json",
+        "sessionDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/sessions",
+        "sessionFiles": [
+          "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/sessions/2026-06-19T03-54-48-526Z_019ede04-5d4e-7904-b121-dd85684a53be.jsonl"
+        ],
+        "workDir": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/work"
+      },
+      "sessionFiles": [
+        {
+          "path": "/home/kenzo/dev/blitz/.pi/reports/current/pi-accounting-runs/20260619-replacement-gate-final-after-ta7v/class-d-config-docs-10-blitz-edit/sessions/2026-06-19T03-54-48-526Z_019ede04-5d4e-7904-b121-dd85684a53be.jsonl",
+          "bytes": 6315,
+          "sha256": "64415f1cba403c1806e70d9f37ce87b06d925753a8a7a6295ffe035481cf2e65"
+        }
+      ],
+      "toolCalls": [
+        {
+          "name": "blitz_edit",
+          "argTokens": 514,
+          "argumentsSha256": "60b1058141f165c655601b500fbdacb84174f4b4feb0b182169d1508b9f786a6"
+        }
+      ],
+      "toolResults": [
+        {
+          "toolName": "blitz_edit",
+          "resultPayloadTokens": 25,
+          "textSha256": "eb26914ea5245e9d7d955396d69b4195c1f907075489848c57e69052417f6a7b",
+          "textPreview": "ok c=10 files=10 groupedApply=false sequentialApply=true sameFileAtomic=true crossFileAtomic=true rollbackBacked=true"
+        }
+      ]
+    }
+  ],
+  "excludedArtifacts": [
+    ".pi/reports/archive/history/REPLACEMENT-GATE-LOCK-20260619.json",
+    ".pi/reports/archive/history/REPLACEMENT-GATE-20260619.md",
+    ".pi/reports/archive/history/REPLACEMENT-GATE-LOCK-20260619-rerun-after-k296.json",
+    ".pi/reports/archive/history/REPLACEMENT-GATE-20260619-rerun-after-k296.md"
+  ]
+}

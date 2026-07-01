@@ -23,4 +23,4 @@ E13 noop, E14 ambiguous, E15 no-match/stale, E16 unsupported structural, E17 pat
 
 **2026-06-19T07:22:20Z**
 
-start: materializing Sprint D safety rows E13-E18 in bench/true-streak.ts; no provider/model benchmark or focused lock.
+start: materializing Sprint D safety rows E13-E18 in .pi/bench/true-streak.ts; no provider/model benchmark or focused lock.

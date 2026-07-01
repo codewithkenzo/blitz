@@ -1,0 +1,25 @@
+{
+  "status": "blocked",
+  "ticket": "bli-m3sj",
+  "blocker": "bli-t3cl",
+  "generatedAt": "2026-06-19T07:54:59Z",
+  "provider": "zai",
+  "model": "glm-4.5-air",
+  "reason": "provider_usage_limit",
+  "error": "429 Usage limit reached for 5 hour. Your limit will reset at 2026-06-19 18:03:59",
+  "attempt": {
+    "scenario": "tiny-10",
+    "lane": "core-optimized",
+    "status": "caveated",
+    "exitStatus": 1,
+    "timedOut": false,
+    "toolCalls": [],
+    "tokscaleMatched": true,
+    "correct": false,
+    "jsonOut": ".pi/reports/archive/history/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.json",
+    "mdOut": ".pi/reports/archive/history/pi-tmux-true-streak-tiny-10-core-optimized-20260619-all-edit-type-lock.md",
+    "runRoot": ".pi/reports/current/pi-accounting-runs/20260619-all-edit-type-lock/tiny-10-core-optimized"
+  },
+  "rerunPerformed": false,
+  "claimAuditStarted": false
+}

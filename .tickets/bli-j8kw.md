@@ -30,4 +30,4 @@ finding: Sprint F Zai core structural-body red artifact natural-edit-runs/struct
 
 **2026-06-20T06:14:07Z**
 
-verify: tightened structural-body prompt to require all original two-space statements become four spaces inside try and reject start/end-only edits; extended --self-check-prompt-shapes with structural prompt guard, canonical indentation guard, and start/end-only anti-pattern rejection. Pass: bun bench/natural-edit.ts --self-check-prompt-shapes; bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js; git diff --check. No model runs; zig build skipped (bench TS prompt/self-check only).
+verify: tightened structural-body prompt to require all original two-space statements become four spaces inside try and reject start/end-only edits; extended --self-check-prompt-shapes with structural prompt guard, canonical indentation guard, and start/end-only anti-pattern rejection. Pass: bun .pi/bench/natural-edit.ts --self-check-prompt-shapes; bun build .pi/bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js; git diff --check. No model runs; zig build skipped (bench TS prompt/self-check only).

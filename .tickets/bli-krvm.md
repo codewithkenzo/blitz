@@ -23,4 +23,4 @@ Guard has deterministic byte/token thresholds; tiny/simple row routing decision 
 
 **2026-06-20T05:34:46Z**
 
-Implemented deterministic simple-row route budget guard in bench/natural-edit.ts. Verification passed: route-budget self-check, prompt-shape self-check, bench script bundle check, LSP diagnostics clean. No model/provider runs.
+Implemented deterministic simple-row route budget guard in .pi/bench/natural-edit.ts. Verification passed: route-budget self-check, prompt-shape self-check, bench script bundle check, LSP diagnostics clean. No model/provider runs.

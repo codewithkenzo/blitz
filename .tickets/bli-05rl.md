@@ -23,4 +23,4 @@ Report separates product bugs, harness bugs, provider quirks, unsupported scope,
 
 **2026-06-20T04:55:28Z**
 
-triage complete: wrote .pi/reports/PROVIDER-LANGUAGE-SURVEY-TRIAGE-20260620.md. Classified structural-body as provider-independent product/default-route structural bug, filed linked follow-up bli-caly. No accounting-invalidating harness bug found; provider quirks documented; Claude/Gemini/Grok unsupported/not-run. Green-only token summary: 14/14 green rows used more runtime tokens than core; no savings claim.
+triage complete: wrote .pi/reports/current/PROVIDER-LANGUAGE-SURVEY-TRIAGE-20260620.md. Classified structural-body as provider-independent product/default-route structural bug, filed linked follow-up bli-caly. No accounting-invalidating harness bug found; provider quirks documented; Claude/Gemini/Grok unsupported/not-run. Green-only token summary: 14/14 green rows used more runtime tokens than core; no savings claim.

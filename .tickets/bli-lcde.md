@@ -31,8 +31,8 @@ start: optimizing provider-language survey prompts/row shapes. Scope: harness/re
 
 **2026-06-20T05:20:51Z**
 
-done: optimized natural/provider-language Blitz preamble and centralized prompt builder. Static guard --self-check-prompt-shapes passes: legacy preamble 887 bytes -> current 440; tiny-exact Blitz prompt 1342 -> 895 (-447). Safety/no-fallback phrases retained. Verification: self-check, bun build bench/natural-edit.ts, git diff --check passed. No benchmark/model/provider reruns; no token-savings claim.
+done: optimized natural/provider-language Blitz preamble and centralized prompt builder. Static guard --self-check-prompt-shapes passes: legacy preamble 887 bytes -> current 440; tiny-exact Blitz prompt 1342 -> 895 (-447). Safety/no-fallback phrases retained. Verification: self-check, bun build .pi/bench/natural-edit.ts, git diff --check passed. No benchmark/model/provider reruns; no token-savings claim.
 
 **2026-06-20T05:21:39Z**
 
-done: blitz commit f32b56fb compacts provider-language/natural Blitz prompt shape. Static guard: legacy preamble 887 bytes -> current 440; tiny-exact Blitz prompt 1342 -> 895 (-447). Verification: bun bench/natural-edit.ts --self-check-prompt-shapes passed; bun build bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js passed; git diff --check passed. No model/provider benchmark reruns; no savings claim.
+done: blitz commit f32b56fb compacts provider-language/natural Blitz prompt shape. Static guard: legacy preamble 887 bytes -> current 440; tiny-exact Blitz prompt 1342 -> 895 (-447). Verification: bun .pi/bench/natural-edit.ts --self-check-prompt-shapes passed; bun build .pi/bench/natural-edit.ts --target=bun --outfile=/tmp/natural-edit-check.js passed; git diff --check passed. No model/provider benchmark reruns; no savings claim.

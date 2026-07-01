@@ -17,11 +17,13 @@ node_modules/
 !.pi/reports/**
 !.pi/sprints/
 !.pi/sprints/**
+!.pi/bench/
+!.pi/bench/**
 !.pi/skills/
 !.pi/skills/**
 # Generated benchmark/session artifacts. Commit durable summaries explicitly.
 .pi/reports/pi-tmux-runs/
-.pi/reports/pi-accounting-runs/
+.pi/reports/current/pi-accounting-runs/
 .pi/reports/natural-edit-runs/
 .pi/reports/natural-edit-harness/
 .pi/reports/subagents/

@@ -27,7 +27,7 @@ Started after qn4t commit 6b379a7d. Scope: deterministic zero-resident/minimal s
 
 **2026-06-20T07:20:25Z**
 
-Investigated zero-resident/minimal surface. Implemented safe pi-blitz resident skill trim 637B -> 569B with tightened guards. Wrote .pi/reports/SPRINT-I-ZERO-RESIDENT-MINIMAL-SURFACE-20260620.md documenting current token floor and zero-resident limitation/workaround. No model/provider runs.
+Investigated zero-resident/minimal surface. Implemented safe pi-blitz resident skill trim 637B -> 569B with tightened guards. Wrote .pi/reports/current/SPRINT-I-ZERO-RESIDENT-MINIMAL-SURFACE-20260620.md documenting current token floor and zero-resident limitation/workaround. No model/provider runs.
 
 **2026-06-20T07:22:50Z**
 

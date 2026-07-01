@@ -27,4 +27,4 @@ start: provider-language quick survey. Preflight: dirty .tickets/bli-pg9j.md pre
 
 **2026-06-20T04:47:31Z**
 
-survey complete: 32 raw model runs (2 providers x 8 scenarios x core/blitz), Tokscale ok+matched 32/32, no timeouts/side effects/systemic stop. Final artifacts: .pi/reports/PROVIDER-LANGUAGE-SURVEY-20260620.md and .json; raw artifacts under .pi/reports/pi-accounting-runs/20260620-provider-language-survey/. Results: 14 survey_green, 2 survey_red_product (structural-body blitz mismatch on Zai and OpenAI/Codex).
+survey complete: 32 raw model runs (2 providers x 8 scenarios x core/blitz), Tokscale ok+matched 32/32, no timeouts/side effects/systemic stop. Final artifacts: .pi/reports/current/PROVIDER-LANGUAGE-SURVEY-20260620.md and .json; raw artifacts under .pi/reports/current/pi-accounting-runs/20260620-provider-language-survey/. Results: 14 survey_green, 2 survey_red_product (structural-body blitz mismatch on Zai and OpenAI/Codex).

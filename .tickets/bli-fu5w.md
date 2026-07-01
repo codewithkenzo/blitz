@@ -27,4 +27,4 @@ start: compact IR v2 design slice; using PLAN-0.5I, zero-resident report, route 
 
 **2026-06-20T08:50:29Z**
 
-done: design saved .pi/docs/plans/PLAN-0.5I-compact-ir-v2.md; no model/provider runs; structural rb remains advanced-only
+done: design saved .pi/docs/plans/current/PLAN-0.5I-compact-ir-v2.md; no model/provider runs; structural rb remains advanced-only

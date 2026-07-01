@@ -7,7 +7,7 @@ Status: repo-local benchmark method; use before publishing Blitz token/wall-time
 
 ### 1. Spawn baseline
 
-`bench/pi-matrix.ts` default runner uses child-process spawn. It is fast and good for harness iteration, parser checks, and baseline reports.
+`.pi/bench/pi-matrix.ts` default runner uses child-process spawn. It is fast and good for harness iteration, parser checks, and baseline reports.
 
 Use when:
 - validating harness parser changes;

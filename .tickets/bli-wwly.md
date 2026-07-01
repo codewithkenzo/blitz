@@ -12,11 +12,11 @@ tags: [blitz, 0.5, sprint-a, packaging]
 ---
 # 0.5A bench and package isolation guard
 
-Prove bench/dev assets are excluded from language stats, npm root package, platform packages, installs, and runtime surfaces.
+Prove .pi/bench/dev assets are excluded from language stats, npm root package, platform packages, installs, and runtime surfaces.
 
 ## Acceptance Criteria
 
-git check-attr proves bench exclusion; npm pack dry-runs prove no bench/.pi/reports/dev farm in root tarball; platform tarballs contain only binary payload + metadata; release guard documented or scripted.
+git check-attr proves bench exclusion; npm pack dry-runs prove no .pi/bench/.pi/reports/dev farm in root tarball; platform tarballs contain only binary payload + metadata; release guard documented or scripted.
 
 
 ## Notes
