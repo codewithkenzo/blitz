@@ -11,6 +11,14 @@ node_modules/
 .pi/*
 !.pi/skills/
 !.pi/skills/**
+# Generated benchmark/session artifacts. Commit durable summaries explicitly.
 reports/pi-tmux-runs/
+reports/pi-accounting-runs/
+reports/natural-edit-runs/
+reports/natural-edit-harness/
+reports/subagents/
+reports/provider-matrix-logs/
+reports/bench-logs/
+reports/profile-dumps/
 .tokensave/
 bin/blitz
