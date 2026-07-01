@@ -2,7 +2,7 @@
 id: bli-pg9j
 status: open
 deps: []
-links: []
+links: [bli-6uqs]
 created: 2026-06-15T18:38:10Z
 type: task
 priority: 1
@@ -10,7 +10,6 @@ assignee: Kenzo
 tags: [blitz, benchmark, goal-mq9zabo4]
 ---
 # Stabilize natural edit harness equivalence and Zai focused smokes
-
 
 ## Notes
 
@@ -36,15 +35,15 @@ handoff: spawned D5 ce3556ad to remediate import-removal prompt/scenario only. F
 
 **2026-06-15T18:49:34Z**
 
-verify: latest focused Zai import-removal smoke reports both lanes accepted=true with Tokscale match true at reports/natural-edit-harness/natural-edit-2026-06-15T18-48-45-644Z.json. All previously focused remediated rows now have green focused smokes: structural-add-guard, import-insertion, import-removal, import-order, no-op-format-already, no-op-idempotent.
+verify: latest focused Zai import-removal smoke reports both lanes accepted=true with Tokscale match true at .pi/reports/natural-edit-harness/natural-edit-2026-06-15T18-48-45-644Z.json. All previously focused remediated rows now have green focused smokes: structural-add-guard, import-insertion, import-removal, import-order, no-op-format-already, no-op-idempotent.
 
 **2026-06-15T18:49:50Z**
 
-verify: import-removal prompt remediated. Build passed. Focused Zai import-removal report reports/natural-edit-harness/natural-edit-2026-06-15T18-48-45-644Z.json accepted both lanes, Tokscale match true; no alternate added and known whitespace regression remains rejected in prior artifacts.
+verify: import-removal prompt remediated. Build passed. Focused Zai import-removal report .pi/reports/natural-edit-harness/natural-edit-2026-06-15T18-48-45-644Z.json accepted both lanes, Tokscale match true; no alternate added and known whitespace regression remains rejected in prior artifacts.
 
 **2026-06-15T18:57:51Z**
 
-full natural Zai matrix after focused remediation: latest report reports/natural-edit-harness/natural-edit-2026-06-15T18-50-07-578Z.json has 47/50 accepted. Remaining failures: structural-body/blitz timeout no mutation, same-file-doc-comments/blitz changed JSDoc close to **/ instead of */, structural-loop-body/blitz no-op. Core accepted 25/25. Blitz accepted 22/25 and accepted-row token total still worse than core, so correctness remediation is next before route/token work.
+full natural Zai matrix after focused remediation: latest report .pi/reports/natural-edit-harness/natural-edit-2026-06-15T18-50-07-578Z.json has 47/50 accepted. Remaining failures: structural-body/blitz timeout no mutation, same-file-doc-comments/blitz changed JSDoc close to **/ instead of */, structural-loop-body/blitz no-op. Core accepted 25/25. Blitz accepted 22/25 and accepted-row token total still worse than core, so correctness remediation is next before route/token work.
 
 **2026-06-15T19:02:48Z**
 
@@ -56,11 +55,11 @@ verify: line-comment remediated same-file-doc-comments focused Zai smoke now pas
 
 **2026-06-15T19:15:41Z**
 
-full natural Zai rerun after line-comment change regressed to 43/50 accepted at reports/natural-edit-harness/natural-edit-2026-06-15T19-06-21-966Z.json. Failures: structural-body/blitz timeout, no-op-idempotent/core timeout despite correct file, same-file-doc-comments/blitz no-op, structural-add-guard/blitz double-quote guard, structural-loop-body/blitz no-op, import-insertion/core imported formatTitle from ./render, local-helper-rename/blitz renamed definition but not use. Several had focused greens, so next slice must separate stochastic timeout/tool-choice variance from prompt/golden issues.
+full natural Zai rerun after line-comment change regressed to 43/50 accepted at .pi/reports/natural-edit-harness/natural-edit-2026-06-15T19-06-21-966Z.json. Failures: structural-body/blitz timeout, no-op-idempotent/core timeout despite correct file, same-file-doc-comments/blitz no-op, structural-add-guard/blitz double-quote guard, structural-loop-body/blitz no-op, import-insertion/core imported formatTitle from ./render, local-helper-rename/blitz renamed definition but not use. Several had focused greens, so next slice must separate stochastic timeout/tool-choice variance from prompt/golden issues.
 
 **2026-06-15T20:41:46Z**
 
-Full natural Zai after restored alternates: reports/natural-edit-harness/natural-edit-2026-06-15T20-27-20-767Z.json accepted 43/50; core 25/25, blitz 18/25. Blitz failures: same-file-multi no-op/incomplete, structural-body timeout no mutation, structural-loop-body no-op, import-insertion no-op, import-removal whitespace/blank-line drift, import-order duplicate alpha/missing zed timeout, no-op-format-already syntax drift. Focused smokes before full were green for structural-add-guard, same-file-doc-comments, import-insertion, local-helper-rename.
+Full natural Zai after restored alternates: .pi/reports/natural-edit-harness/natural-edit-2026-06-15T20-27-20-767Z.json accepted 43/50; core 25/25, blitz 18/25. Blitz failures: same-file-multi no-op/incomplete, structural-body timeout no mutation, structural-loop-body no-op, import-insertion no-op, import-removal whitespace/blank-line drift, import-order duplicate alpha/missing zed timeout, no-op-format-already syntax drift. Focused smokes before full were green for structural-add-guard, same-file-doc-comments, import-insertion, local-helper-rename.
 
 **2026-06-15T20:50:10Z**
 
@@ -76,7 +75,7 @@ verify: latest full natural Zai improved to 49/50 accepted (report natural-edit-
 
 **2026-06-16T00:56:10Z**
 
-verify: full natural Zai matrix is now 50/50 accepted/correct with Tokscale match 50/50 at reports/natural-edit-harness/natural-edit-2026-06-16T00-49-32-836Z.json. Core 25/25, blitz 25/25; no timeouts. Token accounting still shows blitz visibleTotal 73631 vs core 54725, so this is correctness-only remediation, not route/token win.
+verify: full natural Zai matrix is now 50/50 accepted/correct with Tokscale match 50/50 at .pi/reports/natural-edit-harness/natural-edit-2026-06-16T00-49-32-836Z.json. Core 25/25, blitz 25/25; no timeouts. Token accounting still shows blitz visibleTotal 73631 vs core 54725, so this is correctness-only remediation, not route/token win.
 
 **2026-06-16T00:59:33Z**
 
@@ -104,15 +103,15 @@ handoff: spawned D5 9426da2c in /home/kenzo/dev/pi-blitz to remediate reviewer a
 
 **2026-06-16T01:29:09Z**
 
-verify: default route adversarial Zai lane passed 22/22 accepted/correct with Tokscale match 22/22 at reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json. Route profile/tools recorded as pi_blitz_route_edit/router via /home/kenzo/dev/pi-blitz/dist/index.js; route outcome breakdown decline=22, blitz=0, fallback=0. NUL prompt escaping prevents adv-binary-ish spawnSync crash.
+verify: default route adversarial Zai lane passed 22/22 accepted/correct with Tokscale match 22/22 at .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json. Route profile/tools recorded as pi_blitz_route_edit/router via /home/kenzo/dev/pi-blitz/dist/index.js; route outcome breakdown decline=22, blitz=0, fallback=0. NUL prompt escaping prevents adv-binary-ish spawnSync crash.
 
 **2026-06-16T01:29:25Z**
 
-route evidence: D5 f0bb produced Zai adversarial route report reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match; visible profile pi_blitz_route_edit/router from /home/kenzo/dev/pi-blitz/dist/index.js; route counts decline=22, fallback=0. Needs integration/commit and interpretation: safety pass, but all-decline means no Blitz-success subset for adversarial.
+route evidence: D5 f0bb produced Zai adversarial route report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match; visible profile pi_blitz_route_edit/router from /home/kenzo/dev/pi-blitz/dist/index.js; route counts decline=22, fallback=0. Needs integration/commit and interpretation: safety pass, but all-decline means no Blitz-success subset for adversarial.
 
 **2026-06-16T01:32:58Z**
 
-landed: committed+pushed Blitz adversarial route lane slice in /home/kenzo/dev/blitz. Commit adds route lane/tool provenance/session probing and preserves Zai adversarial route report reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json plus 22 raw route run dirs. Verification: diff check+bench build passed; report audit 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router.
+landed: committed+pushed Blitz adversarial route lane slice in /home/kenzo/dev/blitz. Commit adds route lane/tool provenance/session probing and preserves Zai adversarial route report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-25-55-558Z.json plus 22 raw route run dirs. Verification: diff check+bench build passed; report audit 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router.
 
 **2026-06-16T01:33:17Z**
 
@@ -120,11 +119,11 @@ landed: pi-blitz atomicity remediation completed by D5 9426da2c. Commit ea515e5 
 
 **2026-06-16T01:37:22Z**
 
-provider evidence: openai-codex gpt-5.4-mini adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json: 22 rows, 22 correct, 22 Tokscale match, but only 17 accepted. Five rows selected routeOutcome=blitz with pi-blitz blitz-error UNSUPPORTED_OPERATION despite no mutation/correct safety outcome: adv-noop-idempotent-1/2, adv-stale-context-1, adv-generated-minified-1, adv-incomplete-intent-1. This is route product/accounting remediation input; preserve failed artifacts.
+provider evidence: openai-codex gpt-5.4-mini adversarial route full run .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json: 22 rows, 22 correct, 22 Tokscale match, but only 17 accepted. Five rows selected routeOutcome=blitz with pi-blitz blitz-error UNSUPPORTED_OPERATION despite no mutation/correct safety outcome: adv-noop-idempotent-1/2, adv-stale-context-1, adv-generated-minified-1, adv-incomplete-intent-1. This is route product/accounting remediation input; preserve failed artifacts.
 
 **2026-06-16T01:38:20Z**
 
-landed: committed+pushed failed GPT-5.4-mini adversarial route evidence in /home/kenzo/dev/blitz as 371f910b reports: preserve mini adversarial route failure. Preserves report reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json and 22 raw route dirs: 22 correct/22 Tokscale, 17 accepted, 5 unsupported-operation routeOutcome=blitz failures. D5 39c78f99 is remediating pi-blitz route unsupported/no-op behavior.
+landed: committed+pushed failed GPT-5.4-mini adversarial route evidence in /home/kenzo/dev/blitz as 371f910b reports: preserve mini adversarial route failure. Preserves report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-34-36-097Z.json and 22 raw route dirs: 22 correct/22 Tokscale, 17 accepted, 5 unsupported-operation routeOutcome=blitz failures. D5 39c78f99 is remediating pi-blitz route unsupported/no-op behavior.
 
 **2026-06-16T01:39:17Z**
 
@@ -140,23 +139,23 @@ landed: committed+pushed route report accounting fix 5ee1897a. Fixes top-level t
 
 **2026-06-16T01:45:14Z**
 
-landed/verified: pi-blitz route unsupported/no-write remediation completed by D5 39c78f99. Commit 3dd5063 pushed to origin/feat/blitz-0.4-token-core-profile: unsupported compact aliases and UNSUPPORTED_OPERATION no-write errors become explicit route decline/noop with no internal core/apply_patch fallback. D5 verification passed typecheck/tests/build and focused 5 bad GPT-5.4-mini route scenarios. Main reran full GPT-5.4-mini adversarial route: reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json = 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router.
+landed/verified: pi-blitz route unsupported/no-write remediation completed by D5 39c78f99. Commit 3dd5063 pushed to origin/feat/blitz-0.4-token-core-profile: unsupported compact aliases and UNSUPPORTED_OPERATION no-write errors become explicit route decline/noop with no internal core/apply_patch fallback. D5 verification passed typecheck/tests/build and focused 5 bad GPT-5.4-mini route scenarios. Main reran full GPT-5.4-mini adversarial route: .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json = 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router.
 
 **2026-06-16T01:46:08Z**
 
-landed: committed+pushed mini route remediation pass evidence. Latest blitz commit preserves focused five bad-row reruns and full GPT-5.4-mini adversarial route rerun reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router. Report top profile and MD Results route accounting verified as router/decline.
+landed: committed+pushed mini route remediation pass evidence. Latest blitz commit preserves focused five bad-row reruns and full GPT-5.4-mini adversarial route rerun .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-42-53-372Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, decline=22, fallback=0, visible pi_blitz_route_edit/router. Report top profile and MD Results route accounting verified as router/decline.
 
 **2026-06-16T01:49:48Z**
 
-verified: GPT-5.5 adversarial route full run reports/natural-edit-harness/natural-edit-2026-06-16T01-46-21-353Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router, top profile router.
+verified: GPT-5.5 adversarial route full run .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-46-21-353Z.json: 22/22 accepted, 22/22 correct, 22/22 Tokscale match, route decline=22, fallback=0, visible pi_blitz_route_edit/router, top profile router.
 
 **2026-06-16T01:54:06Z**
 
-natural route failure: GPT-5.4-mini natural route report reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias , route declined as UNSUPPORTED_OPERATION/no internal fallback. This is product/schema/prompt remediation input; preserve artifacts.
+natural route failure: GPT-5.4-mini natural route report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias , route declined as UNSUPPORTED_OPERATION/no internal fallback. This is product/schema/prompt remediation input; preserve artifacts.
 
 **2026-06-16T01:54:13Z**
 
-natural route failure detail: GPT-5.4-mini natural route report reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias replace, route declined as UNSUPPORTED_OPERATION/no internal fallback. Product/schema/prompt remediation needed; artifacts preserved next.
+natural route failure detail: GPT-5.4-mini natural route report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T01-50-55-622Z.json has 25 rows, 25 Tokscale match, but only 3 accepted/3 correct. All routeOutcome=decline; mutation rows failed because model emitted common op alias replace, route declined as UNSUPPORTED_OPERATION/no internal fallback. Product/schema/prompt remediation needed; artifacts preserved next.
 
 **2026-06-16T01:55:27Z**
 
@@ -172,7 +171,7 @@ D5 focused rerun diagnostics after replace alias normalization: tiny-exact still
 
 **2026-06-16T02:12:31Z**
 
-handoff: D5 5967c825 completed pi-blitz route replace alias slice and pushed fc0d2cd `fix(edit): accept route replace aliases`. Focused GPT-5.4-mini route evidence after fc0d2cd: mixed-config-doc passes at reports/natural-edit-harness/natural-edit-2026-06-16T02-07-31-715Z.json; tiny-exact still declines on unstable replace range form `["replace",4,3,...]` at T02-07-27; same-file-multi still declines on unsupported `insert_after` alias at T02-07-37. Spawned D5 6d547bde for next narrow remediation: safe tiny-exact line/range support + insert_after alias, no hidden fallback, focused reruns + commit/push if fixed.
+handoff: D5 5967c825 completed pi-blitz route replace alias slice and pushed fc0d2cd `fix(edit): accept route replace aliases`. Focused GPT-5.4-mini route evidence after fc0d2cd: mixed-config-doc passes at .pi/reports/natural-edit-harness/natural-edit-2026-06-16T02-07-31-715Z.json; tiny-exact still declines on unstable replace range form `["replace",4,3,...]` at T02-07-27; same-file-multi still declines on unsupported `insert_after` alias at T02-07-37. Spawned D5 6d547bde for next narrow remediation: safe tiny-exact line/range support + insert_after alias, no hidden fallback, focused reruns + commit/push if fixed.
 
 **2026-06-16T06:05:16Z**
 
@@ -180,7 +179,7 @@ handoff: focused GPT-5.4-mini route rerun after previous alias slice was unblock
 
 **2026-06-16T06:08:04Z**
 
-finding: focused route reruns after line/range fix show tiny-exact and mixed-config-doc passing, but same-file-multi latest report reports/natural-edit-harness/natural-edit-2026-06-16T06-07-12-052Z declines. GPT-5.4-mini used pi_blitz_route_edit with s=<entire desired file>, r=blitz, p=true,d=true; router parsed s as unsupported compact script and declined no-write. D5 f246b783 is still active; intercom cannot reach non-interactive worker.
+finding: focused route reruns after line/range fix show tiny-exact and mixed-config-doc passing, but same-file-multi latest report .pi/reports/natural-edit-harness/natural-edit-2026-06-16T06-07-12-052Z declines. GPT-5.4-mini used pi_blitz_route_edit with s=<entire desired file>, r=blitz, p=true,d=true; router parsed s as unsupported compact script and declined no-write. D5 f246b783 is still active; intercom cannot reach non-interactive worker.
 
 **2026-06-16T06:10:18Z**
 
@@ -220,4 +219,8 @@ Zai/provider-shape remediation slice complete in pi-blitz: pushed da602c5 (norma
 
 **2026-06-16T07:13:48Z**
 
-Evidence curation checkpoint: final accepted refs for this slice are pi-blitz commits d31f3e5 and da602c5, D5 reports /tmp/pi-subagents-uid-1000/d5-exported-signature-route-safety.md and /tmp/pi-subagents-uid-1000/d5-zai-provider-shape-remediation.md, reviewer blocker /tmp/pi-subagents-uid-1000/reviewer-pi-blitz-70b6f1f.md, and focused report timestamps called out in notes. Report artifact farm under reports/natural-edit-harness remains uncommitted by design; no benchmark artifacts should be committed for this slice. Universal claim remains blocked pending broad natural/adversarial/provider matrices under Tokscale/accounting.
+Evidence curation checkpoint: final accepted refs for this slice are pi-blitz commits d31f3e5 and da602c5, D5 reports /tmp/pi-subagents-uid-1000/d5-exported-signature-route-safety.md and /tmp/pi-subagents-uid-1000/d5-zai-provider-shape-remediation.md, reviewer blocker /tmp/pi-subagents-uid-1000/reviewer-pi-blitz-70b6f1f.md, and focused report timestamps called out in notes. Report artifact farm under .pi/reports/natural-edit-harness remains uncommitted by design; no benchmark artifacts should be committed for this slice. Universal claim remains blocked pending broad natural/adversarial/provider matrices under Tokscale/accounting.
+
+**2026-06-19T01:30:52Z**
+
+decision: 0.5 split into bounded implementation sprints under epic bli-6uqs. Existing natural-harness ticket becomes historical/evidence context, not the whole Exodia work loop.
