@@ -27,7 +27,7 @@ import { join, basename, dirname } from "node:path";
 import { existsSync } from "node:fs";
 import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const PI_BLITZ_DIST = "/home/kenzo/dev/pi-plugins-repo-kenzo/.dmux/worktrees/dmux-1777009913426-opus47/extensions/pi-blitz/dist/index.js";
 const PI_BLITZ_SKILL = "/home/kenzo/dev/pi-plugins-repo-kenzo/.dmux/worktrees/dmux-1777009913426-opus47/extensions/pi-blitz/skills/pi-blitz";
 

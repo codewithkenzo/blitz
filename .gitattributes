@@ -8,4 +8,4 @@ grammars/**/src/scanner.c linguist-generated
 
 # Bench harnesses, synthetic fixtures, and generated run reports are not product/runtime code.
 .pi/bench/** linguist-vendored
-reports/** linguist-generated
+.pi/reports/** linguist-generated

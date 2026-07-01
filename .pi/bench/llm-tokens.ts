@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ = `${REPO_ROOT}/zig-out/bin/blitz`;
 const ITER = 5;
 const CONTEXT_LINES = 3;

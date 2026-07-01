@@ -14,7 +14,7 @@ import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { countTokens, releaseTokenizer } from "./llm-tokenizer.ts";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BIN_DIR = join(REPO_ROOT, "zig-out/bin");
 const DEFAULT_PI_BIN = "/home/kenzo/.local/bin/pi";
 const DEFAULT_PI_BLITZ_DIST = "/home/kenzo/dev/pi-blitz/dist/index.js";

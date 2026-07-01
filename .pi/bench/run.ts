@@ -19,7 +19,7 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const BLITZ_BINARY = `${REPO_ROOT}/zig-out/bin/blitz`;
 const ITERATIONS = 5;
 

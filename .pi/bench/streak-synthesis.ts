@@ -11,7 +11,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const DEFAULT_SYNTHESIS = join(
 	REPO_ROOT,
 	".pi/reports/archive/history/pi-tmux-phase7-route-selected-synthesis-20260609-d5.json",
